@@ -84,45 +84,59 @@ export default function LayarUndianPage() {
     frame();
   };
 
-  const handleStartDraw = () => {
+  const handleStartDraw = async (isForfeit: boolean = false) => {
     if (isRolling || !selectedPrizeId) return;
     setErrorMsg('');
+
+    const forfeitCode = isForfeit && winnerVoucher ? winnerVoucher.code : undefined;
     setWinnerVoucher(null);
 
-    // Pre-validate eligibility before starting animation
-    const result = drawWinnerForPrize(selectedPrizeId);
-    if (!result.success || !result.winnerVoucher) {
-      setErrorMsg(result.error || 'Gagal mengocok undian.');
-      return;
-    }
+    try {
+      const res = await fetch('/api/draw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prizeId: selectedPrizeId, forfeitCode }),
+      });
+      const data = await res.json();
 
-    setIsRolling(true);
-    soundManager.startDrumroll();
-
-    // Fast digit shuffling visual effect (3 seconds)
-    const startTime = Date.now();
-    rollIntervalRef.current = window.setInterval(() => {
-      const random5Digit = Math.floor(Math.random() * 100000)
-        .toString()
-        .padStart(5, '0');
-      setDisplayDigits(random5Digit);
-      soundManager.playTick();
-
-      if (Date.now() - startTime >= 3200) {
-        // Stop rolling & reveal winner
-        if (rollIntervalRef.current !== null) {
-          clearInterval(rollIntervalRef.current);
-          rollIntervalRef.current = null;
-        }
-
-        setIsRolling(false);
-        setDisplayDigits(result.winnerVoucher!.code);
-        setWinnerVoucher(result.winnerVoucher!);
-        soundManager.playVictoryFanfare();
-        triggerConfetti();
-        loadData();
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error || 'Gagal mengocok undian.');
+        return;
       }
-    }, 80);
+
+      const winner = data.winnerVoucher;
+
+      setIsRolling(true);
+      soundManager.startDrumroll();
+
+      // Fast digit shuffling visual effect (3 seconds)
+      const startTime = Date.now();
+      rollIntervalRef.current = window.setInterval(() => {
+        const random5Digit = Math.floor(Math.random() * 100000)
+          .toString()
+          .padStart(5, '0');
+        setDisplayDigits(random5Digit);
+        soundManager.playTick();
+
+        if (Date.now() - startTime >= 3200) {
+          // Stop rolling & reveal winner
+          if (rollIntervalRef.current !== null) {
+            clearInterval(rollIntervalRef.current);
+            rollIntervalRef.current = null;
+          }
+
+          setIsRolling(false);
+          setDisplayDigits(winner.code);
+          setWinnerVoucher(winner);
+          soundManager.playVictoryFanfare();
+          triggerConfetti();
+          loadData();
+        }
+      }, 80);
+    } catch (err) {
+      console.error('Draw error:', err);
+      setErrorMsg('Gagal terhubung ke server undian.');
+    }
   };
 
   const toggleFullscreen = () => {
@@ -261,18 +275,40 @@ export default function LayarUndianPage() {
 
         {/* Draw Action Buttons */}
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={handleStartDraw}
-            disabled={isRolling}
-            className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-2xl transition-all flex items-center gap-3 ${
-              isRolling
-                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-red-600 via-amber-500 to-red-600 hover:scale-105 text-slate-950 shadow-amber-500/40 ring-4 ring-amber-400/30'
-            }`}
-          >
-            <Play className="w-6 h-6 fill-current" />
-            {isRolling ? 'Mengocok Kode...' : winnerVoucher ? 'Tarik Lagi (Kocok Ulang)' : 'Kocok / Tarik Kode!'}
-          </button>
+          {winnerVoucher ? (
+            <>
+              <button
+                onClick={() => handleStartDraw(false)}
+                disabled={isRolling}
+                className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-gradient-to-r from-red-600 to-red-500 text-white hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <Play className="w-5 h-5 fill-current" />
+                Kocok Lagi Hadiah Berikutnya
+              </button>
+
+              <button
+                onClick={() => handleStartDraw(true)}
+                disabled={isRolling}
+                className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-amber-950 border border-amber-500 text-amber-300 hover:bg-amber-900 hover:scale-105 transition-all flex items-center gap-2"
+              >
+                <RotateCcw className="w-5 h-5" />
+                🔴 Gugurkan & Tarik Ulang (Peserta Tidak Hadir)
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={() => handleStartDraw(false)}
+              disabled={isRolling}
+              className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-2xl transition-all flex items-center gap-3 ${
+                isRolling
+                  ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-red-600 via-amber-500 to-red-600 hover:scale-105 text-slate-950 shadow-amber-500/40 ring-4 ring-amber-400/30'
+              }`}
+            >
+              <Play className="w-6 h-6 fill-current" />
+              {isRolling ? 'Mengocok Kode...' : 'Kocok / Tarik Kode!'}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -177,7 +177,7 @@ export function checkInTransactionBatch(tokenOrId: string, scannerId: string = '
 }
 
 // 4. Draw Random Winner for a Prize
-export function drawWinnerForPrize(prizeId: string): {
+export function drawWinnerForPrize(prizeId: string, forfeitCode?: string): {
   success: boolean;
   winnerVoucher?: Voucher;
   prize?: Prize;
@@ -190,11 +190,25 @@ export function drawWinnerForPrize(prizeId: string): {
     return { success: false, error: 'Hadiah tidak ditemukan!' };
   }
 
+  const vouchers = getStoredVouchers();
+
+  if (forfeitCode) {
+    const prevWinner = vouchers.find((v) => v.code === forfeitCode);
+    if (prevWinner) {
+      prevWinner.status = 'checkin';
+      prevWinner.won_at = undefined;
+      prevWinner.prize_id = undefined;
+      prevWinner.prize_name = undefined;
+    }
+    if (prize.drawn_count > 0) {
+      prize.drawn_count -= 1;
+    }
+  }
+
   if (prize.drawn_count >= prize.stock) {
     return { success: false, error: `Stok hadiah ${prize.name} sudah habis!` };
   }
 
-  const vouchers = getStoredVouchers();
   // Filter only valid checked-in vouchers that haven't won yet
   const eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
 

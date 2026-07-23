@@ -6,12 +6,31 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const prizeId = body.prizeId;
+    const forfeitCode = body.forfeitCode; // optional code to forfeit if winner was absent
 
     if (!prizeId) {
       return NextResponse.json({ error: 'ID Hadiah wajib diisi' }, { status: 400 });
     }
 
     if (isSupabaseConfigured()) {
+      // If forfeitCode is provided (absent winner), mark previous draw result & reset prize drawn_count
+      if (forfeitCode) {
+        await supabase
+          .from('vouchers')
+          .update({ status: 'checkin', prize_id: null, prize_name: null, won_at: null })
+          .eq('code', forfeitCode);
+
+        await supabase
+          .from('draw_results')
+          .delete()
+          .eq('voucher_code', forfeitCode);
+
+        const { data: pCurrent } = await supabase.from('prizes').select('drawn_count').eq('id', prizeId).single();
+        if (pCurrent && pCurrent.drawn_count > 0) {
+          await supabase.from('prizes').update({ drawn_count: pCurrent.drawn_count - 1 }).eq('id', prizeId);
+        }
+      }
+
       // 1. Fetch Prize details
       const { data: prize, error: prizeErr } = await supabase
         .from('prizes')
