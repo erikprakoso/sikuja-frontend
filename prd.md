@@ -1,4 +1,4 @@
-# PRD: SIVOJA — Sistem Voucher & Undian Jalan Sehat (Agustusan)
+# PRD: SIKUJA — Sistem Kupon & Undian Jalan Sehat (Agustusan)
 
 ## 1. Latar Belakang
 

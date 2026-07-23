@@ -14,8 +14,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SIVOJA — Sistem Voucher & Undian Jalan Sehat Agustusan',
-  description: 'Aplikasi Digital Penjualan Voucher, Check-in Pos, dan Pengocokan Undian Agustusan Transparan & Realtime.',
+  title: 'SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan',
+  description: 'Aplikasi Digital Penjualan Kupon, Check-in Pos, dan Pengocokan Undian Agustusan Transparan & Realtime.',
   manifest: '/manifest.json',
 };
 
@@ -40,7 +40,7 @@ export default function RootLayout({
         </main>
         <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>© 2026 SIVOJA — Sistem Undian Jalan Sehat Agustusan 🇮🇩</p>
+            <p>© 2026 SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan 🇮🇩</p>
             <p className="text-slate-600">Aplikasi Web PWA • Bebas Kecurangan • Transparan</p>
           </div>
         </footer>

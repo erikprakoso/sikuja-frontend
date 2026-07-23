@@ -1,4 +1,4 @@
-# Tech Stack: SIVOJA — Sistem Voucher & Undian Jalan Sehat
+# Tech Stack: SIKUJA — Sistem Kupon & Undian Jalan Sehat
 
 Dokumen ini adalah rekomendasi teknologi untuk implementasi SIVOJA, terpisah dari PRD (lihat `prd.md`).
 

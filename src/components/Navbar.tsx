@@ -64,7 +64,7 @@ export default function Navbar() {
           {/* Logo & Brand */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-red-600 to-red-500 flex items-center justify-center shadow-md shadow-red-900/50 group-hover:scale-105 transition-transform">
-              <span className="text-xl font-black text-white tracking-tighter">SV</span>
+              <span className="text-xl font-black text-white tracking-tighter">SK</span>
               <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -73,14 +73,14 @@ export default function Navbar() {
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-xl bg-gradient-to-r from-red-400 via-white to-red-300 bg-clip-text text-transparent tracking-wide">
-                  SIVOJA
+                  SIKUJA
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-bold uppercase rounded-full bg-red-950 border border-red-700/60 text-red-300 tracking-wider">
                   Agustusan 🇮🇩
                 </span>
               </div>
               <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                Sistem Voucher & Undian Jalan Sehat
+                Sistem Kupon & Undian Jalan Sehat
               </span>
             </div>
           </Link>
