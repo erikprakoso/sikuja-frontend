@@ -38,7 +38,7 @@ export default function AdminDashboardPage() {
   // New Prize Form Modal state
   const [showAddPrize, setShowAddPrize] = useState(false);
   const [newPrizeName, setNewPrizeName] = useState('');
-  const [newPrizeStock, setNewPrizeStock] = useState(1);
+  const [newPrizeStock, setNewPrizeStock] = useState<number | string>(1);
 
   const loadData = () => {
     setVouchers(getStoredVouchers());
@@ -211,7 +211,15 @@ export default function AdminDashboardPage() {
               min={1}
               placeholder="Stok"
               value={newPrizeStock}
-              onChange={(e) => setNewPrizeStock(Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '') {
+                  setNewPrizeStock('');
+                } else {
+                  const parsed = parseInt(val, 10);
+                  setNewPrizeStock(isNaN(parsed) ? '' : parsed);
+                }
+              }}
               className="w-24 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
               required
             />
