@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getStoredVouchers, getStoredTransactions, getStoredDrawResults, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredVouchers, getStoredTransactions, getStoredDrawResults, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { Voucher, Transaction, DrawResult } from '@/types';
 import {
   Ticket,
@@ -31,7 +31,9 @@ export default function HomePage() {
   };
 
   useEffect(() => {
-    loadData();
+    syncFromSupabase().then(() => {
+      loadData();
+    });
     if (typeof window !== 'undefined') {
       window.addEventListener(SIVOJA_EVENT_NAME, loadData);
     }

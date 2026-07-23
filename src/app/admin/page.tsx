@@ -7,6 +7,8 @@ import {
   getStoredPrizes,
   getStoredDrawResults,
   savePrizes,
+  deletePrizeFromStore,
+  syncFromSupabase,
   SIVOJA_EVENT_NAME,
 } from '@/lib/storage';
 import { Voucher, Transaction, Prize, DrawResult } from '@/types';
@@ -46,7 +48,9 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    loadData();
+    syncFromSupabase().then(() => {
+      loadData();
+    });
     if (typeof window !== 'undefined') {
       window.addEventListener(SIVOJA_EVENT_NAME, loadData);
     }
@@ -83,11 +87,11 @@ export default function AdminDashboardPage() {
     setShowAddPrize(false);
   };
 
-  const handleDeletePrize = (prizeId: string) => {
+  const handleDeletePrize = async (prizeId: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus hadiah ini dari daftar?')) {
       const updated = prizes.filter((p) => p.id !== prizeId);
-      savePrizes(updated);
       setPrizes(updated);
+      await deletePrizeFromStore(prizeId);
     }
   };
 

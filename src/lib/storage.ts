@@ -33,14 +33,16 @@ export async function syncFromSupabase(): Promise<boolean> {
     const [txRes, vRes, pRes, dRes] = await Promise.all([
       supabase.from('transactions').select('*'),
       supabase.from('vouchers').select('*'),
-      supabase.from('prizes').select('*'),
+      supabase.from('prizes').select('*').order('order_num', { ascending: true }),
       supabase.from('draw_results').select('*'),
     ]);
 
-    if (txRes.data) localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txRes.data));
-    if (vRes.data) localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(vRes.data));
-    if (pRes.data && pRes.data.length > 0) localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(pRes.data));
-    if (dRes.data) localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(dRes.data));
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txRes.data || []));
+    localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(vRes.data || []));
+    if (pRes.data && pRes.data.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(pRes.data));
+    }
+    localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(dRes.data || []));
 
     notifyListeners();
     return true;
@@ -80,10 +82,13 @@ export function getStoredVouchers(): Voucher[] {
     const raw = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
     if (raw) return JSON.parse(raw);
     
-    // Seed initial vouchers if completely empty for instant demonstration
-    const seed = seedInitialVouchers();
-    localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(seed));
-    return seed;
+    // Only seed initial vouchers if Supabase is NOT configured (standalone local demo mode)
+    if (!isSupabaseConfigured()) {
+      const seed = seedInitialVouchers();
+      localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(seed));
+      return seed;
+    }
+    return [];
   } catch {
     return [];
   }
@@ -134,8 +139,11 @@ export function getStoredPrizes(): Prize[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.PRIZES);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(INITIAL_PRIZES));
-      return INITIAL_PRIZES;
+      if (!isSupabaseConfigured()) {
+        localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(INITIAL_PRIZES));
+        return INITIAL_PRIZES;
+      }
+      return [];
     }
     return JSON.parse(raw);
   } catch {
@@ -153,6 +161,21 @@ export async function savePrizes(prizes: Prize[]) {
       await supabase.from('prizes').upsert(prizes);
     } catch (err) {
       console.error('Supabase savePrizes error:', err);
+    }
+  }
+}
+
+export async function deletePrizeFromStore(prizeId: string) {
+  if (typeof window === 'undefined') return;
+  const prizes = getStoredPrizes().filter((p) => p.id !== prizeId);
+  localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
+  notifyListeners();
+
+  if (isSupabaseConfigured()) {
+    try {
+      await supabase.from('prizes').delete().eq('id', prizeId);
+    } catch (err) {
+      console.error('Supabase deletePrize error:', err);
     }
   }
 }
