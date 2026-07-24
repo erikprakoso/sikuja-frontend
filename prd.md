@@ -33,7 +33,7 @@ Menggantikan proses manual di atas dengan sistem digital yang:
 - Modul pengocokan/undian acak dari seluruh kode yang terjual, ditayangkan di layar agar peserta bisa melihat langsung.
 - Modul verifikasi/klaim hadiah: scan atau input kode pemenang, sistem menandai kode tersebut "sudah dipakai" (pengganti sobek voucher) sehingga tidak bisa diundi/diklaim ulang.
 - Dashboard panitia: rekap penjualan, daftar hadiah, daftar pemenang, status kode (belum ditarik/sudah ditarik/sudah diklaim).
-- Cetak voucher (kertas/QR) untuk dibawa peserta pada hari-H, karena voucher fisik tetap dibutuhkan sebagai bukti pegang di tangan peserta.
+- Fitur **Cetak Kupon Fisik & Struk Thermal**: mendukung pencetakan langsung dari browser ke Printer Thermal Bluetooth (58mm/80mm) atau printer biasa, berisi kode 5-digit besar & QR code untuk dibawa peserta pada hari-H.
 
 ### 3.2 Tidak Termasuk (Out of Scope) — tahap awal
 - Pembayaran online/e-wallet (asumsi pembelian voucher tetap tunai di lokasi, sistem hanya mencatat).

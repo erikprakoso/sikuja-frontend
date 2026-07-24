@@ -24,6 +24,7 @@ import {
   Edit2,
   CheckCircle2,
   Search,
+  Printer,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -138,13 +139,22 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        <button
-          onClick={exportCSV}
-          className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md"
-        >
-          <Download className="w-4 h-4" />
-          Unduh Rekap (CSV)
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-2 transition-all border border-slate-700"
+          >
+            <Printer className="w-4 h-4 text-amber-400" />
+            🖨️ Cetak Lembaran Kupon
+          </button>
+          <button
+            onClick={exportCSV}
+            className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md"
+          >
+            <Download className="w-4 h-4" />
+            Unduh Rekap (CSV)
+          </button>
+        </div>
       </div>
 
       {/* Summary Stat Cards */}
@@ -330,6 +340,30 @@ export default function AdminDashboardPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Hidden Printable Area for Admin Master Voucher Printing */}
+      <div className="hidden print-area text-black font-sans">
+        <div className="text-center pb-3 border-b-2 border-black mb-4">
+          <h1 className="text-xl font-black uppercase">LEMBARAN KUPON VOUCHER JALAN SEHAT AGUSTUSAN 🇮🇩</h1>
+          <p className="text-xs font-bold">Total Terbit: {filteredVouchers.length} Lembar Kode Voucher</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {filteredVouchers.map((v, idx) => (
+            <div key={v.code} className="border-2 border-black p-3 text-center rounded-lg space-y-1">
+              <div className="flex justify-between items-center text-[9px] font-bold border-b border-black pb-1">
+                <span>SIKUJA 2026</span>
+                <span className="uppercase">{v.type}</span>
+              </div>
+              <p className="text-[10px] font-bold mt-1">KODE VOUCHER #{idx + 1}</p>
+              <div className="text-2xl font-black font-mono tracking-widest my-1">
+                {v.code}
+              </div>
+              <p className="text-[8px] text-gray-700">Wajib Di-scan di Pos Rute Jalan Sehat</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
