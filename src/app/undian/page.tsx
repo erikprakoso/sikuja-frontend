@@ -50,30 +50,21 @@ export default function LayarUndianPage() {
   }, []);
 
   const triggerConfetti = () => {
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-
-    const frame = () => {
-      confetti({
-        particleCount: 5,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#ef4444', '#f59e0b', '#ffffff'],
-      });
-      confetti({
-        particleCount: 5,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#ef4444', '#f59e0b', '#ffffff'],
-      });
-
-      if (Date.now() < animationEnd) {
-        requestAnimationFrame(frame);
-      }
-    };
-    frame();
+    // Lightweight single burst from left & right (Zero CPU/GPU lag)
+    confetti({
+      particleCount: 40,
+      angle: 60,
+      spread: 60,
+      origin: { x: 0, y: 0.7 },
+      colors: ['#ef4444', '#f59e0b', '#ffffff', '#10b981'],
+    });
+    confetti({
+      particleCount: 40,
+      angle: 120,
+      spread: 60,
+      origin: { x: 1, y: 0.7 },
+      colors: ['#ef4444', '#f59e0b', '#ffffff', '#10b981'],
+    });
   };
 
   const handleStartDraw = async (isForfeit: boolean = false) => {
