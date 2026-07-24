@@ -3,21 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
-import { getStoredVouchers, getStoredTransactions, getOfflineQueue, clearOfflineQueue, SIVOJA_EVENT_NAME } from '@/lib/storage';
-import { Voucher, Transaction, PosCheckin } from '@/types';
-import {
-  QrCode,
-  CheckCircle2,
-  AlertCircle,
-  Camera,
-  Layers,
-  RefreshCw,
-  Search,
-  Wifi,
-  WifiOff,
-  Zap,
-  Sparkles,
-} from 'lucide-react';
+import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { PosCheckin } from '@/types';
+
+import { CheckinHeader } from '@/components/checkin/CheckinHeader';
+import { OfflineQueueBanner } from '@/components/checkin/OfflineQueueBanner';
+import { CheckinScanner } from '@/components/checkin/CheckinScanner';
+import { CheckinOperatorTips } from '@/components/checkin/CheckinOperatorTips';
 
 export default function CheckinPosPage() {
   const [inputCode, setInputCode] = useState('');
@@ -85,25 +77,59 @@ export default function CheckinPosPage() {
     try {
       setIsScanning(true);
       setResultMessage(null);
+
+      // Wait a tick to ensure DOM element is displayed
+      await new Promise((r) => setTimeout(r, 100));
+
       if (!scannerRef.current) {
         scannerRef.current = new Html5Qrcode(scannerContainerId);
       }
 
-      await scannerRef.current.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          handleProcessCode(decodedText);
-          stopCamera();
-        },
-        () => {}
-      );
-    } catch (err) {
+      const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+      const onScanSuccess = (decodedText: string) => {
+        handleProcessCode(decodedText);
+        stopCamera();
+      };
+
+      try {
+        await scannerRef.current.start(
+          { facingMode: 'environment' },
+          qrConfig,
+          onScanSuccess,
+          () => {}
+        );
+      } catch (primaryErr) {
+        console.warn('FacingMode environment failed, attempting camera list fallback...', primaryErr);
+        const devices = await Html5Qrcode.getCameras();
+        if (devices && devices.length > 0) {
+          const backCam =
+            devices.find(
+              (d) =>
+                d.label.toLowerCase().includes('back') ||
+                d.label.toLowerCase().includes('rear') ||
+                d.label.toLowerCase().includes('belakang')
+            ) || devices[0];
+
+          await scannerRef.current.start(backCam.id, qrConfig, onScanSuccess, () => {});
+        } else {
+          throw primaryErr;
+        }
+      }
+    } catch (err: any) {
       console.error('Camera start error:', err);
       setIsScanning(false);
+
+      const isHttpIp =
+        typeof window !== 'undefined' &&
+        window.location.protocol === 'http:' &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1';
+
       setResultMessage({
         success: false,
-        text: 'Gagal membuka kamera HP. Pastikan izin kamera sudah diaktifkan di browser.',
+        text: isHttpIp
+          ? '🔒 Kamera diblokir browser karena diakses via HTTP IP (bukan HTTPS). Gunakan localhost / HTTPS / ngrok, atau aktifkan chrome://flags/#unsafely-treat-insecure-origin-as-secure.'
+          : `Gagal membuka kamera HP: ${err?.message || 'Pastikan izin akses kamera diizinkan pada browser HP Anda.'}`,
       });
     }
   };
@@ -133,142 +159,31 @@ export default function CheckinPosPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6 py-4">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <QrCode className="w-3.5 h-3.5" />
-            Pos Check-In Tengah Rute
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Multi-Scanner Validation</h1>
-          <p className="text-xs text-slate-400">
-            Scan 1 QR Transaksi untuk Batch Check-in atau scan 5-digit voucher fisik.
-          </p>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center sm:text-right">
-          <span className="text-[10px] text-slate-400 font-bold uppercase">Progres Check-In</span>
-          <p className="text-xl font-black text-emerald-400 font-mono">
-            {totalCheckinCount} <span className="text-xs font-normal text-slate-400">/ {totalVoucherCount}</span>
-          </p>
-        </div>
-      </div>
+      <CheckinHeader
+        totalCheckinCount={totalCheckinCount}
+        totalVoucherCount={totalVoucherCount}
+      />
 
       {/* Offline Queue Notice */}
-      {offlineQueue.length > 0 && (
-        <div className="p-4 rounded-2xl bg-amber-950/80 border border-amber-700/80 text-amber-200 text-xs flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <WifiOff className="w-5 h-5 text-amber-400 animate-pulse flex-shrink-0" />
-            <div>
-              <p className="font-bold">Ada {offlineQueue.length} data scan tersimpan offline!</p>
-              <p className="text-[11px] text-amber-300/80">
-                Data akan tersimpan di HP ini sampai jaringan terhubung kembali.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleSyncOffline}
-            className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1 flex-shrink-0"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Sync Now
-          </button>
-        </div>
-      )}
+      <OfflineQueueBanner
+        queueCount={offlineQueue.length}
+        onSync={handleSyncOffline}
+      />
 
       {/* Scanner & Code Input Box */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-        {/* Camera Feed Container */}
-        <div className="space-y-4">
-          <div
-            id={scannerContainerId}
-            className={`w-full overflow-hidden rounded-2xl border-2 ${
-              isScanning ? 'border-emerald-500 bg-black min-h-[300px]' : 'hidden'
-            }`}
-          />
-
-          {!isScanning ? (
-            <button
-              onClick={startCamera}
-              className="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-lg shadow-xl shadow-emerald-950/60 transition-all flex items-center justify-center gap-3"
-            >
-              <Camera className="w-6 h-6" />
-              Buka Kamera HP & Scan QR
-            </button>
-          ) : (
-            <button
-              onClick={stopCamera}
-              className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700"
-            >
-              Tutup Kamera
-            </button>
-          )}
-        </div>
-
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-800 w-full" />
-          <span className="bg-slate-900 px-3 text-xs text-slate-500 uppercase font-bold absolute">
-            Atau Input Manual
-          </span>
-        </div>
-
-        {/* Manual Input Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleProcessCode(inputCode);
-          }}
-          className="flex flex-col sm:flex-row gap-2"
-        >
-          <input
-            type="text"
-            placeholder="Ketik 5-digit kode atau token transaksi..."
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            className="flex-1 px-4 py-3.5 bg-slate-950 border border-slate-700 rounded-2xl text-white font-mono text-base placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-          />
-          <button
-            type="submit"
-            disabled={!inputCode.trim()}
-            className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            Check-In
-          </button>
-        </form>
-
-        {/* Result Alert Box */}
-        {resultMessage && (
-          <div
-            className={`p-4 rounded-2xl border text-sm font-semibold flex items-start gap-3 animate-fade-in ${
-              resultMessage.success
-                ? 'bg-emerald-950/80 border-emerald-700 text-emerald-200'
-                : 'bg-red-950/80 border-red-800 text-red-200'
-            }`}
-          >
-            {resultMessage.success ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-            )}
-            <div>
-              <p className="font-bold">{resultMessage.text}</p>
-            </div>
-          </div>
-        )}
-      </div>
+      <CheckinScanner
+        scannerContainerId={scannerContainerId}
+        isScanning={isScanning}
+        inputCode={inputCode}
+        setInputCode={setInputCode}
+        resultMessage={resultMessage}
+        onStartCamera={startCamera}
+        onStopCamera={stopCamera}
+        onSubmitCode={handleProcessCode}
+      />
 
       {/* POS Operator Tips */}
-      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 text-xs text-slate-400 space-y-2">
-        <span className="font-bold text-slate-200 flex items-center gap-1.5">
-          <Zap className="w-4 h-4 text-emerald-400" />
-          Tips Panitia Pos:
-        </span>
-        <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400">
-          <li>1 transaksi e-voucher cukup discan 1x untuk langsung mengaktifkan semua kuponnya sekaligus.</li>
-          <li>Beberapa panitia dapat membuka halaman ini bersamaan di HP masing-time tanpa risiko scan ganda.</li>
-          <li>Data tersinkronkan real-time. Kode yang belum check-in tidak akan ditarik saat undian.</li>
-        </ul>
-      </div>
+      <CheckinOperatorTips />
     </div>
   );
 }
