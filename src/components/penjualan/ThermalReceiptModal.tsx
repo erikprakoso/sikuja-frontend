@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
+import { getAppBaseUrl } from '@/lib/storage';
 import { Printer, X } from 'lucide-react';
 
 interface ThermalReceiptModalProps {
@@ -18,9 +19,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   const [txQrUrl, setTxQrUrl] = useState<string>('');
 
   useEffect(() => {
-    const fullUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/v/${transaction.token}`
-      : `/v/${transaction.token}`;
+    const baseUrl = getAppBaseUrl();
+    const fullUrl = `${baseUrl}/v/${transaction.token}`;
       
     QRCode.toDataURL(fullUrl, {
       width: 160,

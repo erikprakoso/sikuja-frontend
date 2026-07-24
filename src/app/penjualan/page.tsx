@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { createPurchaseTransaction } from '@/lib/services/voucher';
+import { getAppBaseUrl } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
 import { Ticket, RefreshCw } from 'lucide-react';
 
@@ -24,7 +25,8 @@ export default function PenjualanPage() {
   // Generate QR code image when a transaction is completed
   useEffect(() => {
     if (lastTx && lastTx.transaction.qty_non_fisik > 0) {
-      const fullUrl = `${window.location.origin}/v/${lastTx.transaction.token}`;
+      const baseUrl = getAppBaseUrl();
+      const fullUrl = `${baseUrl}/v/${lastTx.transaction.token}`;
       QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         .then((url) => setQrDataUrl(url))
         .catch((err) => console.error('QR Gen error', err));

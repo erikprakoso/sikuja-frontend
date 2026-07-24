@@ -1,5 +1,6 @@
 import React from 'react';
 import { Transaction, Voucher } from '@/types';
+import { getAppBaseUrl } from '@/lib/storage';
 import {
   CheckCircle2,
   Ticket,
@@ -28,7 +29,8 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
   onOpenPrintModal,
   onResetForm,
 }) => {
-  const etokenUrl = typeof window !== 'undefined' ? `${window.location.origin}/v/${transaction.token}` : '';
+  const baseUrl = getAppBaseUrl();
+  const etokenUrl = `${baseUrl}/v/${transaction.token}`;
   const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
 
   return (

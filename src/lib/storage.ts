@@ -11,6 +11,20 @@ const STORAGE_KEYS = {
 
 export const SIVOJA_EVENT_NAME = 'sivoja_data_changed';
 
+export function getAppBaseUrl(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
+  }
+  if (process.env.NEXT_PUBLIC_VERCEL_URL) {
+    const vUrl = process.env.NEXT_PUBLIC_VERCEL_URL.replace(/\/$/, '');
+    return vUrl.startsWith('http') ? vUrl : `https://${vUrl}`;
+  }
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+}
+
 function notifyListeners() {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent(SIVOJA_EVENT_NAME));

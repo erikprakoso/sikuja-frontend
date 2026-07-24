@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
+import { getAppBaseUrl } from '@/lib/storage';
 
 interface ThermalReceiptPrintProps {
   transaction: Transaction;
@@ -15,9 +16,8 @@ export const ThermalReceiptPrint: React.FC<ThermalReceiptPrintProps> = ({
   const [txQrUrl, setTxQrUrl] = useState<string>('');
 
   useEffect(() => {
-    const fullUrl = typeof window !== 'undefined'
-      ? `${window.location.origin}/v/${transaction.token}`
-      : `/v/${transaction.token}`;
+    const baseUrl = getAppBaseUrl();
+    const fullUrl = `${baseUrl}/v/${transaction.token}`;
       
     QRCode.toDataURL(fullUrl, {
       width: 160,
