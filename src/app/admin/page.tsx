@@ -17,7 +17,6 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { PrizeManagement } from '@/components/admin/PrizeManagement';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
-import { AdminPrintSheet } from '@/components/admin/AdminPrintSheet';
 
 export default function AdminDashboardPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -81,7 +80,7 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeletePrize = async (prizeId: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus hadiah ini dari daftar?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus kategori hadiah ini?')) {
       const updated = prizes.filter((p) => p.id !== prizeId);
       setPrizes(updated);
       await deletePrizeFromStore(prizeId);
@@ -152,9 +151,6 @@ export default function AdminDashboardPage() {
         setSearchQuery={setSearchQuery}
         setStatusFilter={setStatusFilter}
       />
-
-      {/* Hidden Printable Area for Admin Master Voucher Printing */}
-      <AdminPrintSheet vouchers={filteredVouchers} />
     </div>
   );
 }

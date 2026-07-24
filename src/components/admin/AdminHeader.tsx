@@ -7,11 +7,11 @@ export const AdminHeader: React.FC = () => {
       <div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950 border border-purple-800 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Dashboard Admin & Rekapitulasi
+          Dashboard Administrasi & Laporan
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Laporan & Manajemen Event</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-white">Laporan & Rekapitulasi Penjualan</h1>
         <p className="text-xs text-slate-400">
-          Rekap otomatis penjualan, kelola daftar hadiah, dan pantau seluruh data voucher.
+          Ringkasan real-time penjualan voucher, pengelolaan daftar doorprize, dan status peserta.
         </p>
       </div>
     </div>

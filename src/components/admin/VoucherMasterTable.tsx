@@ -40,7 +40,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h2 className="text-base font-bold text-white flex items-center gap-2">
           <Ticket className="w-5 h-5 text-red-400" />
-          Master Data Voucher ({totalVouchers})
+          Data Utama Kupon ({totalVouchers})
         </h2>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -48,7 +48,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <div className="relative flex-1 sm:w-48">
             <input
               type="text"
-              placeholder="Cari kode..."
+              placeholder="Cari kode kupon..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-mono focus:outline-none focus:border-red-500"
@@ -63,10 +63,10 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none"
           >
             <option value="all">Semua Status</option>
-            <option value="terbit">Terbit (Belum Checkin)</option>
-            <option value="checkin">Check-in Pos</option>
-            <option value="menang">Menang Undian</option>
-            <option value="diklaim">Sudah Diklaim</option>
+            <option value="terbit">Terbit (Belum Verifikasi)</option>
+            <option value="checkin">Terverifikasi Pos</option>
+            <option value="menang">Pemenang Undian</option>
+            <option value="diklaim">Hadiah Diserahkan</option>
           </select>
 
           {/* Page Size Select */}
@@ -88,11 +88,11 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
         <table className="w-full text-left text-xs text-slate-300">
           <thead className="bg-slate-950 text-slate-400 uppercase font-bold text-[10px] border-b border-slate-800">
             <tr>
-              <th className="p-3">Kode 5-Digit</th>
-              <th className="p-3">Tipe</th>
+              <th className="p-3">Kode Kupon</th>
+              <th className="p-3">Jenis</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Hadiah (Jika Menang)</th>
-              <th className="p-3">Waktu Terbit</th>
+              <th className="p-3">Hadiah</th>
+              <th className="p-3">Waktu Transaksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60 font-mono">
@@ -113,7 +113,13 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                           : 'bg-slate-800 text-slate-400'
                       }`}
                     >
-                      {v.status}
+                      {v.status === 'checkin'
+                        ? 'Terverifikasi'
+                        : v.status === 'menang'
+                        ? 'Pemenang'
+                        : v.status === 'diklaim'
+                        ? 'Diserahkan'
+                        : 'Terbit'}
                     </span>
                   </td>
                   <td className="p-3 font-sans text-slate-300">{v.prize_name || '-'}</td>
@@ -125,7 +131,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             ) : (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-slate-500 font-sans">
-                  Tidak ada voucher ditemukan.
+                  Tidak ada data kupon yang sesuai.
                 </td>
               </tr>
             )}
@@ -139,7 +145,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <span className="text-slate-400 text-[11px]">
             Menampilkan <strong className="text-white">{startIndex + 1}</strong>–
             <strong className="text-white">{endIndex}</strong> dari{' '}
-            <strong className="text-white">{totalVouchers}</strong> voucher
+            <strong className="text-white">{totalVouchers}</strong> data kupon
           </span>
 
           <div className="flex items-center gap-1.5">

@@ -30,14 +30,14 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-white flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-400" />
-          Manajemen Daftar Hadiah ({prizes.length})
+          Daftar Kategori Doorprize ({prizes.length})
         </h2>
         <button
           onClick={() => setShowAddPrize(!showAddPrize)}
-          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all"
+          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
         >
           <Plus className="w-4 h-4" />
-          Tambah Hadiah
+          Tambah Kategori Hadiah
         </button>
       </div>
 
@@ -48,16 +48,16 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
         >
           <input
             type="text"
-            placeholder="Nama Hadiah (Contoh: Kipas Angin)..."
+            placeholder="Nama Hadiah (contoh: Sepeda Listrik)..."
             value={newPrizeName}
             onChange={(e) => setNewPrizeName(e.target.value)}
-            className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
+            className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-amber-500"
             required
           />
           <input
             type="number"
             min={1}
-            placeholder="Stok"
+            placeholder="Jumlah Stok"
             value={newPrizeStock}
             onChange={(e) => {
               const val = e.target.value;
@@ -68,14 +68,14 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
                 setNewPrizeStock(isNaN(parsed) ? '' : parsed);
               }
             }}
-            className="w-24 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs"
+            className="w-28 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-amber-500"
             required
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-amber-500 text-slate-950 rounded-xl text-xs font-bold"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-colors"
           >
-            Simpan Hadiah
+            Simpan Kategori
           </button>
         </form>
       )}
@@ -87,16 +87,16 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
             className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"
           >
             <div>
-              <span className="text-[10px] text-amber-400 font-bold uppercase">Urutan #{p.order_num}</span>
+              <span className="text-[10px] text-amber-400 font-bold uppercase">Prioritas #{p.order_num}</span>
               <p className="text-sm font-bold text-white">{p.name}</p>
               <p className="text-xs text-slate-400">
-                Ditarik: <strong className="text-white">{p.drawn_count}</strong> / {p.stock} unit
+                Terundi: <strong className="text-white">{p.drawn_count}</strong> dari {p.stock} unit
               </p>
             </div>
             <button
               onClick={() => onDeletePrize(p.id)}
               className="p-2 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-900 transition-colors"
-              title="Hapus Hadiah"
+              title="Hapus Kategori Hadiah"
             >
               <Trash2 className="w-4 h-4" />
             </button>

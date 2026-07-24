@@ -24,31 +24,31 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <span className="text-xs font-bold text-slate-400 uppercase">Total Terjual</span>
-        <p className="text-2xl font-black text-white mt-1">{totalSales} lembar</p>
+        <span className="text-xs font-bold text-slate-400 uppercase">Total Penerbitan</span>
+        <p className="text-2xl font-black text-white mt-1">{totalSales} Lembar</p>
         <span className="text-[11px] text-slate-500 block mt-1">
-          {totalFisik} Fisik • {totalNonFisik} E-Voucher
+          {totalFisik} Kupon Fisik • {totalNonFisik} E-Voucher
         </span>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <span className="text-xs font-bold text-slate-400 uppercase">Check-In Pos</span>
-        <p className="text-2xl font-black text-emerald-400 mt-1">{totalCheckin} kode</p>
-        <span className="text-[11px] text-slate-500 block mt-1">{participationRate}% Partisipasi</span>
+        <span className="text-xs font-bold text-slate-400 uppercase">Kehadiran Peserta</span>
+        <p className="text-2xl font-black text-emerald-400 mt-1">{totalCheckin} Kupon</p>
+        <span className="text-[11px] text-slate-500 block mt-1">Tingkat Kehadiran {participationRate}%</span>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <span className="text-xs font-bold text-slate-400 uppercase">Pemenang Ditarik</span>
-        <p className="text-2xl font-black text-amber-400 mt-1">{drawResults.length} kode</p>
-        <span className="text-[11px] text-slate-500 block mt-1">{totalClaimed} Diklaim</span>
+        <span className="text-xs font-bold text-slate-400 uppercase">Kupon Terundi</span>
+        <p className="text-2xl font-black text-amber-400 mt-1">{drawResults.length} Kupon</p>
+        <span className="text-[11px] text-slate-500 block mt-1">{totalClaimed} Hadiah Diserahkan</span>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
-        <span className="text-xs font-bold text-slate-400 uppercase">Total Dana Kas</span>
+        <span className="text-xs font-bold text-slate-400 uppercase">Total Pendapatan Kas</span>
         <p className="text-2xl font-black text-cyan-400 mt-1">
           Rp {totalDana.toLocaleString('id-ID')}
         </p>
-        <span className="text-[11px] text-slate-500 block mt-1">Anonim & Terverifikasi</span>
+        <span className="text-[11px] text-slate-500 block mt-1">Pendapatan Terverifikasi</span>
       </div>
     </div>
   );
