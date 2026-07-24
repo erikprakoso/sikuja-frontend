@@ -1,6 +1,6 @@
 import React from 'react';
 import { Prize } from '@/types';
-import { Star } from 'lucide-react';
+import { Star, CheckCircle } from 'lucide-react';
 
 interface PrizeSelectorGridProps {
   prizes: Prize[];
@@ -15,16 +15,27 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
   isRolling,
   onSelectPrize,
 }) => {
+  // Hide prizes that are fully drawn (stok habis)
+  const availablePrizes = prizes.filter((p) => p.drawn_count < p.stock);
+
+  if (availablePrizes.length === 0) {
+    return (
+      <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-center font-bold flex items-center justify-center gap-2">
+        <CheckCircle className="w-5 h-5 text-emerald-400" />
+        Semua Hadiah Telah Selesai Diundi! 🏆
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
         <Star className="w-4 h-4 text-amber-400" />
-        Pilih Hadiah yang Akan Diundi:
+        Pilih Hadiah yang Akan Diundi ({availablePrizes.length} Tersedia):
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {prizes.map((p) => {
+        {availablePrizes.map((p) => {
           const isSelected = p.id === selectedPrizeId;
-          const isSoldOut = p.drawn_count >= p.stock;
           return (
             <button
               key={p.id}
@@ -33,8 +44,6 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               className={`p-3 rounded-2xl text-left border transition-all relative overflow-hidden ${
                 isSelected
                   ? 'bg-amber-950/80 border-amber-500 text-white shadow-lg shadow-amber-950/60 scale-105 ring-2 ring-amber-400/40'
-                  : isSoldOut
-                  ? 'bg-slate-950/50 border-slate-900 text-slate-600 opacity-60'
                   : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
               }`}
             >

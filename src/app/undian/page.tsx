@@ -19,8 +19,11 @@ export default function LayarUndianPage() {
   const [eligibleCount, setEligibleCount] = useState<number>(0);
   
   const [isRolling, setIsRolling] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
   const [displayDigits, setDisplayDigits] = useState<string>('00000');
-  const [winnerVoucher, setWinnerVoucher] = useState<Voucher | null>(null);
+  
+  const [candidateVoucher, setCandidateVoucher] = useState<Voucher | null>(null);
+  const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
   const rollIntervalRef = useRef<number | null>(null);
@@ -30,9 +33,16 @@ export default function LayarUndianPage() {
 
     const p = getStoredPrizes();
     setPrizes(p);
-    if (p.length > 0 && !selectedPrizeId) {
-      setSelectedPrizeId(p[0].id);
-    }
+
+    const availablePrizes = p.filter((item) => item.drawn_count < item.stock);
+
+    setSelectedPrizeId((prevId) => {
+      // Preserve current selection if it still has stock available
+      const isStillAvailable = availablePrizes.some((item) => item.id === prevId);
+      if (isStillAvailable) return prevId;
+      // Otherwise, select first available prize
+      return availablePrizes.length > 0 ? availablePrizes[0].id : '';
+    });
 
     const v = getStoredVouchers();
     const eligible = v.filter((x) => x.status === 'checkin').length;
@@ -52,16 +62,15 @@ export default function LayarUndianPage() {
   }, []);
 
   const triggerConfetti = () => {
-    // Lightweight single burst from left & right (Zero CPU/GPU lag)
     confetti({
-      particleCount: 40,
+      particleCount: 50,
       angle: 60,
       spread: 60,
       origin: { x: 0, y: 0.7 },
       colors: ['#ef4444', '#f59e0b', '#ffffff', '#10b981'],
     });
     confetti({
-      particleCount: 40,
+      particleCount: 50,
       angle: 120,
       spread: 60,
       origin: { x: 1, y: 0.7 },
@@ -69,29 +78,29 @@ export default function LayarUndianPage() {
     });
   };
 
-  const handleStartDraw = async (isForfeit: boolean = false) => {
+  // 1. Draw candidate code (random CSPRNG, status checkin unchanged)
+  const handleStartDraw = async () => {
     if (isRolling || !selectedPrizeId) return;
-    setIsRolling(true); // Lock immediately to prevent double-click
+    setIsRolling(true);
     setErrorMsg('');
-
-    const forfeitCode = isForfeit && winnerVoucher ? winnerVoucher.code : undefined;
-    setWinnerVoucher(null);
+    setCandidateVoucher(null);
+    setIsConfirmedWinner(false);
 
     try {
       const res = await fetch('/api/draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeId: selectedPrizeId, forfeitCode }),
+        body: JSON.stringify({ prizeId: selectedPrizeId }),
       });
       const data = await res.json();
 
       if (!res.ok || data.error) {
         setErrorMsg(data.error || 'Gagal mengocok undian.');
-        setIsRolling(false); // Unlock on error
+        setIsRolling(false);
         return;
       }
 
-      const winner = data.winnerVoucher;
+      const candidate: Voucher = data.candidate;
 
       soundManager.startDrumroll();
 
@@ -103,32 +112,65 @@ export default function LayarUndianPage() {
         setDisplayDigits(random5Digit);
       }, 80);
 
-      // After 3.2 seconds: stop everything cleanly and reveal winner
+      // Reveal candidate code
       setTimeout(() => {
-        // 1. Stop the digit shuffle interval
         if (rollIntervalRef.current !== null) {
           clearInterval(rollIntervalRef.current);
           rollIntervalRef.current = null;
         }
 
-        // 2. Stop ALL sounds (drumroll + ticks)
         soundManager.stopDrumroll();
 
-        // 3. Reveal winner
         setIsRolling(false);
-        setDisplayDigits(winner.code);
-        setWinnerVoucher(winner);
-
-        // 4. Play short victory fanfare & confetti
-        soundManager.playVictoryFanfare();
-        triggerConfetti();
-        loadData();
+        setDisplayDigits(candidate.code);
+        setCandidateVoucher(candidate);
       }, 3200);
     } catch (err) {
       console.error('Draw error:', err);
       setErrorMsg('Gagal terhubung ke server undian.');
-      setIsRolling(false); // Unlock on error
+      setIsRolling(false);
     }
+  };
+
+  // 2. Confirm candidate as official winner when person comes on stage
+  const handleConfirmWinner = async () => {
+    if (!candidateVoucher || !selectedPrizeId || isConfirming) return;
+    setIsConfirming(true);
+    setErrorMsg('');
+
+    try {
+      const res = await fetch('/api/draw/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: candidateVoucher.code, prizeId: selectedPrizeId }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error || 'Gagal menyahkan pemenang.');
+        setIsConfirming(false);
+        return;
+      }
+
+      setIsConfirmedWinner(true);
+      setIsConfirming(false);
+
+      // Play victory fanfare & confetti
+      soundManager.playVictoryFanfare();
+      triggerConfetti();
+      await loadData();
+    } catch (err) {
+      console.error('Confirm error:', err);
+      setErrorMsg('Gagal terhubung ke server untuk mengonfirmasi.');
+      setIsConfirming(false);
+    }
+  };
+
+  // 3. Candidate absent -> forfeit & redraw immediately for the same prize
+  const handleForfeitAndRedraw = () => {
+    setCandidateVoucher(null);
+    setIsConfirmedWinner(false);
+    handleStartDraw();
   };
 
   const toggleFullscreen = () => {
@@ -156,7 +198,8 @@ export default function LayarUndianPage() {
         isRolling={isRolling}
         onSelectPrize={(id) => {
           setSelectedPrizeId(id);
-          setWinnerVoucher(null);
+          setCandidateVoucher(null);
+          setIsConfirmedWinner(false);
         }}
       />
 
@@ -176,11 +219,16 @@ export default function LayarUndianPage() {
         <DigitSlotsDisplay
           displayDigits={displayDigits}
           isRolling={isRolling}
-          winnerVoucher={winnerVoucher}
+          winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
         />
 
-        {/* Winner Announcement Banner */}
-        {winnerVoucher && <WinnerBanner winnerVoucher={winnerVoucher} />}
+        {/* Candidate or Winner Announcement Banner */}
+        {candidateVoucher && (
+          <WinnerBanner
+            voucher={candidateVoucher}
+            isConfirmed={isConfirmedWinner}
+          />
+        )}
 
         {errorMsg && (
           <div className="p-4 rounded-2xl bg-red-950/80 border border-red-800 text-red-200 text-sm font-bold inline-flex items-center gap-2 max-w-md">
@@ -192,8 +240,12 @@ export default function LayarUndianPage() {
         {/* Draw Action Buttons */}
         <DrawControls
           isRolling={isRolling}
-          winnerVoucher={winnerVoucher}
+          isConfirming={isConfirming}
+          candidateVoucher={candidateVoucher}
+          isConfirmed={isConfirmedWinner}
           onStartDraw={handleStartDraw}
+          onConfirmWinner={handleConfirmWinner}
+          onForfeitAndRedraw={handleForfeitAndRedraw}
         />
       </div>
     </div>

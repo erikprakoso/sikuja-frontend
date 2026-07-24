@@ -6,41 +6,25 @@ import { drawWinnerForPrize } from '@/lib/services/voucher';
 /**
  * Cryptographically Secure Random Index Generator
  * Uses Node.js crypto.randomInt() which is CSPRNG-backed (OS-level entropy).
- * This is the gold standard for fair, unpredictable random selection.
  */
 function secureRandomIndex(max: number): number {
-  return randomInt(0, max); // [0, max) — uniform distribution, crypto-safe
+  return randomInt(0, max);
 }
 
+/**
+ * POST /api/draw — Pick a random eligible code (does NOT change status yet).
+ * The MC must then confirm or skip (gugur) via /api/draw/confirm.
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const prizeId = body.prizeId;
-    const forfeitCode = body.forfeitCode; // optional code to forfeit if winner was absent
 
     if (!prizeId) {
       return NextResponse.json({ error: 'ID Hadiah wajib diisi' }, { status: 400 });
     }
 
     if (isSupabaseConfigured()) {
-      // If forfeitCode is provided (absent winner), mark previous draw result & reset prize drawn_count
-      if (forfeitCode) {
-        await supabase
-          .from('vouchers')
-          .update({ status: 'checkin', prize_id: null, prize_name: null, won_at: null })
-          .eq('code', forfeitCode);
-
-        await supabase
-          .from('draw_results')
-          .delete()
-          .eq('voucher_code', forfeitCode);
-
-        const { data: pCurrent } = await supabase.from('prizes').select('drawn_count').eq('id', prizeId).single();
-        if (pCurrent && pCurrent.drawn_count > 0) {
-          await supabase.from('prizes').update({ drawn_count: pCurrent.drawn_count - 1 }).eq('id', prizeId);
-        }
-      }
-
       // 1. Fetch Prize details
       const { data: prize, error: prizeErr } = await supabase
         .from('prizes')
@@ -69,68 +53,19 @@ export async function POST(request: NextRequest) {
       }
 
       // 3. Cryptographically Secure Random Pick (CSPRNG)
+      // Status voucher TIDAK diubah — hanya pick acak
       const randomIndex = secureRandomIndex(eligibleVouchers.length);
-      const winner = eligibleVouchers[randomIndex];
-      const now = new Date().toISOString();
-
-      // 4. Update winner voucher status
-      const { error: winErr } = await supabase
-        .from('vouchers')
-        .update({
-          status: 'menang',
-          won_at: now,
-          prize_id: prize.id,
-          prize_name: prize.name,
-        })
-        .eq('code', winner.code);
-
-      if (winErr) throw winErr;
-
-      // 5. Atomic increment with optimistic lock — prevents double-draw race condition
-      // Only updates if drawn_count hasn't changed since we read it AND is still under stock
-      const { data: updatedPrize, error: incErr } = await supabase
-        .from('prizes')
-        .update({ drawn_count: prize.drawn_count + 1 })
-        .eq('id', prize.id)
-        .eq('drawn_count', prize.drawn_count) // Optimistic lock: only if unchanged
-        .lt('drawn_count', prize.stock)        // Safety: must still be under stock
-        .select()
-        .maybeSingle();
-
-      if (incErr || !updatedPrize) {
-        // Race condition detected — rollback the voucher status
-        await supabase
-          .from('vouchers')
-          .update({ status: 'checkin', prize_id: null, prize_name: null, won_at: null })
-          .eq('code', winner.code);
-
-        return NextResponse.json({
-          error: `Stok hadiah "${prize.name}" sudah habis atau sedang dikocok oleh proses lain. Coba lagi!`,
-        }, { status: 409 });
-      }
-
-      // 6. Record draw_result with audit trail
-      const drawResult = {
-        id: 'res_' + Date.now(),
-        voucher_code: winner.code,
-        prize_id: prize.id,
-        prize_name: prize.name,
-        drawn_at: now,
-        claimed: false,
-      };
-
-      await supabase.from('draw_results').insert([drawResult]);
+      const candidate = eligibleVouchers[randomIndex];
 
       return NextResponse.json({
         success: true,
-        winnerVoucher: { ...winner, status: 'menang', won_at: now, prize_name: prize.name },
+        candidate, // Still status 'checkin' — not yet a winner
         prize,
-        // Audit info for transparency
         audit: {
           method: 'crypto.randomInt (CSPRNG)',
           pool_size: eligibleVouchers.length,
           selected_index: randomIndex,
-          drawn_at: now,
+          picked_at: new Date().toISOString(),
         },
       });
     } else {
