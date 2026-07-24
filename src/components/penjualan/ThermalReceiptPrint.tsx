@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
 
 interface ThermalReceiptPrintProps {
@@ -11,6 +12,21 @@ export const ThermalReceiptPrint: React.FC<ThermalReceiptPrintProps> = ({
   vouchers,
 }) => {
   const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
+  const [txQrUrl, setTxQrUrl] = useState<string>('');
+
+  useEffect(() => {
+    const fullUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/v/${transaction.token}`
+      : `/v/${transaction.token}`;
+      
+    QRCode.toDataURL(fullUrl, {
+      width: 160,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+      .then((url) => setTxQrUrl(url))
+      .catch((err) => console.error('Tx QR print gen error', err));
+  }, [transaction.token]);
 
   return (
     <div className="hidden print-receipt-area font-mono text-black text-[11px] leading-tight">
@@ -22,12 +38,28 @@ export const ThermalReceiptPrint: React.FC<ThermalReceiptPrintProps> = ({
         </p>
       </div>
 
-      <div className="space-y-3 my-2">
+      {/* 1 QR Transaksi (Scan 1x di Pos Check-in untuk Batch Check-in Semua Kupon) */}
+      <div className="text-center py-1 border-b border-black border-dashed space-y-1">
+        <p className="text-[9px] font-bold uppercase">1 QR TRANSAKSI (BATCH CHECK-IN)</p>
+        {txQrUrl && (
+          <img
+            src={txQrUrl}
+            alt="QR Transaksi"
+            className="w-24 h-24 mx-auto border border-black p-0.5 my-1"
+          />
+        )}
+        <p className="text-[8px]">Panitia Pos Cukup Scan 1x QR Di Atas!</p>
+      </div>
+
+      {/* Daftar Kode 5-Digit Kupon Fisik */}
+      <div className="space-y-1.5 my-2">
+        <p className="text-[9px] font-bold text-center uppercase">
+          DAFTAR KODE KUPON FISIK ({physicalVouchers.length} LBR):
+        </p>
         {physicalVouchers.map((v, idx) => (
-          <div key={v.code} className="border border-black p-2 text-center rounded space-y-0.5">
-            <p className="text-[9px] font-bold">#KUPON FISIK {idx + 1}</p>
-            <p className="text-xl font-black tracking-widest my-0.5">{v.code}</p>
-            <p className="text-[8px]">Scan di Pos Rute Jalan Sehat!</p>
+          <div key={v.code} className="flex justify-between items-center px-2 py-1 bg-gray-100 rounded border border-gray-300 font-mono text-xs">
+            <span className="text-[9px]">#Kupon {idx + 1}</span>
+            <span className="font-black text-sm tracking-widest">{v.code}</span>
           </div>
         ))}
       </div>
