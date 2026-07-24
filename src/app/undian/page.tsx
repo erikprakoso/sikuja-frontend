@@ -93,29 +93,34 @@ export default function LayarUndianPage() {
       soundManager.startDrumroll();
 
       // Fast digit shuffling visual effect (3 seconds)
-      const startTime = Date.now();
       rollIntervalRef.current = window.setInterval(() => {
         const random5Digit = Math.floor(Math.random() * 100000)
           .toString()
           .padStart(5, '0');
         setDisplayDigits(random5Digit);
-        soundManager.playTick();
-
-        if (Date.now() - startTime >= 3200) {
-          // Stop rolling & reveal winner
-          if (rollIntervalRef.current !== null) {
-            clearInterval(rollIntervalRef.current);
-            rollIntervalRef.current = null;
-          }
-
-          setIsRolling(false);
-          setDisplayDigits(winner.code);
-          setWinnerVoucher(winner);
-          soundManager.playVictoryFanfare();
-          triggerConfetti();
-          loadData();
-        }
       }, 80);
+
+      // After 3.2 seconds: stop everything cleanly and reveal winner
+      setTimeout(() => {
+        // 1. Stop the digit shuffle interval
+        if (rollIntervalRef.current !== null) {
+          clearInterval(rollIntervalRef.current);
+          rollIntervalRef.current = null;
+        }
+
+        // 2. Stop ALL sounds (drumroll + ticks)
+        soundManager.stopDrumroll();
+
+        // 3. Reveal winner
+        setIsRolling(false);
+        setDisplayDigits(winner.code);
+        setWinnerVoucher(winner);
+
+        // 4. Play short victory fanfare & confetti
+        soundManager.playVictoryFanfare();
+        triggerConfetti();
+        loadData();
+      }, 3200);
     } catch (err) {
       console.error('Draw error:', err);
       setErrorMsg('Gagal terhubung ke server undian.');
