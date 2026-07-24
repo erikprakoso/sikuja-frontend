@@ -41,7 +41,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               key={p.id}
               disabled={isRolling}
               onClick={() => onSelectPrize(p.id)}
-              className={`p-3 rounded-2xl text-left border transition-all relative overflow-hidden ${
+              className={`p-3 rounded-2xl text-left border transition-all relative overflow-hidden cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
                 isSelected
                   ? 'bg-amber-950/80 border-amber-500 text-white shadow-lg shadow-amber-950/60 scale-105 ring-2 ring-amber-400/40'
                   : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'

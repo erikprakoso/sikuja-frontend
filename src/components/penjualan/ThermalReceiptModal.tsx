@@ -46,7 +46,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors"
+            className="p-1 rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer active:scale-95"
           >
             <X className="w-5 h-5" />
           </button>
@@ -102,13 +102,13 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
+            className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer active:scale-95"
           >
             Tutup
           </button>
           <button
             onClick={handlePrint}
-            className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-amber-950/60"
+            className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-amber-950/60 cursor-pointer active:scale-95"
           >
             <Printer className="w-4 h-4 text-white" />
             <span>Cetak Struk</span>

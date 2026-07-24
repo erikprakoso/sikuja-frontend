@@ -28,13 +28,13 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <h2 className="text-lg font-black text-white flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-400" />
-          Daftar Kategori Doorprize ({prizes.length})
+          Manajemen Kategori Doorprize
         </h2>
         <button
           onClick={() => setShowAddPrize(!showAddPrize)}
-          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
+          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Tambah Kategori Hadiah
@@ -73,7 +73,7 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-colors"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-colors cursor-pointer active:scale-95"
           >
             Simpan Kategori
           </button>
@@ -84,19 +84,21 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
         {prizes.map((p) => (
           <div
             key={p.id}
-            className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2"
+            className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
           >
             <div>
-              <span className="text-[10px] text-amber-400 font-bold uppercase">Prioritas #{p.order_num}</span>
-              <p className="text-sm font-bold text-white">{p.name}</p>
-              <p className="text-xs text-slate-400">
-                Terundi: <strong className="text-white">{p.drawn_count}</strong> dari {p.stock} unit
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-slate-500">#{p.order_num}</span>
+                <span className="text-sm font-bold text-white">{p.name}</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Stok: <span className="font-mono font-bold text-amber-400">{p.stock} Unit</span>
               </p>
             </div>
             <button
               onClick={() => onDeletePrize(p.id)}
-              className="p-2 rounded-lg bg-red-950/60 text-red-400 hover:bg-red-900 transition-colors"
-              title="Hapus Kategori Hadiah"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-red-950 text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-800 transition-colors cursor-pointer active:scale-95"
+              title="Hapus Kategori Doorprize"
             >
               <Trash2 className="w-4 h-4" />
             </button>

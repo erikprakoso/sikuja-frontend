@@ -149,7 +149,7 @@ export default function Navbar() {
             <button
               onClick={toggleSound}
               title={isMuted ? 'Aktifkan Suara Effect' : 'Mute Suara Effect'}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer active:scale-95"
             >
               {isMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
             </button>
@@ -163,7 +163,7 @@ export default function Navbar() {
                 <button
                   onClick={handleLogout}
                   title="Keluar Session"
-                  className="p-2 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 transition-colors flex items-center gap-1 text-xs font-bold"
+                  className="p-2 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 transition-colors flex items-center gap-1 text-xs font-bold cursor-pointer active:scale-95"
                 >
                   <LogOut className="w-4 h-4" />
                   <span className="hidden sm:inline">Keluar</span>

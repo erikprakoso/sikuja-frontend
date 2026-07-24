@@ -25,7 +25,7 @@ export const OfflineQueueBanner: React.FC<OfflineQueueBannerProps> = ({
       </div>
       <button
         onClick={onSync}
-        className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5 flex-shrink-0 transition-all"
+        className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5 flex-shrink-0 transition-all cursor-pointer active:scale-95"
       >
         <RefreshCw className="w-3.5 h-3.5" />
         Sinkronkan Data

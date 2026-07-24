@@ -18,26 +18,26 @@ export const PinKeypad: React.FC<PinKeypadProps> = ({
         <button
           key={num}
           onClick={() => onKeyPress(num)}
-          className="h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xl font-bold text-white shadow-md transition-all border border-slate-700/50 flex items-center justify-center"
+          className="h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xl font-bold text-white shadow-md transition-all border border-slate-700/50 flex items-center justify-center cursor-pointer"
         >
           {num}
         </button>
       ))}
       <button
         onClick={onClear}
-        className="h-14 rounded-2xl bg-slate-950 hover:bg-slate-900 active:scale-95 text-xs font-bold text-slate-400 transition-all border border-slate-800 flex items-center justify-center uppercase tracking-wider"
+        className="h-14 rounded-2xl bg-slate-950 hover:bg-slate-900 active:scale-95 text-xs font-bold text-slate-400 transition-all border border-slate-800 flex items-center justify-center uppercase tracking-wider cursor-pointer"
       >
         Reset
       </button>
       <button
         onClick={() => onKeyPress('0')}
-        className="h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xl font-bold text-white shadow-md transition-all border border-slate-700/50 flex items-center justify-center"
+        className="h-14 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xl font-bold text-white shadow-md transition-all border border-slate-700/50 flex items-center justify-center cursor-pointer"
       >
         0
       </button>
       <button
         onClick={onDelete}
-        className="h-14 rounded-2xl bg-red-950/60 hover:bg-red-900/80 active:scale-95 text-red-300 transition-all border border-red-800/60 flex items-center justify-center"
+        className="h-14 rounded-2xl bg-red-950/60 hover:bg-red-900/80 active:scale-95 text-red-300 transition-all border border-red-800/60 flex items-center justify-center cursor-pointer"
       >
         <Delete className="w-5 h-5" />
       </button>

@@ -38,7 +38,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
           <button
             onClick={onStartCamera}
             disabled={isProcessing}
-            className="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-black text-lg shadow-xl shadow-emerald-950/60 transition-all flex items-center justify-center gap-3"
+            className="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-black text-lg shadow-xl shadow-emerald-950/60 transition-all flex items-center justify-center gap-3 cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed"
           >
             <Camera className="w-6 h-6" />
             Aktifkan Kamera & Pindai QR Code
@@ -47,7 +47,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
           <button
             onClick={onStopCamera}
             disabled={isProcessing}
-            className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-bold text-sm border border-slate-700 transition-all"
+            className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-bold text-sm border border-slate-700 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed"
           >
             Nonaktifkan Kamera
           </button>
@@ -80,7 +80,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
         <button
           type="submit"
           disabled={!inputCode.trim() || isProcessing}
-          className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+          className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />

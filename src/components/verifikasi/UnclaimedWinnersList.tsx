@@ -43,7 +43,7 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
 
               <button
                 onClick={() => onQuickClaim(res.voucher_code)}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 flex-shrink-0"
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Proses Klaim

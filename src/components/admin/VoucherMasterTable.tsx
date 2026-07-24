@@ -60,7 +60,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none"
+            className="px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 focus:outline-none cursor-pointer"
           >
             <option value="all">Semua Status</option>
             <option value="terbit">Terbit (Belum Verifikasi)</option>
@@ -73,7 +73,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-400 focus:outline-none"
+            className="px-2.5 py-1.5 bg-slate-950 border border-slate-700 rounded-xl text-xs font-semibold text-slate-400 focus:outline-none cursor-pointer"
           >
             <option value={10}>10 / hlm</option>
             <option value={25}>25 / hlm</option>
@@ -152,7 +152,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={safeCurrentPage <= 1}
-              className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-300 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-300 transition-colors cursor-pointer active:scale-95 disabled:cursor-not-allowed"
               title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -174,7 +174,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all ${
+                    className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer active:scale-95 ${
                       safeCurrentPage === pageNum
                         ? 'bg-red-600 text-white shadow-md'
                         : 'bg-slate-950 border border-slate-800 text-slate-400 hover:bg-slate-800'
@@ -189,7 +189,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={safeCurrentPage >= totalPages}
-              className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-300 transition-colors"
+              className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none text-slate-300 transition-colors cursor-pointer active:scale-95 disabled:cursor-not-allowed"
               title="Halaman Selanjutnya"
             >
               <ChevronRight className="w-4 h-4" />

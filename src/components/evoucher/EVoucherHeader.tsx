@@ -65,7 +65,7 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
       <div className="pt-2">
         <button
           onClick={onShare}
-          className="px-4 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-red-700/50 text-red-300 text-xs font-bold inline-flex items-center gap-2 transition-all shadow-md"
+          className="px-4 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-red-700/50 text-red-300 text-xs font-bold inline-flex items-center gap-2 transition-all shadow-md cursor-pointer active:scale-95"
         >
           <Share2 className="w-4 h-4" />
           {copied ? 'Tautan Tersalin!' : 'Bagikan / Simpan Tautan Halaman Ini'}

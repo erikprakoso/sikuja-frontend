@@ -53,8 +53,8 @@ export const HomeHeroBanner: React.FC<HomeHeroBannerProps> = ({
               href={searchToken.trim() ? `/v/${searchToken.trim()}` : '#'}
               className={`px-6 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
                 searchToken.trim()
-                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/50'
-                  : 'bg-slate-800 text-slate-500 pointer-events-none'
+                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-900/50 cursor-pointer active:scale-95'
+                  : 'bg-slate-800 text-slate-500 pointer-events-none cursor-not-allowed'
               }`}
             >
               Buka E-Voucher

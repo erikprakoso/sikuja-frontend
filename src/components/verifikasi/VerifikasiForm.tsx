@@ -36,7 +36,7 @@ export const VerifikasiForm: React.FC<VerifikasiFormProps> = ({
           <button
             type="submit"
             disabled={!code.trim()}
-            className="px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+            className="px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:cursor-not-allowed"
           >
             <CheckSquare className="w-5 h-5" />
             Verifikasi Klaim

@@ -74,7 +74,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
             <div className="flex items-center gap-2 w-full max-w-xs pt-1">
               <button
                 onClick={onCopyLink}
-                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
+                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors cursor-pointer active:scale-95"
               >
                 <Copy className="w-3.5 h-3.5 text-cyan-400" />
                 {copied ? 'Tersalin!' : 'Salin Tautan E-Voucher'}
@@ -84,7 +84,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
                 href={etokenUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 transition-colors"
+                className="p-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 transition-colors cursor-pointer active:scale-95"
                 title="Buka Tautan E-Voucher"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -125,7 +125,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
       <div className="pt-2 flex items-center justify-between gap-3 border-t border-slate-800">
         <button
           onClick={onOpenPrintModal}
-          className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center gap-2 transition-all"
+          className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 flex items-center gap-2 transition-all cursor-pointer active:scale-95"
         >
           <Printer className="w-4 h-4 text-amber-400" />
           <span>Cetak Struk Pembayaran</span>
@@ -133,7 +133,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
 
         <button
           onClick={onResetForm}
-          className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5"
+          className="py-2.5 px-5 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
         >
           <PlusCircle className="w-4 h-4" />
           <span>Transaksi Penjualan Baru</span>

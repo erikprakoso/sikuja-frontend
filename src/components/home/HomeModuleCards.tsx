@@ -114,7 +114,7 @@ export const HomeModuleCards: React.FC<HomeModuleCardsProps> = ({ session }) => 
             <Link
               key={card.href}
               href={card.href}
-              className={`group relative bg-slate-900/80 border border-slate-800 ${card.borderColor} rounded-2xl p-5 transition-all hover:shadow-xl ${card.shadowColor} flex flex-col justify-between`}
+              className={`group relative bg-slate-900/80 border border-slate-800 ${card.borderColor} rounded-2xl p-5 transition-all hover:shadow-xl ${card.shadowColor} cursor-pointer active:scale-[0.98] flex flex-col justify-between`}
             >
               <div className="space-y-3">
                 <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>

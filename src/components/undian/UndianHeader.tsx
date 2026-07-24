@@ -30,7 +30,7 @@ export const UndianHeader: React.FC<UndianHeaderProps> = ({
 
         <button
           onClick={onToggleFullscreen}
-          className="p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-colors"
+          className="p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-colors cursor-pointer active:scale-95"
           title="Mode Tampilan Penuh"
         >
           <Maximize className="w-5 h-5" />

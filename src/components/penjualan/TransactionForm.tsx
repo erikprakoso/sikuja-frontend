@@ -84,7 +84,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('fisik')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
                 activeType === 'fisik'
                   ? 'bg-red-950/80 border-red-500 text-white ring-2 ring-red-500/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -101,7 +101,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('non_fisik')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
                 activeType === 'non_fisik'
                   ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -135,7 +135,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleQtyChange(currentQty - 1)}
-              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
             >
               <Minus className="w-5 h-5" />
             </button>
@@ -145,7 +145,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleQtyChange(currentQty + 1)}
-              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -159,7 +159,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 key={num}
                 type="button"
                 onClick={() => handleQtyChange(num)}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center ${
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 ${
                   currentQty === num
                     ? 'bg-amber-500 text-slate-950 font-black shadow-md'
                     : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
@@ -182,7 +182,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => setPaymentMethod('cash')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
                 paymentMethod === 'cash'
                   ? 'bg-emerald-950/80 border-emerald-500 text-white ring-2 ring-emerald-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -199,7 +199,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => setPaymentMethod('qris')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
                 paymentMethod === 'qris'
                   ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -269,11 +269,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         <button
           type="submit"
           disabled={totalLembar <= 0}
-          className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-base shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
+          className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-base shadow-lg hover:scale-[1.01] active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-2 ${
             paymentMethod === 'cash'
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
               : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/60'
-          } disabled:opacity-50 disabled:pointer-events-none`}
+          } disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none`}
         >
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>{paymentMethod === 'cash' ? 'Proses Pembayaran Tunai' : 'Proses Pembayaran QRIS'}</span>
