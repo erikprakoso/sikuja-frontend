@@ -18,13 +18,13 @@ export const VerifikasiForm: React.FC<VerifikasiFormProps> = ({
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
       <form onSubmit={onVerify} className="space-y-4">
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
-          🔍 Input 5-Digit Kode Voucher Pemenang di Panggung:
+          Masukkan Kode Kupon Pemenang:
         </label>
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Contoh: 05678..."
+              placeholder="Ketik 5-digit kode kupon..."
               value={code}
               onChange={(e) => setCode(e.target.value)}
               maxLength={5}
@@ -36,10 +36,10 @@ export const VerifikasiForm: React.FC<VerifikasiFormProps> = ({
           <button
             type="submit"
             disabled={!code.trim()}
-            className="px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
+            className="px-8 py-3.5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
           >
             <CheckSquare className="w-5 h-5" />
-            Tandai Diklaim
+            Verifikasi Klaim
           </button>
         </div>
       </form>

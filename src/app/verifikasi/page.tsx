@@ -48,10 +48,10 @@ export default function VerifikasiPanggungPage() {
         setResultMsg({ success: true, message: data.message });
         setCode('');
       } else {
-        setResultMsg({ success: false, message: data.error || 'Gagal memproses klaim.' });
+        setResultMsg({ success: false, message: data.error || 'Gagal memproses verifikasi klaim.' });
       }
     } catch {
-      setResultMsg({ success: false, message: 'Gagal terhubung ke server.' });
+      setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
     }
     await loadData();
   };
@@ -68,10 +68,10 @@ export default function VerifikasiPanggungPage() {
       if (res.ok && data.success) {
         setResultMsg({ success: true, message: data.message });
       } else {
-        setResultMsg({ success: false, message: data.error || 'Gagal memproses klaim.' });
+        setResultMsg({ success: false, message: data.error || 'Gagal memproses verifikasi klaim.' });
       }
     } catch {
-      setResultMsg({ success: false, message: 'Gagal terhubung ke server.' });
+      setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
     }
     await loadData();
   };
