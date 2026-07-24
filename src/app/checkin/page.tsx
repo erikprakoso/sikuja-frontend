@@ -15,6 +15,7 @@ export default function CheckinPosPage() {
   const [inputCode, setInputCode] = useState('');
   const [resultMessage, setResultMessage] = useState<{ success: boolean; text: string } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState<PosCheckin[]>([]);
   const [totalCheckinCount, setTotalCheckinCount] = useState(0);
   const [totalVoucherCount, setTotalVoucherCount] = useState(0);
@@ -46,6 +47,9 @@ export default function CheckinPosPage() {
     const raw = scannedText.trim();
     if (!raw) return;
 
+    setIsProcessing(true);
+    setResultMessage(null);
+
     // Extract token if scanned text is full URL (/v/...)
     let token = raw;
     if (raw.includes('/v/')) {
@@ -68,6 +72,7 @@ export default function CheckinPosPage() {
         });
         setInputCode('');
         await loadStats();
+        setIsProcessing(false);
         return;
       } else if (data.error) {
         setResultMessage({
@@ -76,6 +81,7 @@ export default function CheckinPosPage() {
         });
         setInputCode('');
         await loadStats();
+        setIsProcessing(false);
         return;
       }
     } catch (err) {
@@ -91,6 +97,7 @@ export default function CheckinPosPage() {
       });
       setInputCode('');
       await loadStats();
+      setIsProcessing(false);
       return;
     }
 
@@ -101,6 +108,7 @@ export default function CheckinPosPage() {
     });
     setInputCode('');
     await loadStats();
+    setIsProcessing(false);
   };
 
   const startCamera = async () => {
@@ -196,6 +204,7 @@ export default function CheckinPosPage() {
       <CheckinScanner
         scannerContainerId={scannerContainerId}
         isScanning={isScanning}
+        isProcessing={isProcessing}
         inputCode={inputCode}
         setInputCode={setInputCode}
         resultMessage={resultMessage}
