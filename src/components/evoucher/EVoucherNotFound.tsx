@@ -13,7 +13,7 @@ export const EVoucherNotFound: React.FC<EVoucherNotFoundProps> = ({ token }) => 
       </div>
       <h1 className="text-xl font-black text-white">E-Voucher Tidak Ditemukan</h1>
       <p className="text-xs text-slate-400">
-        Token transaksi <span className="font-mono text-red-400">{token}</span> tidak valid atau belum terdaftar.
+        Kode token transaksi <span className="font-mono text-red-400">{token}</span> tidak terdaftar dalam sistem.
       </p>
     </div>
   );

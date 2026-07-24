@@ -12,9 +12,9 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
       <div className="flex items-center justify-between px-1">
         <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
           <Ticket className="w-4 h-4 text-cyan-400" />
-          Daftar Kupon Anda ({vouchers.length})
+          Daftar Kupon Peserta ({vouchers.length})
         </h2>
-        <span className="text-[11px] text-slate-500 font-medium">Grid Kartu Kupon</span>
+        <span className="text-[11px] text-slate-500 font-medium">Kartu Kupon</span>
       </div>
 
       {/* Grid 2 Columns on Mobile, 3 Columns on Tablet/Desktop */}
@@ -22,26 +22,26 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
         {vouchers.map((v, idx) => {
           let cardBg = 'bg-slate-900/90 border-slate-800 hover:border-slate-700';
           let badgeBg = 'bg-slate-800 text-slate-400 border-slate-700';
-          let statusText = 'Belum Check-In';
+          let statusText = 'Belum Terverifikasi';
           let StatusIcon = Ticket;
           let codeColor = 'text-cyan-300';
 
           if (v.status === 'checkin') {
             cardBg = 'bg-slate-900/90 border-emerald-800/80 ring-1 ring-emerald-500/30';
             badgeBg = 'bg-emerald-950 border-emerald-600 text-emerald-300';
-            statusText = '✓ Sah Undian';
+            statusText = '✓ Terverifikasi';
             StatusIcon = CheckCircle;
             codeColor = 'text-emerald-400';
           } else if (v.status === 'menang') {
             cardBg = 'bg-gradient-to-b from-amber-950/90 to-slate-950 border-amber-400 ring-2 ring-amber-400/60 shadow-lg shadow-amber-950/50 animate-pulse';
             badgeBg = 'bg-amber-400 text-slate-950 border-amber-300 font-black';
-            statusText = `🏆 ${v.prize_name || 'Menang'}`;
+            statusText = `🏆 ${v.prize_name || 'Pemenang'}`;
             StatusIcon = Trophy;
             codeColor = 'text-amber-300';
           } else if (v.status === 'diklaim') {
             cardBg = 'bg-slate-900/90 border-purple-800/80';
             badgeBg = 'bg-purple-950 border-purple-600 text-purple-300';
-            statusText = '✓ Hadiah Diklaim';
+            statusText = '✓ Hadiah Diserahkan';
             StatusIcon = Award;
             codeColor = 'text-purple-300';
           }

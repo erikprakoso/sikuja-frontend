@@ -76,8 +76,8 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     if (navigator.share) {
       navigator
         .share({
-          title: 'E-Voucher Jalan Sehat SIVOJA',
-          text: `Ini link E-Voucher Jalan Sehat Agustusan saya!`,
+          title: 'E-Voucher Resmi Jalan Sehat 2026',
+          text: `Kartu E-Voucher Resmi Jalan Sehat 2026`,
           url: window.location.href,
         })
         .catch(() => {});
