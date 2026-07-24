@@ -3,13 +3,9 @@ import { Voucher } from '@/types';
 
 interface EVoucherCardListProps {
   vouchers: Voucher[];
-  qrUrls: Record<string, string>;
 }
 
-export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({
-  vouchers,
-  qrUrls,
-}) => {
+export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) => {
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 px-1">
@@ -34,10 +30,10 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({
         return (
           <div
             key={v.code}
-            className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4"
+            className="bg-slate-900/90 border border-slate-800 rounded-3xl p-5 shadow-xl flex items-center justify-between gap-4"
           >
-            <div className="space-y-2 text-center sm:text-left flex-1">
-              <div className="flex items-center justify-center sm:justify-start gap-2">
+            <div className="space-y-2 text-left flex-1">
+              <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-500 font-mono">#Kupon {idx + 1}</span>
                 <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase border ${badgeColor}`}>
                   {statusText}
@@ -52,13 +48,6 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({
                 Tipe: <span className="font-semibold text-slate-200 capitalize">{v.type}</span>
               </p>
             </div>
-
-            {/* QR Code thumbnail for each voucher */}
-            {qrUrls[v.code] && (
-              <div className="p-2 bg-white rounded-2xl shadow-md border-2 border-slate-800 flex-shrink-0">
-                <img src={qrUrls[v.code]} alt={`QR ${v.code}`} className="w-24 h-24 object-contain" />
-              </div>
-            )}
           </div>
         );
       })}

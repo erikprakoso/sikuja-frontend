@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use } from 'react';
 import QRCode from 'qrcode';
-import { getStoredTransactions, getStoredVouchers, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
 
 import { EVoucherNotFound } from '@/components/evoucher/EVoucherNotFound';
@@ -20,7 +20,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
 
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [qrUrls, setQrUrls] = useState<Record<string, string>>({});
+  const [txQrDataUrl, setTxQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
   const loadData = async () => {
@@ -31,15 +31,6 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       if (res.ok && data.success) {
         setTransaction(data.transaction);
         setVouchers(data.vouchers);
-
-        // Generate QR for each voucher code
-        (data.vouchers as Voucher[]).forEach((v) => {
-          QRCode.toDataURL(v.code, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
-            .then((url) => {
-              setQrUrls((prev) => ({ ...prev, [v.code]: url }));
-            })
-            .catch(() => {});
-        });
         return;
       }
     } catch (err) {
@@ -55,14 +46,6 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       const allV = getStoredVouchers();
       const txV = allV.filter((v) => v.transaction_id === tx.id);
       setVouchers(txV);
-
-      txV.forEach((v) => {
-        QRCode.toDataURL(v.code, { width: 200, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
-          .then((url) => {
-            setQrUrls((prev) => ({ ...prev, [v.code]: url }));
-          })
-          .catch(() => {});
-      });
     }
   };
 
@@ -77,6 +60,17 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       }
     };
   }, [token]);
+
+  // Generate 1 Main Transaction QR Code
+  useEffect(() => {
+    if (transaction) {
+      const baseUrl = getAppBaseUrl();
+      const fullUrl = `${baseUrl}/v/${transaction.token}`;
+      QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+        .then((url) => setTxQrDataUrl(url))
+        .catch((err) => console.error('TX QR Gen error:', err));
+    }
+  }, [transaction]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -102,10 +96,11 @@ export default function ParticipantEVoucherPage({ params }: Props) {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 py-4">
-      {/* Header Banner */}
+      {/* Header Banner with 1 Main Transaction QR Code */}
       <EVoucherHeader
         totalVouchers={vouchers.length}
         checkinCount={checkinCount}
+        qrDataUrl={txQrDataUrl}
         copied={copied}
         onShare={handleShare}
       />
@@ -114,7 +109,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       <EVoucherCheckinNotice totalVouchers={vouchers.length} />
 
       {/* Vouchers List */}
-      <EVoucherCardList vouchers={vouchers} qrUrls={qrUrls} />
+      <EVoucherCardList vouchers={vouchers} />
     </div>
   );
 }

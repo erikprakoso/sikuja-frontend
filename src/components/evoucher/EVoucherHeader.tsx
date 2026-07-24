@@ -4,6 +4,7 @@ import { Sparkles, Share2 } from 'lucide-react';
 interface EVoucherHeaderProps {
   totalVouchers: number;
   checkinCount: number;
+  qrDataUrl?: string;
   copied: boolean;
   onShare: () => void;
 }
@@ -11,6 +12,7 @@ interface EVoucherHeaderProps {
 export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
   totalVouchers,
   checkinCount,
+  qrDataUrl,
   copied,
   onShare,
 }) => {
@@ -30,6 +32,18 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
         <span>•</span>
         <span className="text-emerald-400 font-bold">{checkinCount} Sudah Check-In Pos</span>
       </div>
+
+      {/* 1 Main QR Transaksi (Scan 1x di Pos untuk Batch Check-in Seluruh Voucher) */}
+      {qrDataUrl && (
+        <div className="py-2">
+          <div className="p-3 bg-white rounded-2xl shadow-xl inline-block border-4 border-cyan-400">
+            <img src={qrDataUrl} alt="1 QR Transaksi E-Voucher" className="w-48 h-48 sm:w-56 sm:h-56 object-contain" />
+          </div>
+          <p className="text-[11px] text-cyan-300 font-semibold mt-2">
+            📲 Tunjukkan 1 QR di atas ke HP Panitia Pos untuk Check-In 1x Semua Kupon Anda
+          </p>
+        </div>
+      )}
 
       <div className="pt-2">
         <button
