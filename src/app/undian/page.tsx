@@ -95,7 +95,7 @@ export default function LayarUndianPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Gagal mengocok undian.');
+        setErrorMsg(data.error || 'Gagal memproses pengundian.');
         setIsRolling(false);
         return;
       }
@@ -127,7 +127,7 @@ export default function LayarUndianPage() {
       }, 3200);
     } catch (err) {
       console.error('Draw error:', err);
-      setErrorMsg('Gagal terhubung ke server undian.');
+      setErrorMsg('Gagal terhubung ke server pengundian.');
       setIsRolling(false);
     }
   };
@@ -147,7 +147,7 @@ export default function LayarUndianPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Gagal menyahkan pemenang.');
+        setErrorMsg(data.error || 'Gagal mengonfirmasi pemenang.');
         setIsConfirming(false);
         return;
       }
@@ -211,7 +211,7 @@ export default function LayarUndianPage() {
         {currentPrize && (
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-sm font-black uppercase tracking-widest shadow-lg">
             <Trophy className="w-5 h-5 text-amber-400 animate-bounce" />
-            Hadiah: {currentPrize.name}
+            Kategori Hadiah: {currentPrize.name}
           </div>
         )}
 

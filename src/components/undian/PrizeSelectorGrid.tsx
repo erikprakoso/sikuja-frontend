@@ -22,7 +22,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
     return (
       <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-center font-bold flex items-center justify-center gap-2">
         <CheckCircle className="w-5 h-5 text-emerald-400" />
-        Semua Hadiah Telah Selesai Diundi! 🏆
+        Seluruh Pengundian Hadiah telah Selesai 🏆
       </div>
     );
   }
@@ -31,7 +31,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
     <div className="space-y-3">
       <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
         <Star className="w-4 h-4 text-amber-400" />
-        Pilih Hadiah yang Akan Diundi ({availablePrizes.length} Tersedia):
+        Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {availablePrizes.map((p) => {
@@ -48,7 +48,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               }`}
             >
               <div className="flex justify-between items-start">
-                <span className="text-[10px] uppercase font-bold text-amber-400">#Hadiah {p.order_num}</span>
+                <span className="text-[10px] uppercase font-bold text-amber-400">Kategori #{p.order_num}</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-800">
                   {p.drawn_count}/{p.stock}
                 </span>
