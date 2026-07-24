@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getStoredVouchers, getStoredTransactions, getStoredDrawResults, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredVouchers, getStoredTransactions, getStoredDrawResults, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { getCurrentSession } from '@/lib/services/auth';
 import { Voucher, Transaction, DrawResult, UserSession } from '@/types';
 
@@ -29,11 +29,11 @@ export default function HomePage() {
       loadData();
     });
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadData);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadData);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
   }, []);

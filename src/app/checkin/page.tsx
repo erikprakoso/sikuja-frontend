@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
-import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
 
 import { CheckinHeader } from '@/components/checkin/CheckinHeader';
@@ -34,11 +34,11 @@ export default function CheckinPosPage() {
   useEffect(() => {
     loadStats();
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadStats);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadStats);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadStats);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadStats);
       }
     };
   }, []);

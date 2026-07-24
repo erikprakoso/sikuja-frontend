@@ -9,7 +9,7 @@ import {
   savePrizes,
   deletePrizeFromStore,
   syncFromSupabase,
-  SIVOJA_EVENT_NAME,
+  SIKUJA_EVENT_NAME,
 } from '@/lib/storage';
 import { Voucher, Transaction, Prize, DrawResult } from '@/types';
 
@@ -44,11 +44,11 @@ export default function AdminDashboardPage() {
       loadData();
     });
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadData);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadData);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
   }, []);

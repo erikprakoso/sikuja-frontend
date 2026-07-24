@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, use } from 'react';
 import QRCode from 'qrcode';
-import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
 import { Loader2, Ticket } from 'lucide-react';
 
@@ -57,11 +57,11 @@ export default function ParticipantEVoucherPage({ params }: Props) {
   useEffect(() => {
     loadData();
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadData);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadData);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
   }, [token]);

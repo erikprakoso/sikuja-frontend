@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getStoredDrawResults, getStoredVouchers, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredDrawResults, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { DrawResult, Voucher } from '@/types';
 
 import { VerifikasiHeader } from '@/components/verifikasi/VerifikasiHeader';
@@ -23,11 +23,11 @@ export default function VerifikasiPanggungPage() {
   useEffect(() => {
     loadData();
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadData);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadData);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
   }, []);

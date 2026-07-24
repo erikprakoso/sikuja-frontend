@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
 import { Trophy, AlertCircle } from 'lucide-react';
@@ -52,11 +52,11 @@ export default function LayarUndianPage() {
   useEffect(() => {
     loadData();
     if (typeof window !== 'undefined') {
-      window.addEventListener(SIVOJA_EVENT_NAME, loadData);
+      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
     }
     return () => {
       if (typeof window !== 'undefined') {
-        window.removeEventListener(SIVOJA_EVENT_NAME, loadData);
+        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
   }, []);

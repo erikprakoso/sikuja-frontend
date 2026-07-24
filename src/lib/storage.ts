@@ -9,7 +9,7 @@ const STORAGE_KEYS = {
   OFFLINE_QUEUE: 'sikuja_offline_queue',
 };
 
-export const SIVOJA_EVENT_NAME = 'sikuja_data_changed';
+export const SIKUJA_EVENT_NAME = 'sikuja_data_changed';
 
 export function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
@@ -27,7 +27,7 @@ export function getAppBaseUrl(): string {
 
 function notifyListeners() {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent(SIVOJA_EVENT_NAME));
+    window.dispatchEvent(new CustomEvent(SIKUJA_EVENT_NAME));
   }
 }
 
