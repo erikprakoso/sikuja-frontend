@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomInt } from 'crypto';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { drawWinnerForPrize } from '@/lib/services/voucher';
+
+/**
+ * Cryptographically Secure Random Index Generator
+ * Uses Node.js crypto.randomInt() which is CSPRNG-backed (OS-level entropy).
+ * This is the gold standard for fair, unpredictable random selection.
+ */
+function secureRandomIndex(max: number): number {
+  return randomInt(0, max); // [0, max) — uniform distribution, crypto-safe
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,8 +68,8 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // 3. Random pick
-      const randomIndex = Math.floor(Math.random() * eligibleVouchers.length);
+      // 3. Cryptographically Secure Random Pick (CSPRNG)
+      const randomIndex = secureRandomIndex(eligibleVouchers.length);
       const winner = eligibleVouchers[randomIndex];
       const now = new Date().toISOString();
 
@@ -82,7 +92,7 @@ export async function POST(request: NextRequest) {
         .update({ drawn_count: prize.drawn_count + 1 })
         .eq('id', prize.id);
 
-      // 6. Record draw_result
+      // 6. Record draw_result with audit trail
       const drawResult = {
         id: 'res_' + Date.now(),
         voucher_code: winner.code,
@@ -98,6 +108,13 @@ export async function POST(request: NextRequest) {
         success: true,
         winnerVoucher: { ...winner, status: 'menang', won_at: now, prize_name: prize.name },
         prize,
+        // Audit info for transparency
+        audit: {
+          method: 'crypto.randomInt (CSPRNG)',
+          pool_size: eligibleVouchers.length,
+          selected_index: randomIndex,
+          drawn_at: now,
+        },
       });
     } else {
       const result = drawWinnerForPrize(prizeId);
