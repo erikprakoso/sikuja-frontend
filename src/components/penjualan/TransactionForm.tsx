@@ -74,12 +74,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       <div className="space-y-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-red-500" />
-          1. Pilih Tipe & Jumlah Voucher
+          1. Pilih Jenis & Jumlah Voucher
         </h2>
 
         {/* 1. Select Voucher Type */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-300">Pilih Tipe Voucher:</label>
+          <label className="text-xs font-bold text-slate-300">Jenis Voucher:</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -92,10 +92,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-lg">📜</span>
-                {activeType === 'fisik' && <span className="text-[10px] font-bold text-red-400 uppercase">Aktif</span>}
+                {activeType === 'fisik' && <span className="text-[10px] font-bold text-red-400 uppercase">Dipilih</span>}
               </div>
               <span className="text-sm font-bold mt-1">Voucher Fisik</span>
-              <span className="text-[10px] text-slate-400">Dicetak / Tulis kertas</span>
+              <span className="text-[10px] text-slate-400">Kupon cetak / fisik</span>
             </button>
 
             <button
@@ -109,10 +109,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             >
               <div className="flex items-center justify-between">
                 <span className="text-lg">📱</span>
-                {activeType === 'non_fisik' && <span className="text-[10px] font-bold text-cyan-400 uppercase">Aktif</span>}
+                {activeType === 'non_fisik' && <span className="text-[10px] font-bold text-cyan-400 uppercase">Dipilih</span>}
               </div>
               <span className="text-sm font-bold mt-1">E-Voucher Digital</span>
-              <span className="text-[10px] text-slate-400">Tampil QR di HP pembeli</span>
+              <span className="text-[10px] text-slate-400">Kupon digital E-Voucher</span>
             </button>
           </div>
         </div>
@@ -122,9 +122,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-white">
-                Jumlah Voucher {activeType === 'fisik' ? 'Fisik' : 'Digital'}
+                Jumlah {activeType === 'fisik' ? 'Voucher Fisik' : 'E-Voucher Digital'}
               </h3>
-              <p className="text-[11px] text-slate-400">Rp5.000 / lembar voucher</p>
+              <p className="text-[11px] text-slate-400">Harga: Rp5.000 / lembar</p>
             </div>
             <span className="text-xs font-mono font-bold text-amber-400">
               Rp {(currentQty * 5000).toLocaleString('id-ID')}
@@ -151,9 +151,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </button>
           </div>
 
-          {/* Quick Batch Presets embedded inside counter box */}
+          {/* Quick Batch Presets */}
           <div className="flex items-center gap-1.5 pt-3 border-t border-slate-800/80">
-            <span className="text-[11px] text-slate-400 font-semibold mr-1">Preset:</span>
+            <span className="text-[11px] text-slate-400 font-semibold mr-1">Jumlah Cepat:</span>
             {[1, 2, 5, 10, 20].map((num) => (
               <button
                 key={num}
@@ -192,8 +192,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <Banknote className={`w-5 h-5 ${paymentMethod === 'cash' ? 'text-emerald-400' : 'text-slate-400'}`} />
                 {paymentMethod === 'cash' && <span className="text-[10px] font-bold text-emerald-400 uppercase">Dipilih</span>}
               </div>
-              <span className="text-sm font-bold mt-1">Cash / Tunai</span>
-              <span className="text-[10px] text-slate-400">Bayar uang tunai di kasir</span>
+              <span className="text-sm font-bold mt-1">Tunai / Cash</span>
+              <span className="text-[10px] text-slate-400">Pembayaran uang tunai</span>
             </button>
 
             <button
@@ -210,7 +210,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {paymentMethod === 'qris' && <span className="text-[10px] font-bold text-cyan-400 uppercase">Dipilih</span>}
               </div>
               <span className="text-sm font-bold mt-1">QRIS Digital</span>
-              <span className="text-[10px] text-slate-400">Scan via m-Banking / E-Wallet</span>
+              <span className="text-[10px] text-slate-400">Pembayaran via QRIS</span>
             </button>
           </div>
 
@@ -219,19 +219,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="p-4 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 text-center space-y-3 animate-fade-in shadow-xl">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-900/60 border border-cyan-600/60 text-cyan-200 text-xs font-bold uppercase tracking-wider">
                 <QrCode className="w-3.5 h-3.5 text-cyan-300" />
-                Scan Kode QRIS
+                QRIS Pembayaran
               </div>
 
               {qrisDataUrl ? (
                 <div className="py-1">
                   <div className="p-3 bg-white rounded-2xl inline-block border-4 border-cyan-400 shadow-2xl">
-                    <img src={qrisDataUrl} alt="Kode QRIS" className="w-48 h-48 sm:w-52 sm:h-52 object-contain" />
+                    <img src={qrisDataUrl} alt="Kode QRIS Pembayaran" className="w-48 h-48 sm:w-52 sm:h-52 object-contain" />
                   </div>
                   <p className="text-xs font-bold text-white mt-2">
-                    Tagihan: <span className="text-amber-400 font-mono text-base">Rp {totalHarga.toLocaleString('id-ID')}</span>
+                    Total Tagihan: <span className="text-amber-400 font-mono text-base">Rp {totalHarga.toLocaleString('id-ID')}</span>
                   </p>
                   <p className="text-[10px] text-cyan-200/90 mt-0.5">
-                    Scan via m-Banking atau E-Wallet pembeli.
+                    Silakan pembeli melakukan pemindaian QRIS melalui m-Banking atau E-Wallet.
                   </p>
                 </div>
               ) : (
@@ -243,22 +243,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Summary Box */}
           <div className="space-y-2 border-y border-slate-800 py-3 text-xs">
             <div className="flex justify-between text-slate-300">
-              <span>Tipe & Jumlah Voucher:</span>
+              <span>Jenis & Jumlah Voucher:</span>
               <span className="font-bold text-white">
-                {activeType === 'fisik' ? `📜 Fisik (${qtyFisik} lbr)` : `📱 E-Digital (${qtyNonFisik} lbr)`}
+                {activeType === 'fisik' ? `Voucher Fisik (${qtyFisik} Lembar)` : `E-Voucher Digital (${qtyNonFisik} Lembar)`}
               </span>
             </div>
             <div className="flex justify-between text-slate-300 pt-2 border-t border-slate-800/60 font-bold">
               <span>Metode Pembayaran:</span>
               <span className={paymentMethod === 'cash' ? 'text-emerald-400 uppercase' : 'text-cyan-400 uppercase'}>
-                {paymentMethod === 'cash' ? '💵 Cash / Tunai' : '📱 QRIS Digital'}
+                {paymentMethod === 'cash' ? 'Tunai / Cash' : 'QRIS Digital'}
               </span>
             </div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-950 border border-red-900/40 text-center space-y-1">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
-              Total Tagihan Lunas
+              Total Pembayaran
             </span>
             <p className="text-3xl font-black text-amber-400 font-mono">
               Rp {totalHarga.toLocaleString('id-ID')}
@@ -276,7 +276,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           } disabled:opacity-50 disabled:pointer-events-none`}
         >
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span>{paymentMethod === 'cash' ? 'Bayar Tunai & Terbitkan' : 'Bayar QRIS & Terbitkan'}</span>
+          <span>{paymentMethod === 'cash' ? 'Proses Pembayaran Tunai' : 'Proses Pembayaran QRIS'}</span>
         </button>
       </div>
     </form>

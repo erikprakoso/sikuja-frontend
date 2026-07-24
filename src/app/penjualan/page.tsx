@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { createPurchaseTransaction } from '@/lib/services/voucher';
 import { getAppBaseUrl } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
-import { Ticket, RefreshCw } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 
 import { TransactionForm } from '@/components/penjualan/TransactionForm';
 import { TransactionResult } from '@/components/penjualan/TransactionResult';
@@ -49,14 +49,14 @@ export default function PenjualanPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        alert(data.error || 'Gagal membuat transaksi');
+        alert(data.error || 'Gagal memproses transaksi.');
         return;
       }
 
       setLastTx({ transaction: data.transaction, vouchers: data.vouchers });
     } catch (err) {
       console.error('Checkout error:', err);
-      // Fallback local
+      // Fallback local memory
       const res = createPurchaseTransaction(qtyFisik, qtyNonFisik);
       setLastTx(res);
     }
@@ -86,12 +86,12 @@ export default function PenjualanPage() {
         {/* Header Title */}
         <div className="pb-4 border-b border-slate-800">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950 border border-red-800 text-red-300 text-xs font-bold uppercase tracking-wider mb-2">
-            <Ticket className="w-3.5 h-3.5" />
-            Meja Penjualan Kasir
+            <ShoppingBag className="w-3.5 h-3.5" />
+            Kasir Penjualan Voucher
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Transaksi Beli Voucher</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-white">Transaksi Penjualan Voucher</h1>
           <p className="text-xs text-slate-400">
-            Terbitkan kode 5-digit unik (fisik) atau 1 QR E-Voucher per transaksi.
+            Layanan penerbitan kupon fisik dan e-voucher digital peserta Jalan Sehat.
           </p>
         </div>
 
