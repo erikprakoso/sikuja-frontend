@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getStoredVouchers, getStoredTransactions, getStoredDrawResults, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
-import { Voucher, Transaction, DrawResult } from '@/types';
+import { getCurrentSession } from '@/lib/services/auth';
+import { Voucher, Transaction, DrawResult, UserSession } from '@/types';
 import {
   Ticket,
   QrCode,
@@ -18,13 +19,78 @@ import {
   Flame,
 } from 'lucide-react';
 
+const MODULE_CARDS = [
+  {
+    href: '/penjualan',
+    title: '1. Penjualan Voucher',
+    desc: 'Input beli voucher fisik & e-voucher. Cetak struk thermal & generate 1 QR per transaksi.',
+    roles: ['penjual', 'admin'],
+    pinText: 'Akses Penjual',
+    icon: Ticket,
+    borderColor: 'hover:border-red-600/60',
+    shadowColor: 'hover:shadow-red-950/40',
+    iconBg: 'bg-red-950 border-red-800/80 text-red-400',
+    textColor: 'text-red-400',
+  },
+  {
+    href: '/checkin',
+    title: '2. Pos Check-In',
+    desc: 'Scan QR voucher di pos rute. Batch Check-in 1-Click & Offline Queue otomatis.',
+    roles: ['pos', 'admin'],
+    pinText: 'Akses Pos',
+    icon: QrCode,
+    borderColor: 'hover:border-emerald-600/60',
+    shadowColor: 'hover:shadow-emerald-950/40',
+    iconBg: 'bg-emerald-950 border-emerald-800/80 text-emerald-400',
+    textColor: 'text-emerald-400',
+  },
+  {
+    href: '/undian',
+    title: '3. Layar Undian',
+    desc: 'Tampilan proyektor besar acak 5-digit, drumroll, CSPRNG & pengundian 2 tahap sah.',
+    roles: ['mc', 'admin'],
+    pinText: 'Akses MC/Operator',
+    icon: Trophy,
+    borderColor: 'hover:border-amber-500/60',
+    shadowColor: 'hover:shadow-amber-950/40',
+    iconBg: 'bg-amber-950 border-amber-800/80 text-amber-400',
+    textColor: 'text-amber-400',
+  },
+  {
+    href: '/verifikasi',
+    title: '4. Verifikasi & Klaim',
+    desc: 'Verifikasi panggung pemenang undian, klaim hadiah sah, Sobek Digital kupon.',
+    roles: ['verifikator', 'admin'],
+    pinText: 'Akses Verifikator',
+    icon: CheckCircle2,
+    borderColor: 'hover:border-cyan-500/60',
+    shadowColor: 'hover:shadow-cyan-950/40',
+    iconBg: 'bg-cyan-950 border-cyan-800/80 text-cyan-400',
+    textColor: 'text-cyan-400',
+  },
+  {
+    href: '/admin',
+    title: '5. Admin & Pengaturan',
+    desc: 'Manajemen stok hadiah, rekapitulasi data penjualan, export & sinkronisasi Supabase.',
+    roles: ['admin'],
+    pinText: 'Akses Admin Utama',
+    icon: ShieldCheck,
+    borderColor: 'hover:border-purple-500/60',
+    shadowColor: 'hover:shadow-purple-950/40',
+    iconBg: 'bg-purple-950 border-purple-800/80 text-purple-400',
+    textColor: 'text-purple-400',
+  },
+];
+
 export default function HomePage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [winners, setWinners] = useState<DrawResult[]>([]);
+  const [session, setSession] = useState<UserSession | null>(null);
   const [searchToken, setSearchToken] = useState('');
 
   const loadData = () => {
+    setSession(getCurrentSession());
     setVouchers(getStoredVouchers());
     setTransactions(getStoredTransactions());
     setWinners(getStoredDrawResults());
@@ -49,6 +115,10 @@ export default function HomePage() {
   const totalNonFisik = vouchers.filter((v) => v.type === 'non-fisik').length;
   const totalCheckin = vouchers.filter((v) => v.status === 'checkin' || v.status === 'menang' || v.status === 'diklaim').length;
   const totalDana = transactions.reduce((acc, t) => acc + t.total_harga, 0);
+
+  const visibleCards = session
+    ? MODULE_CARDS.filter((card) => card.roles.includes(session.role))
+    : [];
 
   return (
     <div className="space-y-10 pb-12">
@@ -157,84 +227,47 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Roles & Modules Quick Links */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Users className="w-5 h-5 text-red-500" />
-            Modul Operasional Panitia
-          </h2>
-          <span className="text-xs text-slate-400">PIN default terkonfigurasi</span>
-        </div>
+      {/* Operasional Panitia Section (ONLY rendered when panitia is logged in) */}
+      {session && visibleCards.length > 0 && (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-red-500" />
+              Modul Operasional ({session.name})
+            </h2>
+            <span className="text-xs text-slate-400">Akses Aktif: {session.role.toUpperCase()}</span>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Penjualan */}
-          <Link
-            href="/penjualan"
-            className="group relative bg-slate-900/80 border border-slate-800 hover:border-red-600/60 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-red-950/40 flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-red-950 border border-red-800/80 text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Ticket className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white group-hover:text-red-400 transition-colors">
-                1. Meja Penjualan Voucher
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Input beli voucher fisik & non-fisik. Dapatkan 1 QR per transaksi untuk peserta atau 5-digit angka untuk voucher fisik.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-red-400">
-              <span>Akses Penjual (PIN 1111)</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Link>
-
-          {/* Card 2: Pos Check-In */}
-          <Link
-            href="/checkin"
-            className="group relative bg-slate-900/80 border border-slate-800 hover:border-emerald-600/60 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-emerald-950/40 flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-800/80 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <QrCode className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">
-                2. Pos Check-In Jalan Sehat
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Scan QR voucher di pos tengah rute. Dilengkapi <strong>Batch Check-in 1-Click</strong> & Offline Queue jika sinyal terputus.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-emerald-400">
-              <span>Akses Pos (PIN 2222)</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Link>
-
-          {/* Card 3: Layar Undian */}
-          <Link
-            href="/undian"
-            className="group relative bg-slate-900/80 border border-slate-800 hover:border-amber-500/60 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-amber-950/40 flex flex-col justify-between"
-          >
-            <div className="space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-amber-950 border border-amber-800/80 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Trophy className="w-6 h-6" />
-              </div>
-              <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
-                3. Layar Undian Panggung
-              </h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Tampilan proyektor besar dengan animasi acak 5-digit, suara drumroll & fanfare victory saat pemenang ditarik.
-              </p>
-            </div>
-            <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold text-amber-400">
-              <span>Akses MC/Operator (PIN 3333)</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Link>
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+            {visibleCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <Link
+                  key={card.href}
+                  href={card.href}
+                  className={`group relative bg-slate-900/80 border border-slate-800 ${card.borderColor} rounded-2xl p-5 transition-all hover:shadow-xl ${card.shadowColor} flex flex-col justify-between`}
+                >
+                  <div className="space-y-3">
+                    <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <h3 className="text-base font-bold text-white group-hover:text-red-400 transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      {card.desc}
+                    </p>
+                  </div>
+                  <div className={`mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold ${card.textColor}`}>
+                    <span>{card.pinText}</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Live Winner Announcements */}
       {winners.length > 0 && (
@@ -244,9 +277,9 @@ export default function HomePage() {
               <Flame className="w-5 h-5 text-amber-400 animate-bounce" />
               Daftar Pemenang Undian Terakhir
             </h2>
-            <Link href="/admin" className="text-xs text-red-400 font-semibold hover:underline">
-              Lihat Semua →
-            </Link>
+            <span className="text-xs text-slate-400 font-semibold">
+              Live Real-Time
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

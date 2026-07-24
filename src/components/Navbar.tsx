@@ -7,7 +7,6 @@ import { getCurrentSession, logoutSession } from '@/lib/services/auth';
 import { soundManager } from '@/lib/services/audio';
 import { UserSession } from '@/types';
 import {
-  Sparkles,
   Ticket,
   QrCode,
   Trophy,
@@ -19,6 +18,14 @@ import {
   Wifi,
   WifiOff,
 } from 'lucide-react';
+
+const NAV_ITEMS = [
+  { href: '/penjualan', label: 'Penjualan', icon: Ticket, roles: ['penjual', 'admin'] },
+  { href: '/checkin', label: 'Pos Check-In', icon: QrCode, roles: ['pos', 'admin'] },
+  { href: '/undian', label: 'Layar Undian', icon: Trophy, roles: ['mc', 'admin'] },
+  { href: '/verifikasi', label: 'Verifikasi', icon: CheckCircle2, roles: ['verifikator', 'admin'] },
+  { href: '/admin', label: 'Admin', icon: ShieldAlert, roles: ['admin'] },
+];
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -57,6 +64,15 @@ export default function Navbar() {
     router.push('/');
   };
 
+  if (pathname === '/undian' || pathname.startsWith('/v/')) {
+    return null;
+  }
+
+  // If not logged in (session is null), show NO navigation links
+  const visibleNavItems = session
+    ? NAV_ITEMS.filter((item) => item.roles.includes(session.role))
+    : [];
+
   return (
     <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-red-900/40 text-slate-100 shadow-lg no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -85,68 +101,34 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Link
-              href="/penjualan"
-              className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                pathname.startsWith('/penjualan')
-                  ? 'bg-red-600 text-white shadow-md shadow-red-900/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Ticket className="w-4 h-4" />
-              Penjualan
-            </Link>
-
-            <Link
-              href="/checkin"
-              className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                pathname.startsWith('/checkin')
-                  ? 'bg-red-600 text-white shadow-md shadow-red-900/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <QrCode className="w-4 h-4" />
-              Pos Check-In
-            </Link>
-
-            <Link
-              href="/undian"
-              className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                pathname.startsWith('/undian')
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/30'
-                  : 'text-amber-300 hover:bg-slate-800'
-              }`}
-            >
-              <Trophy className="w-4 h-4" />
-              Layar Undian
-            </Link>
-
-            <Link
-              href="/verifikasi"
-              className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                pathname.startsWith('/verifikasi')
-                  ? 'bg-red-600 text-white shadow-md shadow-red-900/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              Verifikasi
-            </Link>
-
-            <Link
-              href="/admin"
-              className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
-                pathname.startsWith('/admin')
-                  ? 'bg-red-600 text-white shadow-md shadow-red-900/40'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <ShieldAlert className="w-4 h-4" />
-              Admin
-            </Link>
-          </nav>
+          {/* Dynamic Desktop Navigation Links (Only visible when logged in) */}
+          {visibleNavItems.length > 0 && (
+            <nav className="hidden md:flex items-center gap-1">
+              {visibleNavItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname.startsWith(item.href);
+                const isUndian = item.href === '/undian';
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all ${
+                      isActive
+                        ? isUndian
+                          ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/30'
+                          : 'bg-red-600 text-white shadow-md shadow-red-900/40'
+                        : isUndian
+                        ? 'text-amber-300 hover:bg-slate-800'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          )}
 
           {/* Right Status Controls */}
           <div className="flex items-center gap-2">
@@ -181,9 +163,10 @@ export default function Navbar() {
                 <button
                   onClick={handleLogout}
                   title="Keluar Session"
-                  className="p-2 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 transition-colors"
+                  className="p-2 rounded-lg bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 transition-colors flex items-center gap-1 text-xs font-bold"
                 >
                   <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Keluar</span>
                 </button>
               </div>
             ) : (
@@ -197,54 +180,32 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Navigation Row */}
-        <div className="md:hidden flex items-center justify-around border-t border-slate-800 py-2 text-xs">
-          <Link
-            href="/penjualan"
-            className={`flex flex-col items-center gap-1 ${
-              pathname.startsWith('/penjualan') ? 'text-red-400 font-bold' : 'text-slate-400'
-            }`}
-          >
-            <Ticket className="w-4 h-4" />
-            Penjualan
-          </Link>
-          <Link
-            href="/checkin"
-            className={`flex flex-col items-center gap-1 ${
-              pathname.startsWith('/checkin') ? 'text-red-400 font-bold' : 'text-slate-400'
-            }`}
-          >
-            <QrCode className="w-4 h-4" />
-            Pos
-          </Link>
-          <Link
-            href="/undian"
-            className={`flex flex-col items-center gap-1 ${
-              pathname.startsWith('/undian') ? 'text-amber-400 font-bold' : 'text-slate-400'
-            }`}
-          >
-            <Trophy className="w-4 h-4" />
-            Undian
-          </Link>
-          <Link
-            href="/verifikasi"
-            className={`flex flex-col items-center gap-1 ${
-              pathname.startsWith('/verifikasi') ? 'text-red-400 font-bold' : 'text-slate-400'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            Klaim
-          </Link>
-          <Link
-            href="/admin"
-            className={`flex flex-col items-center gap-1 ${
-              pathname.startsWith('/admin') ? 'text-red-400 font-bold' : 'text-slate-400'
-            }`}
-          >
-            <ShieldAlert className="w-4 h-4" />
-            Admin
-          </Link>
-        </div>
+        {/* Dynamic Mobile Navigation Row (Only visible when logged in) */}
+        {visibleNavItems.length > 0 && (
+          <div className="md:hidden flex items-center justify-around border-t border-slate-800 py-2 text-xs">
+            {visibleNavItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname.startsWith(item.href);
+              const isUndian = item.href === '/undian';
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex flex-col items-center gap-1 ${
+                    isActive
+                      ? isUndian
+                        ? 'text-amber-400 font-bold'
+                        : 'text-red-400 font-bold'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </div>
     </header>
   );
