@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from 'react';
 import QRCode from 'qrcode';
 import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
+import { Loader2, Ticket } from 'lucide-react';
 
 import { EVoucherNotFound } from '@/components/evoucher/EVoucherNotFound';
 import { EVoucherHeader } from '@/components/evoucher/EVoucherHeader';
@@ -22,22 +23,24 @@ export default function ParticipantEVoucherPage({ params }: Props) {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [txQrDataUrl, setTxQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
     try {
       const res = await fetch(`/api/vouchers/${token}`);
       const data = await res.json();
 
-      if (res.ok && data.success) {
+      if (res.ok && data.success && data.transaction) {
         setTransaction(data.transaction);
-        setVouchers(data.vouchers);
+        setVouchers(data.vouchers || []);
+        setIsLoading(false);
         return;
       }
     } catch (err) {
       console.error('Fetch e-voucher API error:', err);
     }
 
-    // Fallback local memory lookup
+    // Fallback local storage lookup if server API is unreachable or empty
     const allTxs = getStoredTransactions();
     const tx = allTxs.find((t) => t.token === token || t.id === token);
     setTransaction(tx || null);
@@ -47,6 +50,8 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       const txV = allV.filter((v) => v.transaction_id === tx.id);
       setVouchers(txV);
     }
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -88,6 +93,27 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     }
   };
 
+  // 1. Show Loading State while checking API & Storage
+  if (isLoading) {
+    return (
+      <div className="max-w-md mx-auto py-20 text-center space-y-4 animate-fade-in">
+        <div className="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 text-cyan-400 flex items-center justify-center shadow-xl">
+          <Loader2 className="w-8 h-8 animate-spin" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-lg font-extrabold text-white flex items-center justify-center gap-2">
+            <Ticket className="w-5 h-5 text-red-500" />
+            Memuat Data E-Voucher...
+          </h2>
+          <p className="text-xs text-slate-400">
+            Mengambil data transaksi dan status kupon Anda.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Show Not Found state ONLY after loading is finished and transaction is verified null
   if (!transaction) {
     return <EVoucherNotFound token={token} />;
   }
@@ -95,7 +121,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
   const checkinCount = vouchers.filter((v) => v.status !== 'terbit').length;
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 py-4">
+    <div className="max-w-xl mx-auto space-y-6 py-4 animate-fade-in">
       {/* Header Banner with 1 Main Transaction QR Code */}
       <EVoucherHeader
         totalVouchers={vouchers.length}
