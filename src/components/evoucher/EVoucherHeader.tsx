@@ -1,0 +1,45 @@
+import React from 'react';
+import { Sparkles, Share2 } from 'lucide-react';
+
+interface EVoucherHeaderProps {
+  totalVouchers: number;
+  checkinCount: number;
+  copied: boolean;
+  onShare: () => void;
+}
+
+export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
+  totalVouchers,
+  checkinCount,
+  copied,
+  onShare,
+}) => {
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-br from-red-950 via-slate-900 to-red-900 border border-red-800/40 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-2xl">
+      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold uppercase tracking-wider">
+        <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+        Bukti E-Voucher Digital 🇮🇩
+      </div>
+
+      <h1 className="text-2xl sm:text-3xl font-black text-white">
+        KUPON JALAN SEHAT AGUSTUSAN
+      </h1>
+
+      <div className="flex items-center justify-center gap-3 text-xs text-slate-300">
+        <span>Total: <strong className="text-white">{totalVouchers} Voucher</strong></span>
+        <span>•</span>
+        <span className="text-emerald-400 font-bold">{checkinCount} Sudah Check-In Pos</span>
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={onShare}
+          className="px-4 py-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-red-700/50 text-red-300 text-xs font-bold inline-flex items-center gap-2 transition-all shadow-md"
+        >
+          <Share2 className="w-4 h-4" />
+          {copied ? 'Link Tersalin!' : 'Bagikan / Simpan Bookmark Link ini'}
+        </button>
+      </div>
+    </div>
+  );
+};
