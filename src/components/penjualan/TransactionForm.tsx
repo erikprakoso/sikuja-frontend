@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2 } from 'lucide-react';
+import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
+import { checkCodeAvailable, format5DigitCode } from '@/lib/services/voucher';
 
 interface TransactionFormProps {
   qtyFisik: number;
@@ -11,7 +12,7 @@ interface TransactionFormProps {
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
   setPaymentMethod: (method: 'cash' | 'qris') => void;
-  onSubmit: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent, customCodes?: string[]) => void;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
@@ -28,9 +29,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const totalHarga = totalLembar * 5000;
   const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
 
+  // Mode Alokasi Kode: 'auto' (random acak) atau 'custom' (pilih nomor hoki)
+  const [codeMode, setCodeMode] = useState<'auto' | 'custom'>('auto');
+  const [customCodes, setCustomCodes] = useState<string[]>([]);
+  const [customCodeStatuses, setCustomCodeStatuses] = useState<{ [key: number]: { available: boolean; formatted: string } }>({});
+
   // Active voucher type: default to non_fisik if qtyNonFisik > 0 and qtyFisik === 0, else fisik
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
+
+  // Sync customCodes array length to totalLembar
+  useEffect(() => {
+    setCustomCodes((prev) => {
+      const next = [...prev];
+      if (next.length < totalLembar) {
+        while (next.length < totalLembar) next.push('');
+      } else if (next.length > totalLembar) {
+        next.length = totalLembar;
+      }
+      return next;
+    });
+  }, [totalLembar]);
 
   const handleTypeChange = (type: 'fisik' | 'non_fisik') => {
     const qtyToTransfer = currentQty > 0 ? currentQty : 1;
@@ -54,6 +73,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
+  const handleCustomCodeInputChange = (index: number, val: string) => {
+    const digitsOnly = val.replace(/\D/g, '').slice(0, 5);
+    const updated = [...customCodes];
+    updated[index] = digitsOnly;
+    setCustomCodes(updated);
+
+    if (digitsOnly.length > 0) {
+      const status = checkCodeAvailable(digitsOnly);
+      setCustomCodeStatuses((prev) => ({
+        ...prev,
+        [index]: { available: status.available, formatted: status.formattedCode },
+      }));
+    } else {
+      setCustomCodeStatuses((prev) => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+    }
+  };
+
   // Generate QRIS string dynamic or default static QRIS
   useEffect(() => {
     if (paymentMethod === 'qris') {
@@ -65,8 +105,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   }, [paymentMethod, totalHarga]);
 
+  // Check if any custom code entered has duplicate/taken error
+  const hasCustomCodeError = Object.values(customCodeStatuses).some((s) => s.formatted && !s.available);
+
+  const handleSubmitForm = (e: React.FormEvent) => {
+    e.preventDefault();
+    const activeCustomCodes = codeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
+    onSubmit(e, activeCustomCodes);
+  };
+
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <form onSubmit={handleSubmitForm} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left Input Options */}
       <div className="space-y-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 className="text-lg font-extrabold text-white">1. Pilih Kupon</h2>
@@ -169,6 +218,98 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             ))}
           </div>
         </div>
+
+        {/* 3. Mode Penentuan Kode (Acak Otomatis vs Pilih Nomor Hoki) */}
+        <div className="space-y-3 p-4 rounded-2xl bg-slate-950/80 border border-slate-800">
+          <label className="text-xs font-bold text-slate-300 block">Penentuan Kode 5-Digit:</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setCodeMode('auto')}
+              disabled={isLoading}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                codeMode === 'auto'
+                  ? 'bg-red-950/90 border-red-500 text-white shadow-md'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <Dices className="w-4 h-4 text-red-400" />
+              <span>Kode Acak (Default)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCodeMode('custom')}
+              disabled={isLoading}
+              className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 disabled:opacity-50 ${
+                codeMode === 'custom'
+                  ? 'bg-amber-950/90 border-amber-500 text-amber-300 shadow-md'
+                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <Hash className="w-4 h-4 text-amber-400" />
+              <span>Pilih Nomor Hoki</span>
+            </button>
+          </div>
+
+          {/* Custom Codes Inputs Grid */}
+          {codeMode === 'custom' && (
+            <div className="pt-2 space-y-2 animate-fade-in">
+              <p className="text-[11px] text-amber-300/90 leading-tight">
+                Ketik nomor pilihan pembeli (misal `77` -&gt; `00077`). Jika ada slot kosong, otomatis diisi kode acak.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                {customCodes.map((val, idx) => {
+                  const status = customCodeStatuses[idx];
+                  const isAvailable = status?.available;
+                  const isFilled = val.length > 0;
+
+                  return (
+                    <div key={idx} className="relative flex items-center">
+                      <span className="absolute left-3 text-[10px] font-mono text-slate-500">
+                        #{idx + 1}
+                      </span>
+                      <input
+                        type="text"
+                        maxLength={5}
+                        placeholder="Nomor Hoki"
+                        value={val}
+                        onChange={(e) => handleCustomCodeInputChange(idx, e.target.value)}
+                        disabled={isLoading}
+                        className={`w-full pl-9 pr-8 py-2 bg-slate-900 border rounded-xl font-mono text-xs text-white focus:outline-none transition-all ${
+                          isFilled
+                            ? isAvailable
+                              ? 'border-emerald-500 bg-emerald-950/30'
+                              : 'border-red-500 bg-red-950/40 text-red-200'
+                            : 'border-slate-800 focus:border-amber-400'
+                        }`}
+                      />
+                      {isFilled && (
+                        <div className="absolute right-2.5">
+                          {isAvailable ? (
+                            <span title="🟢 Kode Tersedia">
+                              <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            </span>
+                          ) : (
+                            <span title="🔴 Kode Sudah Terbit">
+                              <AlertCircle className="w-4 h-4 text-red-400" />
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {hasCustomCodeError && (
+                <p className="text-[11px] text-red-400 font-bold flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Beberapa kode pilihan sudah pernah terbit/milik orang lain. Ganti dengan angka lain.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right Payment & Action Box */}
@@ -249,6 +390,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 {activeType === 'fisik' ? `Voucher Fisik (${qtyFisik} Lembar)` : `E-Voucher Digital (${qtyNonFisik} Lembar)`}
               </span>
             </div>
+            <div className="flex justify-between text-slate-300 pt-1">
+              <span>Mode Kode:</span>
+              <span className="font-bold text-amber-300 uppercase">
+                {codeMode === 'auto' ? 'Acak Otomatis' : 'Pilih Nomor Hoki'}
+              </span>
+            </div>
             <div className="flex justify-between text-slate-300 pt-2 border-t border-slate-800/60 font-bold">
               <span>Metode Pembayaran:</span>
               <span className={paymentMethod === 'cash' ? 'text-emerald-400 uppercase' : 'text-cyan-400 uppercase'}>
@@ -269,7 +416,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         <button
           type="submit"
-          disabled={totalLembar <= 0 || isLoading}
+          disabled={totalLembar <= 0 || isLoading || hasCustomCodeError}
           className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-base shadow-lg hover:scale-[1.01] active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-2 ${
             paymentMethod === 'cash'
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'

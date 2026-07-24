@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     } else {
       const result = drawWinnerForPrize(prizeId);
       if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 400 });
+        return NextResponse.json({ error: result.message }, { status: 400 });
       }
       return NextResponse.json(result);
     }

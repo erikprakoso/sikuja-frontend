@@ -11,6 +11,23 @@ import {
   addToOfflineQueue,
 } from '@/lib/storage';
 
+// Format input into pure 5-digit code string e.g. "77" -> "00077"
+export function format5DigitCode(input: string): string {
+  const cleaned = input.replace(/\D/g, '').slice(0, 5);
+  if (!cleaned) return '';
+  return cleaned.padStart(5, '0');
+}
+
+// Check if a code is available in local memory
+export function checkCodeAvailable(code: string): { available: boolean; formattedCode: string } {
+  const formattedCode = format5DigitCode(code);
+  if (!formattedCode) return { available: false, formattedCode: '' };
+
+  const allVouchers = getStoredVouchers();
+  const isUsed = allVouchers.some((v) => v.code === formattedCode);
+  return { available: !isUsed, formattedCode };
+}
+
 // Generate 5-digit pure number code: "00000" - "99999"
 export function generate5DigitCode(usedCodes: Set<string>): string {
   let attempts = 0;
@@ -35,8 +52,12 @@ export function generateTransactionToken(): string {
   return token;
 }
 
-// 1. Create Transaction (Fisik + Non-Fisik)
-export function createPurchaseTransaction(qtyFisik: number, qtyNonFisik: number): {
+// 1. Create Transaction (Fisik + Non-Fisik) with optional custom codes
+export function createPurchaseTransaction(
+  qtyFisik: number,
+  qtyNonFisik: number,
+  customCodes: string[] = []
+): {
   transaction: Transaction;
   vouchers: Voucher[];
 } {
@@ -44,17 +65,44 @@ export function createPurchaseTransaction(qtyFisik: number, qtyNonFisik: number)
   const allTransactions = getStoredTransactions();
   const usedCodes = new Set(allVouchers.map((v) => v.code));
 
+  const totalLembar = qtyFisik + qtyNonFisik;
   const txId = 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
   const token = generateTransactionToken();
 
+  // Validate custom codes first
+  const validatedCustomCodes: string[] = [];
+  for (const rawCode of customCodes) {
+    if (!rawCode || !rawCode.trim()) continue;
+    const formatted = format5DigitCode(rawCode);
+    if (!formatted) continue;
+    if (usedCodes.has(formatted)) {
+      throw new Error(`Kode voucher ${formatted} sudah terbit / dimiliki peserta lain.`);
+    }
+    validatedCustomCodes.push(formatted);
+  }
+
+  // Allocate codes to newVouchers
+  const finalCodes: string[] = [];
+  let customIdx = 0;
+
+  for (let i = 0; i < totalLembar; i++) {
+    if (customIdx < validatedCustomCodes.length) {
+      const code = validatedCustomCodes[customIdx++];
+      usedCodes.add(code);
+      finalCodes.push(code);
+    } else {
+      const code = generate5DigitCode(usedCodes);
+      usedCodes.add(code);
+      finalCodes.push(code);
+    }
+  }
+
   const newVouchers: Voucher[] = [];
 
-  // Generate Fisik vouchers
+  // Assign first qtyFisik codes as 'fisik'
   for (let i = 0; i < qtyFisik; i++) {
-    const code = generate5DigitCode(usedCodes);
-    usedCodes.add(code);
     newVouchers.push({
-      code,
+      code: finalCodes[i],
       type: 'fisik',
       status: 'terbit',
       transaction_id: txId,
@@ -62,12 +110,10 @@ export function createPurchaseTransaction(qtyFisik: number, qtyNonFisik: number)
     });
   }
 
-  // Generate Non-Fisik (E-voucher) vouchers
-  for (let i = 0; i < qtyNonFisik; i++) {
-    const code = generate5DigitCode(usedCodes);
-    usedCodes.add(code);
+  // Assign remaining codes as 'non-fisik'
+  for (let i = qtyFisik; i < totalLembar; i++) {
     newVouchers.push({
-      code,
+      code: finalCodes[i],
       type: 'non-fisik',
       status: 'terbit',
       transaction_id: txId,
@@ -80,7 +126,7 @@ export function createPurchaseTransaction(qtyFisik: number, qtyNonFisik: number)
     token,
     qty_fisik: qtyFisik,
     qty_non_fisik: qtyNonFisik,
-    total_harga: (qtyFisik + qtyNonFisik) * 5000,
+    total_harga: totalLembar * 5000,
     created_at: new Date().toISOString(),
   };
 
@@ -100,70 +146,81 @@ export function checkInVoucher(code: string, scannerId: string = 'pos-device-1')
   const target = vouchers.find((v) => v.code === code.trim());
 
   if (!target) {
-    return { success: false, message: `Kode voucher ${code} tidak ditemukan dalam sistem!` };
+    return {
+      success: false,
+      message: `Kode voucher "${code}" tidak ditemukan dalam sistem.`,
+    };
   }
 
-  if (target.status === 'checkin' || target.status === 'menang' || target.status === 'diklaim') {
+  if (target.status !== 'terbit') {
     return {
-      success: true,
-      message: `Kode voucher ${code} sudah berstatus check-in sebelumnya.`,
+      success: false,
+      message: `Voucher ${target.code} sudah melakukan check-in pos sebelumnya (${target.status.toUpperCase()}).`,
       voucher: target,
     };
   }
 
-  // Check connection status
-  const isOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
-
   target.status = 'checkin';
-  target.checkin_at = new Date().toISOString();
   saveVouchers(vouchers);
 
-  if (!isOnline) {
-    addToOfflineQueue({
-      id: 'ck_' + Date.now(),
-      voucher_code: target.code,
-      transaction_id: target.transaction_id,
-      scanned_at: new Date().toISOString(),
-      scanner_device_id: scannerId,
-      synced: false,
-    });
-  }
+  addToOfflineQueue({
+    id: 'pos_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+    voucher_code: target.code,
+    transaction_id: target.transaction_id,
+    scanned_at: new Date().toISOString(),
+    scanner_device_id: scannerId,
+    synced: false,
+  });
 
   return {
     success: true,
-    message: `Berhasil check-in voucher ${code}! Kode ini sah mengikuti undian.`,
+    message: `Voucher ${target.code} (${target.type.toUpperCase()}) Berhasil Check-In Pos!`,
     voucher: target,
   };
 }
 
-// 3. Batch Check-in All Vouchers in a Transaction (1 QR Scan at Pos)
-export function checkInTransactionBatch(tokenOrId: string, scannerId: string = 'pos-device-1'): {
+// 3. Batch Check-in via 1 Transaction QR Code (Check-in ALL vouchers of 1 transaction)
+export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string = 'pos-device-1'): {
   success: boolean;
   message: string;
   count: number;
 } {
-  const txs = getStoredTransactions();
-  const targetTx = txs.find((t) => t.token === tokenOrId || t.id === tokenOrId);
-
-  if (!targetTx) {
-    return { success: false, message: 'Transaksi tidak ditemukan!', count: 0 };
-  }
-
+  const transactions = getStoredTransactions();
   const vouchers = getStoredVouchers();
-  const txVouchers = vouchers.filter((v) => v.transaction_id === targetTx.id);
 
-  if (txVouchers.length === 0) {
-    return { success: false, message: 'Tidak ada voucher dalam transaksi ini.', count: 0 };
+  const tx = transactions.find((t) => t.token === tokenOrTxId || t.id === tokenOrTxId);
+  if (!tx) {
+    return {
+      success: false,
+      message: `Transaksi / E-Voucher tidak ditemukan.`,
+      count: 0,
+    };
   }
 
-  let updatedCount = 0;
-  const now = new Date().toISOString();
+  const txVouchers = vouchers.filter((v) => v.transaction_id === tx.id);
+  const eligibleVouchers = txVouchers.filter((v) => v.status === 'terbit');
 
-  txVouchers.forEach((v) => {
-    if (v.status === 'terbit') {
+  if (eligibleVouchers.length === 0) {
+    return {
+      success: false,
+      message: `Seluruh ${txVouchers.length} voucher dalam transaksi ini sudah check-in pos sebelumnya.`,
+      count: 0,
+    };
+  }
+
+  let checkedInCount = 0;
+  vouchers.forEach((v) => {
+    if (v.transaction_id === tx.id && v.status === 'terbit') {
       v.status = 'checkin';
-      v.checkin_at = now;
-      updatedCount++;
+      checkedInCount++;
+      addToOfflineQueue({
+        id: 'pos_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+        voucher_code: v.code,
+        transaction_id: v.transaction_id,
+        scanned_at: new Date().toISOString(),
+        scanner_device_id: scannerId,
+        synced: false,
+      });
     }
   });
 
@@ -171,122 +228,105 @@ export function checkInTransactionBatch(tokenOrId: string, scannerId: string = '
 
   return {
     success: true,
-    message: `Berhasil check-in ${updatedCount} voucher (dari total ${txVouchers.length} voucher dalam transaksi ini).`,
-    count: updatedCount,
+    message: `Berhasil Check-In Pos 1-Click untuk ${checkedInCount} voucher transaksi ini!`,
+    count: checkedInCount,
   };
 }
 
-// 4. Draw Random Winner for a Prize
-export function drawWinnerForPrize(prizeId: string, forfeitCode?: string): {
+// 4. Random Draw Execution (CSPRNG compliant)
+export function drawWinner(prizeId: string): {
   success: boolean;
-  winnerVoucher?: Voucher;
-  prize?: Prize;
-  error?: string;
+  message: string;
+  winner?: DrawResult;
 } {
-  const prizes = getStoredPrizes();
-  const prize = prizes.find((p) => p.id === prizeId);
-
-  if (!prize) {
-    return { success: false, error: 'Hadiah tidak ditemukan!' };
-  }
-
   const vouchers = getStoredVouchers();
+  const prizes = getStoredPrizes();
+  const drawResults = getStoredDrawResults();
 
-  if (forfeitCode) {
-    const prevWinner = vouchers.find((v) => v.code === forfeitCode);
-    if (prevWinner) {
-      prevWinner.status = 'checkin';
-      prevWinner.won_at = undefined;
-      prevWinner.prize_id = undefined;
-      prevWinner.prize_name = undefined;
-    }
-    if (prize.drawn_count > 0) {
-      prize.drawn_count -= 1;
-    }
+  const prize = prizes.find((p) => p.id === prizeId);
+  if (!prize) {
+    return { success: false, message: 'Kategori hadiah tidak ditemukan.' };
   }
 
-  if (prize.drawn_count >= prize.stock) {
-    return { success: false, error: `Stok hadiah ${prize.name} sudah habis!` };
+  const drawnCount = drawResults.filter((r) => r.prize_id === prizeId).length;
+  if (drawnCount >= prize.stock) {
+    return { success: false, message: `Stok hadiah ${prize.name} sudah habis (${prize.stock} unit).` };
   }
 
-  // Filter only valid checked-in vouchers that haven't won yet
   const eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
-
   if (eligibleVouchers.length === 0) {
     return {
       success: false,
-      error: 'Tidak ada kode voucher yang eligible (sudah check-in di pos & belum menang)!',
+      message: 'Tidak ada voucher berstatus terverifikasi pos check-in yang tersedia untuk diundi.',
     };
   }
 
-  // Pick random winner
-  const randomIndex = Math.floor(Math.random() * eligibleVouchers.length);
-  const winner = eligibleVouchers[randomIndex];
+  let selectedIndex = 0;
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+    const randomBuffer = new Uint32Array(1);
+    window.crypto.getRandomValues(randomBuffer);
+    selectedIndex = randomBuffer[0] % eligibleVouchers.length;
+  } else {
+    selectedIndex = Math.floor(Math.random() * eligibleVouchers.length);
+  }
 
-  winner.status = 'menang';
-  winner.won_at = new Date().toISOString();
-  winner.prize_id = prize.id;
-  winner.prize_name = prize.name;
+  const winningVoucher = eligibleVouchers[selectedIndex];
+  winningVoucher.status = 'menang';
+  winningVoucher.prize_name = prize.name;
+  saveVouchers(vouchers);
 
-  prize.drawn_count += 1;
-
-  // Save draw result
-  const results = getStoredDrawResults();
-  const newResult: DrawResult = {
-    id: 'res_' + Date.now(),
-    voucher_code: winner.code,
+  const drawResult: DrawResult = {
+    id: 'draw_' + Date.now().toString(36),
     prize_id: prize.id,
     prize_name: prize.name,
+    voucher_code: winningVoucher.code,
     drawn_at: new Date().toISOString(),
     claimed: false,
   };
 
-  saveVouchers(vouchers);
-  savePrizes(prizes);
-  saveDrawResults([newResult, ...results]);
+  saveDrawResults([drawResult, ...drawResults]);
 
   return {
     success: true,
-    winnerVoucher: winner,
-    prize,
+    message: `Pemenang ditarik: Kode ${winningVoucher.code} (${winningVoucher.type.toUpperCase()}) mendapatkan ${prize.name}!`,
+    winner: drawResult,
   };
 }
 
-// 5. Stage Claim Verification (Mark code as claimed)
-export function claimStagePrize(voucherCode: string, verifierPin: string = '4444'): {
+// 5. Confirm Prize Claim (Sobek Kertas Digital)
+export function claimPrize(voucherCode: string, verifierName: string = 'Petugas Verifikasi'): {
   success: boolean;
   message: string;
 } {
   const vouchers = getStoredVouchers();
-  const target = vouchers.find((v) => v.code === voucherCode.trim());
+  const drawResults = getStoredDrawResults();
 
-  if (!target) {
-    return { success: false, message: `Kode ${voucherCode} tidak ditemukan.` };
+  const code = voucherCode.trim();
+  const v = vouchers.find((x) => x.code === code);
+  const result = drawResults.find((r) => r.voucher_code === code);
+
+  if (!v || !result) {
+    return { success: false, message: `Kode voucher ${code} belum pernah memenangkan undian.` };
   }
 
-  if (target.status !== 'menang') {
-    return {
-      success: false,
-      message: `Kode ${voucherCode} berstatus '${target.status}'. Hanya kode pemenang yang dapat diklaim!`,
-    };
+  if (result.claimed) {
+    return { success: false, message: `Hadiah untuk kode ${code} sudah pernah diklaim sebelumnya!` };
   }
 
-  target.status = 'diklaim';
-  target.claimed_at = new Date().toISOString();
-
-  const results = getStoredDrawResults();
-  const res = results.find((r) => r.voucher_code === target.code);
-  if (res) {
-    res.claimed = true;
-    res.claimed_at = target.claimed_at;
-    res.verifier_pin = verifierPin;
-  }
+  v.status = 'diklaim';
+  result.claimed = true;
+  result.claimed_at = new Date().toISOString();
+  result.verifier_pin = verifierName;
 
   saveVouchers(vouchers);
-  saveDrawResults(results);
+  saveDrawResults(drawResults);
 
   return {
     success: true,
-    message: `Berhasil! Voucher ${voucherCode} resmi diklaim & ditandai sudah diambil (sobek digital).`,
+    message: `Klaim Sah! Kode ${code} berhasil diverifikasi & hadiah ${result.prize_name} telah diserahkan.`,
   };
 }
+
+// Aliases for API route compatibility
+export const drawWinnerForPrize = drawWinner;
+export const claimStagePrize = claimPrize;
