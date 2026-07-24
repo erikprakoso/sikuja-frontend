@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (isSupabaseConfigured()) {
-      // Safe transaction lookup by token or UUID id
+      // Safe transaction lookup by token or id text string
       let tx = null;
       const { data: txByToken } = await supabase
         .from('transactions')
@@ -27,15 +27,12 @@ export async function POST(request: NextRequest) {
       if (txByToken) {
         tx = txByToken;
       } else {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codeOrToken);
-        if (isUuid) {
-          const { data: txById } = await supabase
-            .from('transactions')
-            .select('*')
-            .eq('id', codeOrToken)
-            .maybeSingle();
-          if (txById) tx = txById;
-        }
+        const { data: txById } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('id', codeOrToken)
+          .maybeSingle();
+        if (txById) tx = txById;
       }
 
       if (tx) {
