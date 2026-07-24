@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
-import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
 
 import { CheckinHeader } from '@/components/checkin/CheckinHeader';
@@ -22,7 +22,8 @@ export default function CheckinPosPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-reader-pos';
 
-  const loadStats = () => {
+  const loadStats = async () => {
+    await syncFromSupabase();
     const v = getStoredVouchers();
     setTotalVoucherCount(v.length);
     setTotalCheckinCount(v.filter((x) => x.status !== 'terbit').length);
@@ -41,17 +42,47 @@ export default function CheckinPosPage() {
     };
   }, []);
 
-  const handleProcessCode = (scannedText: string) => {
+  const handleProcessCode = async (scannedText: string) => {
     const raw = scannedText.trim();
     if (!raw) return;
 
-    // Check if scanned URL is a transaction token (e.g. contains /v/tx_...)
+    // Extract token if scanned text is full URL (/v/...)
     let token = raw;
     if (raw.includes('/v/')) {
       token = raw.split('/v/')[1].split('?')[0].split('#')[0];
     }
 
-    // Try batch check-in first if it matches a transaction token
+    // Call API /api/checkin first (which checks Supabase)
+    try {
+      const res = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codeOrToken: token }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setResultMessage({
+          success: true,
+          text: data.message,
+        });
+        setInputCode('');
+        await loadStats();
+        return;
+      } else if (data.error) {
+        setResultMessage({
+          success: false,
+          text: data.error,
+        });
+        setInputCode('');
+        await loadStats();
+        return;
+      }
+    } catch (err) {
+      console.warn('API /checkin unreachable, attempting offline local storage fallback...', err);
+    }
+
+    // Fallback to offline local storage if network is offline
     const batchRes = checkInTransactionBatch(token);
     if (batchRes.success && batchRes.count > 0) {
       setResultMessage({
@@ -59,18 +90,17 @@ export default function CheckinPosPage() {
         text: batchRes.message,
       });
       setInputCode('');
-      loadStats();
+      await loadStats();
       return;
     }
 
-    // Otherwise try single 5-digit voucher check-in
     const singleRes = checkInVoucher(token);
     setResultMessage({
       success: singleRes.success,
       text: singleRes.message,
     });
     setInputCode('');
-    loadStats();
+    await loadStats();
   };
 
   const startCamera = async () => {
