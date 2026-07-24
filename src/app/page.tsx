@@ -178,7 +178,7 @@ export default function HomePage() {
       </section>
 
       {/* Live Stat Cards */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Terjual</span>
@@ -210,19 +210,6 @@ export default function HomePage() {
           <p className="text-3xl font-black text-amber-400 mt-2">{winners.length} <span className="text-xs font-normal text-slate-400">kode</span></p>
           <p className="mt-2 text-[11px] text-slate-400 font-medium">
             {winners.filter(w => w.claimed).length} sudah diklaim di panggung
-          </p>
-        </div>
-
-        <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Dana Kas</span>
-            <TrendingUp className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
-          </div>
-          <p className="text-2xl font-black text-cyan-400 mt-2">
-            Rp {totalDana.toLocaleString('id-ID')}
-          </p>
-          <p className="mt-2 text-[11px] text-slate-400 font-medium">
-            Rekap otomatis tanpa rekap manual
           </p>
         </div>
       </section>
