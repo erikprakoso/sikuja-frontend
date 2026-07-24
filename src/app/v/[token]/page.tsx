@@ -106,7 +106,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       />
 
       {/* POS Check-in instruction banner */}
-      <EVoucherCheckinNotice totalVouchers={vouchers.length} />
+      <EVoucherCheckinNotice totalVouchers={vouchers.length} checkinCount={checkinCount} />
 
       {/* Vouchers List */}
       <EVoucherCardList vouchers={vouchers} />
