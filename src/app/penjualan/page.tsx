@@ -20,6 +20,7 @@ export default function PenjualanPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const totalLembar = qtyFisik + qtyNonFisik;
 
@@ -38,7 +39,9 @@ export default function PenjualanPage() {
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalLembar <= 0) return;
+    if (totalLembar <= 0 || isSubmitting) return;
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch('/api/transactions', {
@@ -50,6 +53,7 @@ export default function PenjualanPage() {
 
       if (!res.ok || data.error) {
         alert(data.error || 'Gagal memproses transaksi.');
+        setIsSubmitting(false);
         return;
       }
 
@@ -59,6 +63,8 @@ export default function PenjualanPage() {
       // Fallback local memory
       const res = createPurchaseTransaction(qtyFisik, qtyNonFisik);
       setLastTx(res);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -101,6 +107,7 @@ export default function PenjualanPage() {
             qtyFisik={qtyFisik}
             qtyNonFisik={qtyNonFisik}
             paymentMethod={paymentMethod}
+            isLoading={isSubmitting}
             setQtyFisik={setQtyFisik}
             setQtyNonFisik={setQtyNonFisik}
             setPaymentMethod={setPaymentMethod}

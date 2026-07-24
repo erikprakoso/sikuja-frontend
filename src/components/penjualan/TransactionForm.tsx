@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode } from 'lucide-react';
-import { generateDynamicQris, DEFAULT_STATIC_QRIS } from '@/lib/services/qris';
+import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2 } from 'lucide-react';
+import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 
 interface TransactionFormProps {
   qtyFisik: number;
   qtyNonFisik: number;
   paymentMethod: 'cash' | 'qris';
+  isLoading?: boolean;
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
   setPaymentMethod: (method: 'cash' | 'qris') => void;
@@ -17,6 +18,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   qtyFisik,
   qtyNonFisik,
   paymentMethod,
+  isLoading = false,
   setQtyFisik,
   setQtyNonFisik,
   setPaymentMethod,
@@ -52,30 +54,22 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   };
 
-  // Generate Dynamic QRIS Code Image when QRIS payment method is selected
+  // Generate QRIS string dynamic or default static QRIS
   useEffect(() => {
-    if (paymentMethod === 'qris' && totalHarga > 0) {
-      const dynamicPayload = generateDynamicQris(DEFAULT_STATIC_QRIS, totalHarga);
-      QRCode.toDataURL(dynamicPayload, {
-        width: 280,
-        margin: 2,
-        color: { dark: '#000000', light: '#ffffff' },
-      })
+    if (paymentMethod === 'qris') {
+      const baseQris = getSavedStaticQris();
+      const payload = totalHarga > 0 ? generateDynamicQris(baseQris, totalHarga) : baseQris;
+      QRCode.toDataURL(payload, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         .then((url) => setQrisDataUrl(url))
         .catch((err) => console.error('QRIS Gen error:', err));
-    } else {
-      setQrisDataUrl('');
     }
   }, [paymentMethod, totalHarga]);
 
   return (
-    <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Left Input Section: Streamlined Type & Quantity Selection */}
+    <form onSubmit={onSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Left Input Options */}
       <div className="space-y-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
-        <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
-          <ShoppingBag className="w-5 h-5 text-red-500" />
-          1. Pilih Jenis & Jumlah Voucher
-        </h2>
+        <h2 className="text-lg font-extrabold text-white">1. Pilih Kupon</h2>
 
         {/* 1. Select Voucher Type */}
         <div className="space-y-2">
@@ -84,7 +78,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('fisik')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
+              disabled={isLoading}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeType === 'fisik'
                   ? 'bg-red-950/80 border-red-500 text-white ring-2 ring-red-500/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -101,7 +96,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('non_fisik')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
+              disabled={isLoading}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeType === 'non_fisik'
                   ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -135,7 +131,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleQtyChange(currentQty - 1)}
-              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
+              disabled={isLoading}
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
             >
               <Minus className="w-5 h-5" />
             </button>
@@ -145,7 +142,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleQtyChange(currentQty + 1)}
-              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
+              disabled={isLoading}
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95"
             >
               <Plus className="w-5 h-5" />
             </button>
@@ -159,7 +157,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 key={num}
                 type="button"
                 onClick={() => handleQtyChange(num)}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 ${
+                disabled={isLoading}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                   currentQty === num
                     ? 'bg-amber-500 text-slate-950 font-black shadow-md'
                     : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
@@ -182,7 +181,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => setPaymentMethod('cash')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
+              disabled={isLoading}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 paymentMethod === 'cash'
                   ? 'bg-emerald-950/80 border-emerald-500 text-white ring-2 ring-emerald-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -199,7 +199,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => setPaymentMethod('qris')}
-              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 ${
+              disabled={isLoading}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
                 paymentMethod === 'qris'
                   ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
@@ -268,15 +269,25 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         <button
           type="submit"
-          disabled={totalLembar <= 0}
+          disabled={totalLembar <= 0 || isLoading}
           className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-base shadow-lg hover:scale-[1.01] active:scale-[0.98] cursor-pointer transition-all flex items-center justify-center gap-2 ${
             paymentMethod === 'cash'
               ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
               : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/60'
           } disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none`}
         >
-          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          <span>{paymentMethod === 'cash' ? 'Proses Pembayaran Tunai' : 'Proses Pembayaran QRIS'}</span>
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin text-white flex-shrink-0" />
+          ) : (
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          )}
+          <span>
+            {isLoading
+              ? 'Memproses Transaksi...'
+              : paymentMethod === 'cash'
+              ? 'Proses Pembayaran Tunai'
+              : 'Proses Pembayaran QRIS'}
+          </span>
         </button>
       </div>
     </form>

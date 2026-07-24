@@ -34,7 +34,7 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
         </h2>
         <button
           onClick={() => setShowAddPrize(!showAddPrize)}
-          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
+          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
         >
           <Plus className="w-4 h-4" />
           Tambah Kategori Hadiah
