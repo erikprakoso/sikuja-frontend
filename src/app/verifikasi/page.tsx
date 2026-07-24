@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { claimStagePrize } from '@/lib/services/voucher';
-import { getStoredDrawResults, getStoredVouchers, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredDrawResults, getStoredVouchers, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { DrawResult, Voucher } from '@/types';
 
 import { VerifikasiHeader } from '@/components/verifikasi/VerifikasiHeader';
@@ -15,7 +14,8 @@ export default function VerifikasiPanggungPage() {
   const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
 
-  const loadData = () => {
+  const loadData = async () => {
+    await syncFromSupabase();
     setDrawResults(getStoredDrawResults());
     setVouchers(getStoredVouchers());
   };
@@ -32,22 +32,48 @@ export default function VerifikasiPanggungPage() {
     };
   }, []);
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) return;
 
-    const res = claimStagePrize(code.trim());
-    setResultMsg(res);
-    if (res.success) {
-      setCode('');
-      loadData();
+    try {
+      const res = await fetch('/api/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setResultMsg({ success: true, message: data.message });
+        setCode('');
+      } else {
+        setResultMsg({ success: false, message: data.error || 'Gagal memproses klaim.' });
+      }
+    } catch {
+      setResultMsg({ success: false, message: 'Gagal terhubung ke server.' });
     }
+    await loadData();
   };
 
-  const handleQuickClaim = (voucherCode: string) => {
-    const res = claimStagePrize(voucherCode);
-    setResultMsg(res);
-    loadData();
+  const handleQuickClaim = async (voucherCode: string) => {
+    try {
+      const res = await fetch('/api/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: voucherCode }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setResultMsg({ success: true, message: data.message });
+      } else {
+        setResultMsg({ success: false, message: data.error || 'Gagal memproses klaim.' });
+      }
+    } catch {
+      setResultMsg({ success: false, message: 'Gagal terhubung ke server.' });
+    }
+    await loadData();
   };
 
   const unclaimedWinners = drawResults.filter((r) => !r.claimed);
