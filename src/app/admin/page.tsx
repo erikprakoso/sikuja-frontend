@@ -119,10 +119,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8 py-4 max-w-6xl mx-auto">
       {/* Header Title & Export Buttons */}
-      <AdminHeader
-        onPrint={() => window.print()}
-        onExportCSV={exportCSV}
-      />
+      <AdminHeader />
 
       {/* Summary Stat Cards */}
       <AdminStatCards
