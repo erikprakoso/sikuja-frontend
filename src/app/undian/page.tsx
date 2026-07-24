@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { getStoredPrizes, getStoredVouchers, SIVOJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIVOJA_EVENT_NAME } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
 import { Trophy, AlertCircle } from 'lucide-react';
@@ -25,7 +25,9 @@ export default function LayarUndianPage() {
 
   const rollIntervalRef = useRef<number | null>(null);
 
-  const loadData = () => {
+  const loadData = async () => {
+    await syncFromSupabase();
+
     const p = getStoredPrizes();
     setPrizes(p);
     if (p.length > 0 && !selectedPrizeId) {
