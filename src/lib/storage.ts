@@ -2,14 +2,14 @@ import { Voucher, Transaction, Prize, DrawResult, PosCheckin } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 const STORAGE_KEYS = {
-  TRANSACTIONS: 'sivoja_transactions',
-  VOUCHERS: 'sivoja_vouchers',
-  PRIZES: 'sivoja_prizes',
-  DRAW_RESULTS: 'sivoja_draw_results',
-  OFFLINE_QUEUE: 'sivoja_offline_queue',
+  TRANSACTIONS: 'sikuja_transactions',
+  VOUCHERS: 'sikuja_vouchers',
+  PRIZES: 'sikuja_prizes',
+  DRAW_RESULTS: 'sikuja_draw_results',
+  OFFLINE_QUEUE: 'sikuja_offline_queue',
 };
 
-export const SIVOJA_EVENT_NAME = 'sivoja_data_changed';
+export const SIVOJA_EVENT_NAME = 'sikuja_data_changed';
 
 export function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {

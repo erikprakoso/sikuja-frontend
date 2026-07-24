@@ -8,7 +8,7 @@ export const PIN_CONFIG: Record<string, { role: RoleType; name: string }> = {
   '9999': { role: 'admin', name: 'Panitia Admin / Ketua' },
 };
 
-const SESSION_KEY = 'sivoja_session';
+const SESSION_KEY = 'sikuja_session';
 
 export function verifyPin(pin: string): { success: boolean; session?: UserSession; error?: string } {
   const match = PIN_CONFIG[pin];
