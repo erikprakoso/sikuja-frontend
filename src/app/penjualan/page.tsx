@@ -15,6 +15,7 @@ import { ThermalReceiptPrint } from '@/components/penjualan/ThermalReceiptPrint'
 export default function PenjualanPage() {
   const [qtyFisik, setQtyFisik] = useState(1);
   const [qtyNonFisik, setQtyNonFisik] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'qris'>('cash');
   const [lastTx, setLastTx] = useState<{ transaction: Transaction; vouchers: Voucher[] } | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
@@ -111,8 +112,10 @@ export default function PenjualanPage() {
           <TransactionForm
             qtyFisik={qtyFisik}
             qtyNonFisik={qtyNonFisik}
+            paymentMethod={paymentMethod}
             setQtyFisik={setQtyFisik}
             setQtyNonFisik={setQtyNonFisik}
+            setPaymentMethod={setPaymentMethod}
             onSubmit={handleCheckout}
           />
         ) : (

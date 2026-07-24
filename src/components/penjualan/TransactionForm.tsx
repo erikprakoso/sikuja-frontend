@@ -1,137 +1,264 @@
-import React from 'react';
-import { ShoppingBag, Minus, Plus, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
+import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode } from 'lucide-react';
+import { generateDynamicQris, DEFAULT_STATIC_QRIS } from '@/lib/services/qris';
 
 interface TransactionFormProps {
   qtyFisik: number;
   qtyNonFisik: number;
+  paymentMethod: 'cash' | 'qris';
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
+  setPaymentMethod: (method: 'cash' | 'qris') => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   qtyFisik,
   qtyNonFisik,
+  paymentMethod,
   setQtyFisik,
   setQtyNonFisik,
+  setPaymentMethod,
   onSubmit,
 }) => {
   const totalLembar = qtyFisik + qtyNonFisik;
   const totalHarga = totalLembar * 5000;
+  const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
+
+  // Active voucher type: default to non_fisik if qtyNonFisik > 0 and qtyFisik === 0, else fisik
+  const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
+  const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
+
+  const handleTypeChange = (type: 'fisik' | 'non_fisik') => {
+    const qtyToTransfer = currentQty > 0 ? currentQty : 1;
+    if (type === 'fisik') {
+      setQtyFisik(qtyToTransfer);
+      setQtyNonFisik(0);
+    } else {
+      setQtyNonFisik(qtyToTransfer);
+      setQtyFisik(0);
+    }
+  };
+
+  const handleQtyChange = (newQty: number) => {
+    const safeQty = Math.max(1, newQty);
+    if (activeType === 'fisik') {
+      setQtyFisik(safeQty);
+      setQtyNonFisik(0);
+    } else {
+      setQtyNonFisik(safeQty);
+      setQtyFisik(0);
+    }
+  };
+
+  // Generate Dynamic QRIS Code Image when QRIS payment method is selected
+  useEffect(() => {
+    if (paymentMethod === 'qris' && totalHarga > 0) {
+      const dynamicPayload = generateDynamicQris(DEFAULT_STATIC_QRIS, totalHarga);
+      QRCode.toDataURL(dynamicPayload, {
+        width: 280,
+        margin: 2,
+        color: { dark: '#000000', light: '#ffffff' },
+      })
+        .then((url) => setQrisDataUrl(url))
+        .catch((err) => console.error('QRIS Gen error:', err));
+    } else {
+      setQrisDataUrl('');
+    }
+  }, [paymentMethod, totalHarga]);
 
   return (
     <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* Left Input Section */}
+      {/* Left Input Section: Streamlined Type & Quantity Selection */}
       <div className="space-y-6 bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl">
         <h2 className="text-lg font-extrabold text-white flex items-center gap-2">
           <ShoppingBag className="w-5 h-5 text-red-500" />
-          Pilih Jumlah & Tipe Voucher
+          1. Pilih Tipe & Jumlah Voucher
         </h2>
 
-        {/* Voucher Fisik Input */}
-        <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-                📜 Voucher Fisik (Dicetak/Tulis Kertas)
-              </h3>
-              <p className="text-[11px] text-slate-400">Kode 5-digit disalin ke kertas voucher</p>
-            </div>
-            <span className="text-xs font-semibold text-slate-400">Rp5.000 / lbr</span>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
+        {/* 1. Select Voucher Type */}
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-slate-300">Pilih Tipe Voucher:</label>
+          <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => setQtyFisik(Math.max(0, qtyFisik - 1))}
-              className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
+              onClick={() => handleTypeChange('fisik')}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                activeType === 'fisik'
+                  ? 'bg-red-950/80 border-red-500 text-white ring-2 ring-red-500/40 shadow-lg'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
             >
-              <Minus className="w-4 h-4" />
+              <div className="flex items-center justify-between">
+                <span className="text-lg">📜</span>
+                {activeType === 'fisik' && <span className="text-[10px] font-bold text-red-400 uppercase">Aktif</span>}
+              </div>
+              <span className="text-sm font-bold mt-1">Voucher Fisik</span>
+              <span className="text-[10px] text-slate-400">Dicetak / Tulis kertas</span>
             </button>
-            <span className="text-2xl font-black text-white font-mono px-4">{qtyFisik}</span>
-            <button
-              type="button"
-              onClick={() => setQtyFisik(qtyFisik + 1)}
-              className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
 
-        {/* Voucher Non-Fisik Input */}
-        <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-cyan-300 flex items-center gap-1.5">
-                📱 Voucher Non-Fisik (E-Voucher Digital)
-              </h3>
-              <p className="text-[11px] text-slate-400">Scan 1 QR transaksi via HP pembeli</p>
-            </div>
-            <span className="text-xs font-semibold text-slate-400">Rp5.000 / lbr</span>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
             <button
               type="button"
-              onClick={() => setQtyNonFisik(Math.max(0, qtyNonFisik - 1))}
-              className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
+              onClick={() => handleTypeChange('non_fisik')}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                activeType === 'non_fisik'
+                  ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
             >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span className="text-2xl font-black text-cyan-300 font-mono px-4">{qtyNonFisik}</span>
-            <button
-              type="button"
-              onClick={() => setQtyNonFisik(qtyNonFisik + 1)}
-              className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
-            >
-              <Plus className="w-4 h-4" />
+              <div className="flex items-center justify-between">
+                <span className="text-lg">📱</span>
+                {activeType === 'non_fisik' && <span className="text-[10px] font-bold text-cyan-400 uppercase">Aktif</span>}
+              </div>
+              <span className="text-sm font-bold mt-1">E-Voucher Digital</span>
+              <span className="text-[10px] text-slate-400">Tampil QR di HP pembeli</span>
             </button>
           </div>
         </div>
 
-        {/* Quick Batch Presets */}
-        <div className="flex items-center gap-2 pt-1">
-          <span className="text-xs text-slate-400 font-semibold">Preset Cepat:</span>
-          {[2, 5, 10, 20].map((num) => (
+        {/* 2. Quantity Counter with Embedded Quick Presets */}
+        <div className="p-5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-white">
+                Jumlah Voucher {activeType === 'fisik' ? 'Fisik' : 'Digital'}
+              </h3>
+              <p className="text-[11px] text-slate-400">Rp5.000 / lembar voucher</p>
+            </div>
+            <span className="text-xs font-mono font-bold text-amber-400">
+              Rp {(currentQty * 5000).toLocaleString('id-ID')}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
             <button
-              key={num}
               type="button"
-              onClick={() => {
-                setQtyFisik(num);
-                setQtyNonFisik(0);
-              }}
-              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              onClick={() => handleQtyChange(currentQty - 1)}
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
             >
-              {num} Fisik
+              <Minus className="w-5 h-5" />
             </button>
-          ))}
+            <span className={`text-3xl font-black font-mono px-4 ${activeType === 'fisik' ? 'text-white' : 'text-cyan-300'}`}>
+              {currentQty}
+            </span>
+            <button
+              type="button"
+              onClick={() => handleQtyChange(currentQty + 1)}
+              className="w-12 h-12 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold flex items-center justify-center transition-all"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Quick Batch Presets embedded inside counter box */}
+          <div className="flex items-center gap-1.5 pt-3 border-t border-slate-800/80">
+            <span className="text-[11px] text-slate-400 font-semibold mr-1">Preset:</span>
+            {[1, 2, 5, 10, 20].map((num) => (
+              <button
+                key={num}
+                type="button"
+                onClick={() => handleQtyChange(num)}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center ${
+                  currentQty === num
+                    ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                }`}
+              >
+                {num}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Right Summary & Action Box */}
+      {/* Right Payment & Action Box */}
       <div className="space-y-6 bg-gradient-to-br from-red-950/80 via-slate-900 to-slate-950 border border-red-900/60 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between">
         <div className="space-y-4">
-          <h2 className="text-lg font-extrabold text-white">Ringkasan Pembayaran</h2>
+          <h2 className="text-lg font-extrabold text-white">2. Metode Pembayaran</h2>
 
-          <div className="space-y-2 border-y border-slate-800 py-4 text-sm">
-            <div className="flex justify-between text-slate-300">
-              <span>Jumlah Voucher Fisik:</span>
-              <span className="font-bold text-white">{qtyFisik} lembar</span>
+          {/* Payment Method Selector */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('cash')}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                paymentMethod === 'cash'
+                  ? 'bg-emerald-950/80 border-emerald-500 text-white ring-2 ring-emerald-400/40 shadow-lg'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <Banknote className={`w-5 h-5 ${paymentMethod === 'cash' ? 'text-emerald-400' : 'text-slate-400'}`} />
+                {paymentMethod === 'cash' && <span className="text-[10px] font-bold text-emerald-400 uppercase">Dipilih</span>}
+              </div>
+              <span className="text-sm font-bold mt-1">Cash / Tunai</span>
+              <span className="text-[10px] text-slate-400">Bayar uang tunai di kasir</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('qris')}
+              className={`p-3.5 rounded-2xl border text-left flex flex-col gap-1 transition-all ${
+                paymentMethod === 'qris'
+                  ? 'bg-cyan-950/80 border-cyan-500 text-white ring-2 ring-cyan-400/40 shadow-lg'
+                  : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <QrCode className={`w-5 h-5 ${paymentMethod === 'qris' ? 'text-cyan-400' : 'text-slate-400'}`} />
+                {paymentMethod === 'qris' && <span className="text-[10px] font-bold text-cyan-400 uppercase">Dipilih</span>}
+              </div>
+              <span className="text-sm font-bold mt-1">QRIS Digital</span>
+              <span className="text-[10px] text-slate-400">Scan via m-Banking / E-Wallet</span>
+            </button>
+          </div>
+
+          {/* QRIS Code Display */}
+          {paymentMethod === 'qris' && (
+            <div className="p-4 rounded-2xl bg-cyan-950/80 border border-cyan-500/50 text-center space-y-3 animate-fade-in shadow-xl">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-900/60 border border-cyan-600/60 text-cyan-200 text-xs font-bold uppercase tracking-wider">
+                <QrCode className="w-3.5 h-3.5 text-cyan-300" />
+                Scan Kode QRIS
+              </div>
+
+              {qrisDataUrl ? (
+                <div className="py-1">
+                  <div className="p-3 bg-white rounded-2xl inline-block border-4 border-cyan-400 shadow-2xl">
+                    <img src={qrisDataUrl} alt="Kode QRIS" className="w-48 h-48 sm:w-52 sm:h-52 object-contain" />
+                  </div>
+                  <p className="text-xs font-bold text-white mt-2">
+                    Tagihan: <span className="text-amber-400 font-mono text-base">Rp {totalHarga.toLocaleString('id-ID')}</span>
+                  </p>
+                  <p className="text-[10px] text-cyan-200/90 mt-0.5">
+                    Scan via m-Banking atau E-Wallet pembeli.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">Memuat Kode QRIS...</p>
+              )}
             </div>
+          )}
+
+          {/* Summary Box */}
+          <div className="space-y-2 border-y border-slate-800 py-3 text-xs">
             <div className="flex justify-between text-slate-300">
-              <span>Jumlah E-Voucher Digital:</span>
-              <span className="font-bold text-cyan-300">{qtyNonFisik} lembar</span>
+              <span>Tipe & Jumlah Voucher:</span>
+              <span className="font-bold text-white">
+                {activeType === 'fisik' ? `📜 Fisik (${qtyFisik} lbr)` : `📱 E-Digital (${qtyNonFisik} lbr)`}
+              </span>
             </div>
-            <div className="flex justify-between text-slate-300 pt-2 border-t border-slate-800/60">
-              <span className="font-bold text-white">Total Kuantitas:</span>
-              <span className="font-black text-red-400">{totalLembar} lembar</span>
+            <div className="flex justify-between text-slate-300 pt-2 border-t border-slate-800/60 font-bold">
+              <span>Metode Pembayaran:</span>
+              <span className={paymentMethod === 'cash' ? 'text-emerald-400 uppercase' : 'text-cyan-400 uppercase'}>
+                {paymentMethod === 'cash' ? '💵 Cash / Tunai' : '📱 QRIS Digital'}
+              </span>
             </div>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-950 border border-red-900/40 text-center space-y-1">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider">
-              Total Tagihan Tunai
+              Total Tagihan Lunas
             </span>
             <p className="text-3xl font-black text-amber-400 font-mono">
               Rp {totalHarga.toLocaleString('id-ID')}
@@ -142,10 +269,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         <button
           type="submit"
           disabled={totalLembar <= 0}
-          className="w-full py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 disabled:opacity-50 text-white font-black text-lg shadow-xl shadow-red-950/80 transition-all flex items-center justify-center gap-2"
+          className={`w-full py-3.5 px-6 rounded-2xl font-extrabold text-base shadow-lg hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 ${
+            paymentMethod === 'cash'
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+              : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-950/60'
+          } disabled:opacity-50 disabled:pointer-events-none`}
         >
-          <CheckCircle2 className="w-5 h-5" />
-          Proses & Terbitkan Kode
+          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+          <span>{paymentMethod === 'cash' ? 'Bayar Tunai & Terbitkan' : 'Bayar QRIS & Terbitkan'}</span>
         </button>
       </div>
     </form>
