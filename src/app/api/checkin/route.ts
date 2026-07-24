@@ -16,16 +16,49 @@ export async function POST(request: NextRequest) {
     }
 
     if (isSupabaseConfigured()) {
-      // Check if codeOrToken is a transaction token (batch checkin)
-      const { data: tx } = await supabase
+      // Safe transaction lookup by token or UUID id
+      let tx = null;
+      const { data: txByToken } = await supabase
         .from('transactions')
         .select('*')
-        .or(`token.eq.${codeOrToken},id.eq.${codeOrToken}`)
+        .eq('token', codeOrToken)
         .maybeSingle();
 
+      if (txByToken) {
+        tx = txByToken;
+      } else {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codeOrToken);
+        if (isUuid) {
+          const { data: txById } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('id', codeOrToken)
+            .maybeSingle();
+          if (txById) tx = txById;
+        }
+      }
+
       if (tx) {
-        // Batch check-in all vouchers under this transaction
         const now = new Date().toISOString();
+        
+        // Fetch all vouchers for this transaction to check status
+        const { data: allVouchers } = await supabase
+          .from('vouchers')
+          .select('*')
+          .eq('transaction_id', tx.id);
+
+        const totalInTx = allVouchers ? allVouchers.length : 0;
+        const pendingVouchers = allVouchers ? allVouchers.filter((v) => v.status === 'terbit') : [];
+
+        if (totalInTx > 0 && pendingVouchers.length === 0) {
+          return NextResponse.json({
+            success: true,
+            message: `Seluruh ${totalInTx} voucher dari transaksi ini (${tx.token}) sudah berstatus check-in sebelumnya!`,
+            count: 0,
+          });
+        }
+
+        // Batch check-in all vouchers under this transaction
         const { data: updatedVouchers, error: uErr } = await supabase
           .from('vouchers')
           .update({ status: 'checkin', checkin_at: now })
@@ -38,7 +71,7 @@ export async function POST(request: NextRequest) {
         const count = updatedVouchers ? updatedVouchers.length : 0;
         return NextResponse.json({
           success: true,
-          message: `Berhasil check-in ${count} voucher (dari transaksi E-Voucher).`,
+          message: `Berhasil batch check-in ${count} voucher (dari transaksi E-Voucher ${tx.token}).`,
           count,
         });
       }

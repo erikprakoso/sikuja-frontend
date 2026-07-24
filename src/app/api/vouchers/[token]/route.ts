@@ -15,14 +15,29 @@ export async function GET(
     }
 
     if (isSupabaseConfigured()) {
-      // 1. Fetch transaction from Supabase
-      const { data: tx, error: txError } = await supabase
+      // 1. Fetch transaction safely by token or UUID id
+      let tx = null;
+      const { data: txByToken } = await supabase
         .from('transactions')
         .select('*')
-        .or(`token.eq.${token},id.eq.${token}`)
-        .single();
+        .eq('token', token)
+        .maybeSingle();
 
-      if (txError || !tx) {
+      if (txByToken) {
+        tx = txByToken;
+      } else {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
+        if (isUuid) {
+          const { data: txById } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('id', token)
+            .maybeSingle();
+          if (txById) tx = txById;
+        }
+      }
+
+      if (!tx) {
         return NextResponse.json({ error: 'E-Voucher tidak ditemukan' }, { status: 404 });
       }
 
