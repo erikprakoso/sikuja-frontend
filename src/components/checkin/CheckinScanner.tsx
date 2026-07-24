@@ -38,14 +38,14 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
             className="w-full py-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-lg shadow-xl shadow-emerald-950/60 transition-all flex items-center justify-center gap-3"
           >
             <Camera className="w-6 h-6" />
-            Buka Kamera HP & Scan QR
+            Aktifkan Kamera & Pindai QR Code
           </button>
         ) : (
           <button
             onClick={onStopCamera}
-            className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700"
+            className="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm border border-slate-700 transition-all"
           >
-            Tutup Kamera
+            Nonaktifkan Kamera
           </button>
         )}
       </div>
@@ -53,7 +53,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       <div className="relative flex items-center justify-center">
         <div className="border-t border-slate-800 w-full" />
         <span className="bg-slate-900 px-3 text-xs text-slate-500 uppercase font-bold absolute">
-          Atau Input Manual
+          Atau Masukkan Kode Manual
         </span>
       </div>
 
@@ -67,7 +67,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       >
         <input
           type="text"
-          placeholder="Ketik 5-digit kode atau token transaksi..."
+          placeholder="Masukkan 5-digit kode kupon atau token..."
           value={inputCode}
           onChange={(e) => setInputCode(e.target.value)}
           className="flex-1 px-4 py-3.5 bg-slate-950 border border-slate-700 rounded-2xl text-white font-mono text-base placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -75,10 +75,10 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
         <button
           type="submit"
           disabled={!inputCode.trim()}
-          className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
+          className="px-6 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
         >
           <CheckCircle2 className="w-4 h-4" />
-          Check-In
+          Verifikasi
         </button>
       </form>
 

@@ -17,18 +17,18 @@ export const OfflineQueueBanner: React.FC<OfflineQueueBannerProps> = ({
       <div className="flex items-center gap-2">
         <WifiOff className="w-5 h-5 text-amber-400 animate-pulse flex-shrink-0" />
         <div>
-          <p className="font-bold">Ada {queueCount} data scan tersimpan offline!</p>
+          <p className="font-bold">Terdapat {queueCount} data validasi dalam antrean lokal (offline).</p>
           <p className="text-[11px] text-amber-300/80">
-            Data akan tersimpan di HP ini sampai jaringan terhubung kembali.
+            Data tersimpan otomatis di perangkat dan siap disinkronkan saat terhubung kembali ke jaringan.
           </p>
         </div>
       </div>
       <button
         onClick={onSync}
-        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1 flex-shrink-0"
+        className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-md flex items-center gap-1.5 flex-shrink-0 transition-all"
       >
         <RefreshCw className="w-3.5 h-3.5" />
-        Sync Now
+        Sinkronkan Data
       </button>
     </div>
   );

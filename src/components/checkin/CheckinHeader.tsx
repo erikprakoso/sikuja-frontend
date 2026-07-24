@@ -15,16 +15,16 @@ export const CheckinHeader: React.FC<CheckinHeaderProps> = ({
       <div>
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
           <QrCode className="w-3.5 h-3.5" />
-          Pos Check-In Tengah Rute
+          Pos Validasi Check-In
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Multi-Scanner Validation</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-white">Pemindaian & Validasi Kupon</h1>
         <p className="text-xs text-slate-400">
-          Scan 1 QR Transaksi untuk Batch Check-in atau scan 5-digit voucher fisik.
+          Pindai QR Code E-Voucher atau masukkan 5-digit kode kupon fisik untuk konfirmasi kehadiran.
         </p>
       </div>
 
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center sm:text-right">
-        <span className="text-[10px] text-slate-400 font-bold uppercase">Progres Check-In</span>
+        <span className="text-[10px] text-slate-400 font-bold uppercase">Total Terverifikasi</span>
         <p className="text-xl font-black text-emerald-400 font-mono">
           {totalCheckinCount} <span className="text-xs font-normal text-slate-400">/ {totalVoucherCount}</span>
         </p>

@@ -149,17 +149,9 @@ export default function CheckinPosPage() {
       console.error('Camera start error:', err);
       setIsScanning(false);
 
-      const isHttpIp =
-        typeof window !== 'undefined' &&
-        window.location.protocol === 'http:' &&
-        window.location.hostname !== 'localhost' &&
-        window.location.hostname !== '127.0.0.1';
-
       setResultMessage({
         success: false,
-        text: isHttpIp
-          ? '🔒 Kamera diblokir browser karena diakses via HTTP IP (bukan HTTPS). Gunakan localhost / HTTPS / ngrok, atau aktifkan chrome://flags/#unsafely-treat-insecure-origin-as-secure.'
-          : `Gagal membuka kamera HP: ${err?.message || 'Pastikan izin akses kamera diizinkan pada browser HP Anda.'}`,
+        text: `Gagal mengakses kamera perangkat: ${err?.message || 'Pastikan izin akses kamera diizinkan pada browser Anda.'}`,
       });
     }
   };
@@ -182,7 +174,7 @@ export default function CheckinPosPage() {
     loadStats();
     setResultMessage({
       success: true,
-      text: `Berhasil menyinkronkan ${queue.length} scan antrean offline ke database!`,
+      text: `Berhasil menyinkronkan ${queue.length} data validasi offline ke server.`,
     });
   };
 
