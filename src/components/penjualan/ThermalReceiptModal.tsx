@@ -106,10 +106,10 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
           </button>
           <button
             onClick={handlePrint}
-            className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-amber-950/60"
+            className="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-amber-950/60"
           >
-            <Printer className="w-4 h-4" />
-            Cetak Struk Sekarang
+            <Printer className="w-4 h-4 text-white" />
+            <span>Cetak Struk</span>
           </button>
         </div>
       </div>

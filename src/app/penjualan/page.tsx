@@ -84,27 +84,15 @@ export default function PenjualanPage() {
       {/* Screen Interactive UI (Hidden during print) */}
       <div className="no-print space-y-8">
         {/* Header Title */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950 border border-red-800 text-red-300 text-xs font-bold uppercase tracking-wider mb-2">
-              <Ticket className="w-3.5 h-3.5" />
-              Meja Penjualan Kasir
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white">Transaksi Beli Voucher</h1>
-            <p className="text-xs text-slate-400">
-              Terbitkan kode 5-digit unik (fisik) atau 1 QR E-Voucher per transaksi.
-            </p>
+        <div className="pb-4 border-b border-slate-800">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950 border border-red-800 text-red-300 text-xs font-bold uppercase tracking-wider mb-2">
+            <Ticket className="w-3.5 h-3.5" />
+            Meja Penjualan Kasir
           </div>
-
-          {lastTx && (
-            <button
-              onClick={handleResetForm}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-2 transition-all border border-slate-700"
-            >
-              <RefreshCw className="w-4 h-4 text-red-400" />
-              Transaksi Baru
-            </button>
-          )}
+          <h1 className="text-2xl sm:text-3xl font-black text-white">Transaksi Beli Voucher</h1>
+          <p className="text-xs text-slate-400">
+            Terbitkan kode 5-digit unik (fisik) atau 1 QR E-Voucher per transaksi.
+          </p>
         </div>
 
         {/* Main Content Layout */}
