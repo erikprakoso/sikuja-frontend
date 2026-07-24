@@ -71,6 +71,7 @@ export default function LayarUndianPage() {
 
   const handleStartDraw = async (isForfeit: boolean = false) => {
     if (isRolling || !selectedPrizeId) return;
+    setIsRolling(true); // Lock immediately to prevent double-click
     setErrorMsg('');
 
     const forfeitCode = isForfeit && winnerVoucher ? winnerVoucher.code : undefined;
@@ -86,12 +87,12 @@ export default function LayarUndianPage() {
 
       if (!res.ok || data.error) {
         setErrorMsg(data.error || 'Gagal mengocok undian.');
+        setIsRolling(false); // Unlock on error
         return;
       }
 
       const winner = data.winnerVoucher;
 
-      setIsRolling(true);
       soundManager.startDrumroll();
 
       // Fast digit shuffling visual effect (3 seconds)
@@ -126,6 +127,7 @@ export default function LayarUndianPage() {
     } catch (err) {
       console.error('Draw error:', err);
       setErrorMsg('Gagal terhubung ke server undian.');
+      setIsRolling(false); // Unlock on error
     }
   };
 

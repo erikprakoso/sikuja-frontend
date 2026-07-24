@@ -86,11 +86,28 @@ export async function POST(request: NextRequest) {
 
       if (winErr) throw winErr;
 
-      // 5. Increment prize drawn_count
-      await supabase
+      // 5. Atomic increment with optimistic lock — prevents double-draw race condition
+      // Only updates if drawn_count hasn't changed since we read it AND is still under stock
+      const { data: updatedPrize, error: incErr } = await supabase
         .from('prizes')
         .update({ drawn_count: prize.drawn_count + 1 })
-        .eq('id', prize.id);
+        .eq('id', prize.id)
+        .eq('drawn_count', prize.drawn_count) // Optimistic lock: only if unchanged
+        .lt('drawn_count', prize.stock)        // Safety: must still be under stock
+        .select()
+        .maybeSingle();
+
+      if (incErr || !updatedPrize) {
+        // Race condition detected — rollback the voucher status
+        await supabase
+          .from('vouchers')
+          .update({ status: 'checkin', prize_id: null, prize_name: null, won_at: null })
+          .eq('code', winner.code);
+
+        return NextResponse.json({
+          error: `Stok hadiah "${prize.name}" sudah habis atau sedang dikocok oleh proses lain. Coba lagi!`,
+        }, { status: 409 });
+      }
 
       // 6. Record draw_result with audit trail
       const drawResult = {
