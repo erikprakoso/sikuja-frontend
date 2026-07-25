@@ -23,8 +23,7 @@ export default function CheckinPosPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-reader-pos';
 
-  const loadStats = async () => {
-    await syncFromSupabase();
+  const refreshStats = () => {
     const v = getStoredVouchers();
     setTotalVoucherCount(v.length);
     setTotalCheckinCount(v.filter((x) => x.status !== 'terbit').length);
@@ -32,14 +31,10 @@ export default function CheckinPosPage() {
   };
 
   useEffect(() => {
-    loadStats();
-    if (typeof window !== 'undefined') {
-      window.addEventListener(SIKUJA_EVENT_NAME, loadStats);
-    }
+    syncFromSupabase().then(() => refreshStats());
+    window.addEventListener(SIKUJA_EVENT_NAME, refreshStats);
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener(SIKUJA_EVENT_NAME, loadStats);
-      }
+      window.removeEventListener(SIKUJA_EVENT_NAME, refreshStats);
     };
   }, []);
 
@@ -71,7 +66,7 @@ export default function CheckinPosPage() {
           text: data.message,
         });
         setInputCode('');
-        await loadStats();
+        refreshStats();
         setIsProcessing(false);
         return;
       } else if (data.error) {
@@ -80,7 +75,7 @@ export default function CheckinPosPage() {
           text: data.error,
         });
         setInputCode('');
-        await loadStats();
+        refreshStats();
         setIsProcessing(false);
         return;
       }
@@ -96,7 +91,7 @@ export default function CheckinPosPage() {
         text: batchRes.message,
       });
       setInputCode('');
-      await loadStats();
+      refreshStats();
       setIsProcessing(false);
       return;
     }
@@ -107,7 +102,7 @@ export default function CheckinPosPage() {
       text: singleRes.message,
     });
     setInputCode('');
-    await loadStats();
+    refreshStats();
     setIsProcessing(false);
   };
 
@@ -179,7 +174,7 @@ export default function CheckinPosPage() {
       checkInVoucher(q.voucher_code);
     });
     clearOfflineQueue();
-    loadStats();
+    refreshStats();
     setResultMessage({
       success: true,
       text: `Berhasil menyinkronkan ${queue.length} data validasi offline ke server.`,

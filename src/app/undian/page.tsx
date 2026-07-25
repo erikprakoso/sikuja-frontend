@@ -28,9 +28,8 @@ export default function LayarUndianPage() {
 
   const rollIntervalRef = useRef<number | null>(null);
 
-  const loadData = async () => {
-    await syncFromSupabase();
-
+  // Reads local data only — no network call, no infinite loop
+  const refreshLocalData = () => {
     const p = getStoredPrizes();
     setPrizes(p);
 
@@ -48,14 +47,15 @@ export default function LayarUndianPage() {
   };
 
   useEffect(() => {
-    loadData();
-    if (typeof window !== 'undefined') {
-      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
-    }
+    // One-time sync on mount, then refresh local state
+    syncFromSupabase().then(() => {
+      refreshLocalData();
+    });
+
+    // Listen to storage changes from other actions (checkin, confirm, etc.) — local reads only
+    window.addEventListener(SIKUJA_EVENT_NAME, refreshLocalData);
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
-      }
+      window.removeEventListener(SIKUJA_EVENT_NAME, refreshLocalData);
     };
   }, []);
 
@@ -151,7 +151,7 @@ export default function LayarUndianPage() {
 
       soundManager.playVictoryFanfare();
       triggerConfetti();
-      await loadData();
+      refreshLocalData();
     } catch (err) {
       console.error('Confirm error:', err);
       setErrorMsg('Gagal terhubung ke server untuk mengonfirmasi.');
@@ -233,6 +233,7 @@ export default function LayarUndianPage() {
           isConfirming={isConfirming}
           candidateVoucher={candidateVoucher}
           isConfirmed={isConfirmedWinner}
+          selectedPrizeId={selectedPrizeId}
           onStartDraw={handleStartDraw}
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}

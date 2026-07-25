@@ -1,12 +1,13 @@
 import React from 'react';
 import { Voucher } from '@/types';
-import { Play, CheckCircle, XCircle } from 'lucide-react';
+import { Play, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 interface DrawControlsProps {
   isRolling: boolean;
   isConfirming: boolean;
   candidateVoucher: Voucher | null;
   isConfirmed: boolean;
+  selectedPrizeId: string;
   onStartDraw: () => void;
   onConfirmWinner: () => void;
   onForfeitAndRedraw: () => void;
@@ -17,10 +18,12 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
   isConfirming,
   candidateVoucher,
   isConfirmed,
+  selectedPrizeId,
   onStartDraw,
   onConfirmWinner,
   onForfeitAndRedraw,
 }) => {
+  const canStart = !!selectedPrizeId && !isRolling;
   return (
     <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
       {candidateVoucher ? (
@@ -58,18 +61,26 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
         )
       ) : (
         /* Default Roll Button */
-        <button
-          onClick={onStartDraw}
-          disabled={isRolling}
-          className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-xl transition-all flex items-center gap-3 border-2 border-[#E70013] ${
-            isRolling
-              ? 'bg-white text-[#E70013] opacity-50 cursor-not-allowed'
-              : 'bg-[#E70013] hover:scale-105 active:scale-95 cursor-pointer text-white shadow-lg'
-          }`}
-        >
-          <Play className="w-6 h-6 fill-current" />
-          {isRolling ? 'Memutar Kode Kupon...' : 'Mulai Pengundian'}
-        </button>
+        <div className="flex flex-col items-center gap-2">
+          {!selectedPrizeId && (
+            <p className="flex items-center gap-1.5 text-sm font-bold text-[#E70013] bg-[#E70013]/10 border border-[#E70013]/30 px-4 py-2 rounded-xl">
+              <AlertTriangle className="w-4 h-4" />
+              Pilih kategori hadiah terlebih dahulu
+            </p>
+          )}
+          <button
+            onClick={onStartDraw}
+            disabled={!canStart}
+            className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-xl transition-all flex items-center gap-3 border-2 border-[#E70013] ${
+              !canStart
+                ? 'bg-white text-[#E70013] opacity-40 cursor-not-allowed'
+                : 'bg-[#E70013] hover:scale-105 active:scale-95 cursor-pointer text-white shadow-lg'
+            }`}
+          >
+            <Play className="w-6 h-6 fill-current" />
+            {isRolling ? 'Memutar Kode Kupon...' : 'Mulai Pengundian'}
+          </button>
+        </div>
       )}
     </div>
   );

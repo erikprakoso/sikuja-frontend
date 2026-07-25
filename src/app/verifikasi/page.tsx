@@ -14,21 +14,16 @@ export default function VerifikasiPanggungPage() {
   const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
 
-  const loadData = async () => {
-    await syncFromSupabase();
+  const refreshData = () => {
     setDrawResults(getStoredDrawResults());
     setVouchers(getStoredVouchers());
   };
 
   useEffect(() => {
-    loadData();
-    if (typeof window !== 'undefined') {
-      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
-    }
+    syncFromSupabase().then(() => refreshData());
+    window.addEventListener(SIKUJA_EVENT_NAME, refreshData);
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
-      }
+      window.removeEventListener(SIKUJA_EVENT_NAME, refreshData);
     };
   }, []);
 
@@ -53,7 +48,7 @@ export default function VerifikasiPanggungPage() {
     } catch {
       setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
     }
-    await loadData();
+    refreshData();
   };
 
   const handleQuickClaim = async (voucherCode: string) => {
@@ -73,7 +68,7 @@ export default function VerifikasiPanggungPage() {
     } catch {
       setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
     }
-    await loadData();
+    refreshData();
   };
 
   const unclaimedWinners = drawResults.filter((r) => !r.claimed);
