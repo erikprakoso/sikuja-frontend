@@ -72,13 +72,14 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-14">
 
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 rounded-lg bg-[#E70013] flex items-center justify-center text-white text-xs font-black shadow-xs">
-              SK
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img
+              src="/logo-ri.png"
+              alt="Logo 81 Tahun RI"
+              className="h-8 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
             <span className="font-extrabold text-base text-slate-900 tracking-tight flex items-center gap-1">
-              SIKUJA
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E70013]"></span>
+              Jalan Sehat <span className="text-[#E70013]">2026</span>
             </span>
           </Link>
 
