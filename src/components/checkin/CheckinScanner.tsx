@@ -25,29 +25,29 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
   onSubmitCode,
 }) => {
   return (
-    <div className="bg-white border-4 border-[#E70013] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+    <div className="bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
       {/* Camera Feed Container */}
       <div className="space-y-4">
         <div
           id={scannerContainerId}
           style={{ display: isScanning ? 'block' : 'none' }}
-          className="w-full overflow-hidden rounded-2xl border-4 border-[#E70013] bg-white min-h-[300px]"
+          className="w-full overflow-hidden rounded-2xl border-2 border-[#E70013] bg-white min-h-[300px]"
         />
 
         {!isScanning ? (
           <button
             onClick={onStartCamera}
             disabled={isProcessing}
-            className="w-full py-5 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-lg shadow-xl transition-all flex items-center justify-center gap-3 cursor-pointer active:scale-[0.98] border-2 border-[#E70013]"
+            className="w-full py-4 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-base shadow-md transition-all flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] border border-[#E70013]"
           >
-            <Camera className="w-6 h-6 text-white" />
+            <Camera className="w-5 h-5 text-white" />
             Aktifkan Kamera & Pindai QR Code
           </button>
         ) : (
           <button
             onClick={onStopCamera}
             disabled={isProcessing}
-            className="w-full py-3 rounded-2xl bg-white text-[#E70013] hover:bg-[#E70013] hover:text-white font-black text-sm border-2 border-[#E70013] transition-all cursor-pointer active:scale-95"
+            className="w-full py-3 rounded-2xl bg-white text-[#E70013] hover:bg-[#E70013] hover:text-white font-bold text-sm border border-[#E70013]/30 transition-all cursor-pointer active:scale-95"
           >
             Nonaktifkan Kamera
           </button>
@@ -55,8 +55,8 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       </div>
 
       <div className="relative flex items-center justify-center">
-        <div className="border-t-2 border-[#E70013] w-full" />
-        <span className="bg-white px-3 text-xs text-[#E70013] uppercase font-black absolute">
+        <div className="border-t border-[#E70013]/15 w-full" />
+        <span className="bg-white px-3 text-xs text-[#E70013]/60 uppercase font-bold tracking-wider absolute">
           Atau Masukkan Kode Manual
         </span>
       </div>
@@ -67,20 +67,20 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
           e.preventDefault();
           onSubmitCode(inputCode);
         }}
-        className="flex flex-col sm:flex-row gap-2"
+        className="flex flex-col sm:flex-row gap-2.5"
       >
         <input
           type="text"
-          placeholder="Masukkan 5-digit kode kupon atau token..."
+          placeholder="Masukkan 5-digit kode kupon / token..."
           value={inputCode}
           onChange={(e) => setInputCode(e.target.value)}
           disabled={isProcessing}
-          className="flex-1 px-4 py-3.5 bg-white border-2 border-[#E70013] rounded-2xl text-[#E70013] font-mono text-base font-black placeholder-[#E70013]/50 focus:outline-none disabled:opacity-50"
+          className="flex-1 px-4 py-3 bg-white border border-[#E70013]/30 focus:border-[#E70013] focus:ring-2 focus:ring-[#E70013]/20 rounded-2xl text-[#E70013] font-mono text-base font-bold placeholder-[#E70013]/40 focus:outline-none disabled:opacity-50 transition-all"
         />
         <button
           type="submit"
           disabled={!inputCode.trim() || isProcessing}
-          className="px-6 py-3.5 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 border-2 border-[#E70013]"
+          className="px-6 py-3 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-sm shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 border border-[#E70013]"
         >
           {isProcessing ? (
             <Loader2 className="w-4 h-4 animate-spin text-white" />
@@ -93,7 +93,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
 
       {/* Processing Indicator Banner */}
       {isProcessing && (
-        <div className="p-4 rounded-2xl bg-white border-4 border-[#E70013] text-[#E70013] text-sm font-black flex items-center justify-center gap-3 animate-pulse shadow-md">
+        <div className="p-4 rounded-2xl bg-[#E70013]/5 border border-[#E70013]/20 text-[#E70013] text-sm font-bold flex items-center justify-center gap-3 animate-pulse">
           <Loader2 className="w-5 h-5 animate-spin text-[#E70013] flex-shrink-0" />
           <span>Memproses verifikasi kode kupon... Mohon tunggu.</span>
         </div>
@@ -102,10 +102,10 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       {/* Result Alert Box */}
       {!isProcessing && resultMessage && (
         <div
-          className={`p-4 rounded-2xl border-4 text-sm font-black flex items-start gap-3 animate-fade-in ${
+          className={`p-4 rounded-2xl border text-sm font-bold flex items-start gap-3 animate-fade-in ${
             resultMessage.success
-              ? 'bg-[#E70013] border-[#E70013] text-white'
-              : 'bg-white border-[#E70013] text-[#E70013]'
+              ? 'bg-[#E70013] border-[#E70013] text-white shadow-md'
+              : 'bg-white border-[#E70013] text-[#E70013] shadow-sm'
           }`}
         >
           {resultMessage.success ? (
@@ -114,7 +114,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
             <AlertCircle className="w-5 h-5 text-[#E70013] flex-shrink-0 mt-0.5" />
           )}
           <div>
-            <p className="font-black">{resultMessage.text}</p>
+            <p className="font-bold">{resultMessage.text}</p>
           </div>
         </div>
       )}

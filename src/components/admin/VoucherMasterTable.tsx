@@ -33,7 +33,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const currentVouchers = vouchers.slice(startIndex, endIndex);
 
   return (
-    <div className="bg-white border-4 border-[#E70013] rounded-3xl p-6 space-y-4 shadow-xl">
+    <div className="bg-white border border-[#E70013]/20 rounded-3xl p-6 space-y-4 shadow-sm">
       {/* Top Filter Controls */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h2 className="text-base font-black text-[#E70013] flex items-center gap-2">
@@ -49,16 +49,16 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               placeholder="Cari kode kupon..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-white border-2 border-[#E70013] rounded-xl text-[#E70013] text-xs font-mono font-black focus:outline-none placeholder-[#E70013]/50"
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-[#E70013]/30 rounded-xl text-[#E70013] text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-[#E70013]/40"
             />
-            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-[#E70013]" />
+            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-[#E70013]/60" />
           </div>
 
           {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 bg-white border-2 border-[#E70013] rounded-xl text-xs font-black text-[#E70013] focus:outline-none cursor-pointer"
+            className="px-3 py-1.5 bg-white border border-[#E70013]/30 rounded-xl text-xs font-bold text-[#E70013] focus:outline-none cursor-pointer"
           >
             <option value="all">Semua Status</option>
             <option value="terbit">Terbit (Belum Verifikasi)</option>
@@ -71,7 +71,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="px-2.5 py-1.5 bg-white border-2 border-[#E70013] rounded-xl text-xs font-black text-[#E70013] focus:outline-none cursor-pointer"
+            className="px-2.5 py-1.5 bg-white border border-[#E70013]/30 rounded-xl text-xs font-bold text-[#E70013] focus:outline-none cursor-pointer"
           >
             <option value={10}>10 / hlm</option>
             <option value={25}>25 / hlm</option>
@@ -82,9 +82,9 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
       </div>
 
       {/* Table Data */}
-      <div className="overflow-x-auto rounded-2xl border-2 border-[#E70013]">
+      <div className="overflow-x-auto rounded-2xl border border-[#E70013]/20">
         <table className="w-full text-left text-xs text-[#E70013]">
-          <thead className="bg-[#E70013] text-white uppercase font-black text-[10px] border-b-2 border-[#E70013]">
+          <thead className="bg-[#E70013] text-white uppercase font-bold text-[10px]">
             <tr>
               <th className="p-3">Kode Kupon</th>
               <th className="p-3">Jenis</th>
@@ -93,22 +93,22 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               <th className="p-3">Waktu Transaksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y-2 divide-[#E70013]/20 font-mono font-bold">
+          <tbody className="divide-y divide-[#E70013]/15 font-mono font-bold">
             {currentVouchers.length > 0 ? (
               currentVouchers.map((v) => (
-                <tr key={v.code} className="hover:bg-[#E70013]/10 transition-colors">
+                <tr key={v.code} className="hover:bg-[#E70013]/5 transition-colors">
                   <td className="p-3 font-black text-[#E70013] tracking-widest">{v.code}</td>
-                  <td className="p-3 capitalize font-sans">{v.type}</td>
+                  <td className="p-3 capitalize font-sans font-semibold text-[#E70013]/80">{v.type}</td>
                   <td className="p-3 font-sans">
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
                         v.status === 'checkin'
                           ? 'bg-[#E70013] text-white'
                           : v.status === 'menang'
                           ? 'bg-[#E70013] text-white'
                           : v.status === 'diklaim'
                           ? 'bg-[#E70013] text-white'
-                          : 'bg-white text-[#E70013] border border-[#E70013]'
+                          : 'bg-[#E70013]/10 text-[#E70013] border border-[#E70013]/25'
                       }`}
                     >
                       {v.status === 'checkin'
@@ -120,15 +120,15 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                         : 'Terbit'}
                     </span>
                   </td>
-                  <td className="p-3 font-sans font-bold">{v.prize_name || '-'}</td>
-                  <td className="p-3 text-[11px] font-bold">
+                  <td className="p-3 font-sans font-semibold text-[#E70013]/80">{v.prize_name || '-'}</td>
+                  <td className="p-3 text-[11px] font-semibold text-[#E70013]/70">
                     {new Date(v.created_at).toLocaleTimeString('id-ID')}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-[#E70013] font-black font-sans">
+                <td colSpan={5} className="p-6 text-center text-[#E70013]/60 font-semibold font-sans">
                   Tidak ada data kupon yang sesuai.
                 </td>
               </tr>
@@ -139,18 +139,18 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 
       {/* Pagination Footer Controls */}
       {totalVouchers > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs font-bold text-[#E70013]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs font-semibold text-[#E70013]/80">
           <span className="text-[11px]">
-            Menampilkan <strong className="font-black">{startIndex + 1}</strong>–
-            <strong className="font-black">{endIndex}</strong> dari{' '}
-            <strong className="font-black">{totalVouchers}</strong> data kupon
+            Menampilkan <strong className="font-black text-[#E70013]">{startIndex + 1}</strong>–
+            <strong className="font-black text-[#E70013]">{endIndex}</strong> dari{' '}
+            <strong className="font-black text-[#E70013]">{totalVouchers}</strong> data kupon
           </span>
 
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={safeCurrentPage <= 1}
-              className="p-1.5 rounded-lg bg-white border-2 border-[#E70013] text-[#E70013] hover:bg-[#E70013] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
+              className="p-1.5 rounded-lg bg-white border border-[#E70013]/30 text-[#E70013] hover:bg-[#E70013] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
               title="Halaman Sebelumnya"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -172,10 +172,10 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`w-7 h-7 rounded-lg text-xs font-black font-mono transition-all cursor-pointer active:scale-95 border-2 border-[#E70013] ${
+                    className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer active:scale-95 border ${
                       safeCurrentPage === pageNum
-                        ? 'bg-[#E70013] text-white shadow-md'
-                        : 'bg-white text-[#E70013] hover:bg-[#E70013] hover:text-white'
+                        ? 'bg-[#E70013] border-[#E70013] text-white shadow-xs'
+                        : 'bg-white border-[#E70013]/30 text-[#E70013] hover:bg-[#E70013]/10'
                     }`}
                   >
                     {pageNum}
@@ -187,7 +187,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={safeCurrentPage >= totalPages}
-              className="p-1.5 rounded-lg bg-white border-2 border-[#E70013] text-[#E70013] hover:bg-[#E70013] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
+              className="p-1.5 rounded-lg bg-white border border-[#E70013]/30 text-[#E70013] hover:bg-[#E70013] hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
               title="Halaman Selanjutnya"
             >
               <ChevronRight className="w-4 h-4" />

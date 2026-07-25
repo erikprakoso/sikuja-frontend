@@ -13,23 +13,46 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   winnerVoucher,
 }) => {
   return (
-    <div className="py-4">
-      <div className="inline-flex items-center justify-center gap-3 sm:gap-6 bg-white border-4 border-[#E70013] p-4 sm:p-8 rounded-3xl shadow-lg max-w-full">
+    <div className="py-6">
+      <div
+        className={`inline-flex items-center justify-center gap-2 sm:gap-4 p-4 sm:p-8 rounded-3xl max-w-full transition-all duration-500 ${
+          winnerVoucher
+            ? 'bg-[#E70013]'
+            : 'bg-white border-4 border-[#E70013]'
+        }`}
+      >
         {displayDigits.split('').map((digit, idx) => (
           <div
             key={idx}
-            className={`w-14 h-20 sm:w-24 sm:h-36 rounded-2xl bg-white border-4 ${
-              winnerVoucher
-                ? 'border-[#E70013] text-white bg-[#E70013] shadow-lg scale-105'
+            style={{ animationDelay: `${idx * 60}ms` }}
+            className={`
+              w-12 h-18 sm:w-24 sm:h-36
+              rounded-2xl
+              flex items-center justify-center
+              font-mono font-black
+              text-4xl sm:text-7xl
+              tracking-tighter
+              select-none
+              transition-all duration-300
+              shadow-md
+              ${winnerVoucher
+                ? 'bg-white text-[#E70013] shadow-lg scale-110'
                 : isRolling
-                ? 'border-[#E70013] text-[#E70013] animate-pulse'
-                : 'border-[#E70013] text-[#E70013]'
-            } flex items-center justify-center font-mono text-4xl sm:text-7xl font-black tracking-tighter shadow-xl transition-all`}
+                  ? 'bg-[#E70013]/10 text-[#E70013] blur-[0.5px] scale-95 animate-bounce border-2 border-[#E70013]'
+                  : 'bg-white border-4 border-[#E70013] text-[#E70013] scale-100'
+              }
+            `}
           >
             {digit}
           </div>
         ))}
       </div>
+
+      {isRolling && (
+        <p className="mt-3 text-xs font-black text-[#E70013] uppercase tracking-widest animate-pulse">
+          ⟳ Mengacak kode kupon...
+        </p>
+      )}
     </div>
   );
 };
