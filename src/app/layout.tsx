@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Outfit, Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import { SyncProvider } from '@/components/SyncProvider';
+import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
 import './globals.css';
 
 const outfit = Outfit({
@@ -41,6 +42,7 @@ export default function RootLayout({
             {children}
           </main>
         </SyncProvider>
+        <PwaInstallPrompt />
         <footer className="border-t border-[#E70013]/20 bg-white py-6 text-center text-xs text-slate-600 font-medium">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>© 2026 SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan 🇮🇩</p>
