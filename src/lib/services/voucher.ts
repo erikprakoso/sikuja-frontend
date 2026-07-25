@@ -183,7 +183,7 @@ export function checkInVoucher(code: string, scannerId: string = 'pos-device-1')
   };
 }
 
-// 3. Batch Check-in via 1 Transaction QR Code (Check-in ALL vouchers of 1 transaction)
+// 3. Batch Check-in via 1 Transaction QR Code (Check-in ALL vouchers of 1 transaction or customer)
 export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string = 'pos-device-1'): {
   success: boolean;
   message: string;
@@ -201,20 +201,30 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
     };
   }
 
-  const txVouchers = vouchers.filter((v) => v.transaction_id === tx.id);
+  let allCustomerTxs = [tx];
+  if (tx.customer_phone && tx.customer_phone.trim()) {
+    const phoneTxs = transactions.filter((t) => t.customer_phone === tx.customer_phone);
+    if (phoneTxs.length > 0) allCustomerTxs = phoneTxs;
+  } else if (tx.customer_name && tx.customer_name.trim()) {
+    const nameTxs = transactions.filter((t) => t.customer_name === tx.customer_name);
+    if (nameTxs.length > 0) allCustomerTxs = nameTxs;
+  }
+
+  const txIds = new Set(allCustomerTxs.map((t) => t.id));
+  const txVouchers = vouchers.filter((v) => txIds.has(v.transaction_id));
   const eligibleVouchers = txVouchers.filter((v) => v.status === 'terbit');
 
   if (eligibleVouchers.length === 0) {
     return {
       success: false,
-      message: `Seluruh ${txVouchers.length} voucher dalam transaksi ini sudah check-in pos sebelumnya.`,
+      message: `Seluruh ${txVouchers.length} voucher milik ${tx.customer_name || 'peserta ini'} sudah check-in pos sebelumnya.`,
       count: 0,
     };
   }
 
   let checkedInCount = 0;
   vouchers.forEach((v) => {
-    if (v.transaction_id === tx.id && v.status === 'terbit') {
+    if (txIds.has(v.transaction_id) && v.status === 'terbit') {
       v.status = 'checkin';
       checkedInCount++;
       addToOfflineQueue({
@@ -232,7 +242,7 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
 
   return {
     success: true,
-    message: `Berhasil Check-In Pos 1-Click untuk ${checkedInCount} voucher transaksi ini!`,
+    message: `Berhasil Check-In Pos 1-Click untuk ${checkedInCount} voucher (${tx.customer_name || 'Peserta'})!`,
     count: checkedInCount,
   };
 }

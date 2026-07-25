@@ -15,7 +15,7 @@ export async function GET(
     }
 
     if (isSupabaseConfigured()) {
-      // 1. Fetch transaction safely by token or id text string
+      // 1. Fetch primary transaction by token or id
       let tx = null;
       const { data: txByToken } = await supabase
         .from('transactions')
@@ -38,11 +38,29 @@ export async function GET(
         return NextResponse.json({ error: 'E-Voucher tidak ditemukan' }, { status: 404 });
       }
 
-      // 2. Fetch vouchers for this transaction
+      // 2. Aggregate all transactions of the same customer if phone/name exists
+      let allCustomerTxs = [tx];
+      if (tx.customer_phone && tx.customer_phone.trim()) {
+        const { data: phoneTxs } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('customer_phone', tx.customer_phone.trim());
+        if (phoneTxs && phoneTxs.length > 0) allCustomerTxs = phoneTxs;
+      } else if (tx.customer_name && tx.customer_name.trim()) {
+        const { data: nameTxs } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('customer_name', tx.customer_name.trim());
+        if (nameTxs && nameTxs.length > 0) allCustomerTxs = nameTxs;
+      }
+
+      const txIds = allCustomerTxs.map((t) => t.id);
+
+      // 3. Fetch vouchers for all transactions of this customer
       const { data: vouchers, error: vError } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('transaction_id', tx.id)
+        .in('transaction_id', txIds)
         .order('code', { ascending: true });
 
       if (vError) {
@@ -52,6 +70,7 @@ export async function GET(
       return NextResponse.json({
         success: true,
         transaction: tx,
+        transactionsCount: allCustomerTxs.length,
         vouchers: vouchers || [],
       });
     } else {
@@ -62,10 +81,22 @@ export async function GET(
         return NextResponse.json({ error: 'E-Voucher tidak ditemukan' }, { status: 404 });
       }
 
-      const vouchers = getStoredVouchers().filter((v) => v.transaction_id === tx.id);
+      let allCustomerTxs = [tx];
+      if (tx.customer_phone && tx.customer_phone.trim()) {
+        const phoneTxs = txs.filter((t) => t.customer_phone === tx.customer_phone);
+        if (phoneTxs.length > 0) allCustomerTxs = phoneTxs;
+      } else if (tx.customer_name && tx.customer_name.trim()) {
+        const nameTxs = txs.filter((t) => t.customer_name === tx.customer_name);
+        if (nameTxs.length > 0) allCustomerTxs = nameTxs;
+      }
+
+      const txIds = new Set(allCustomerTxs.map((t) => t.id));
+      const vouchers = getStoredVouchers().filter((v) => txIds.has(v.transaction_id));
+
       return NextResponse.json({
         success: true,
         transaction: tx,
+        transactionsCount: allCustomerTxs.length,
         vouchers,
       });
     }
