@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
-import { Trophy, AlertCircle } from 'lucide-react';
+import { Trophy, AlertCircle, Sparkles } from 'lucide-react';
 
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
@@ -60,19 +60,21 @@ export default function LayarUndianPage() {
   }, []);
 
   const triggerConfetti = () => {
+    // Left side flare confetti burst
     confetti({
-      particleCount: 50,
+      particleCount: 80,
       angle: 60,
-      spread: 60,
-      origin: { x: 0, y: 0.7 },
-      colors: ['#E70013', '#ffffff'],
+      spread: 70,
+      origin: { x: 0, y: 0.65 },
+      colors: ['#E70013', '#ffffff', '#ff4d5a'],
     });
+    // Right side flare confetti burst
     confetti({
-      particleCount: 50,
+      particleCount: 80,
       angle: 120,
-      spread: 60,
-      origin: { x: 1, y: 0.7 },
-      colors: ['#E70013', '#ffffff'],
+      spread: 70,
+      origin: { x: 1, y: 0.65 },
+      colors: ['#E70013', '#ffffff', '#ff4d5a'],
     });
   };
 
@@ -106,7 +108,8 @@ export default function LayarUndianPage() {
           .toString()
           .padStart(5, '0');
         setDisplayDigits(random5Digit);
-      }, 80);
+        soundManager.playTick();
+      }, 85);
 
       setTimeout(() => {
         if (rollIntervalRef.current !== null) {
@@ -115,6 +118,8 @@ export default function LayarUndianPage() {
         }
 
         soundManager.stopDrumroll();
+        soundManager.playVictoryFanfare();
+        triggerConfetti();
 
         setIsRolling(false);
         setDisplayDigits(candidate.code);
@@ -151,6 +156,11 @@ export default function LayarUndianPage() {
 
       soundManager.playVictoryFanfare();
       triggerConfetti();
+
+      // Sync fresh data from server so drawn_count is updated, then refresh UI.
+      // This ensures the prize counter reflects the new draw and auto-advances
+      // to the next available prize category if current one is exhausted.
+      await syncFromSupabase();
       refreshLocalData();
     } catch (err) {
       console.error('Confirm error:', err);
