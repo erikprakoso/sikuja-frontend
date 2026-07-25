@@ -12,7 +12,7 @@ interface TransactionFormProps {
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
   setPaymentMethod: (method: 'cash' | 'qris') => void;
-  onSubmit: (e: React.FormEvent, customCodes?: string[]) => void;
+  onSubmit: (e: React.FormEvent, customCodes?: string[], customerName?: string, customerPhone?: string) => void;
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({
@@ -32,6 +32,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [codeMode, setCodeMode] = useState<'auto' | 'custom'>('auto');
   const [customCodes, setCustomCodes] = useState<string[]>([]);
   const [customCodeStatuses, setCustomCodeStatuses] = useState<{ [key: number]: { available: boolean; formatted: string } }>({});
+  const [customerName, setCustomerName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
@@ -106,7 +108,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
     const activeCustomCodes = codeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
-    onSubmit(e, activeCustomCodes);
+    onSubmit(e, activeCustomCodes, customerName, customerPhone);
   };
 
   return (
@@ -214,9 +216,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
         </div>
 
-        {/* 3. Mode Penentuan Kode */}
+        {/* 2. Mode Penentuan Kode */}
         <div className="space-y-3 p-5 rounded-2xl border border-slate-200 bg-white">
-          <label className="text-xs font-semibold text-slate-600 block">Penentuan Kode 5-Digit:</label>
+          <label className="text-xs font-bold text-slate-900 block">2. Penentuan Kode 5-Digit:</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -305,12 +307,46 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           )}
         </div>
+
+        {/* 3. Identitas Pemilik Kupon (Opsional) */}
+        <div className="space-y-3 p-5 rounded-2xl border border-slate-200 bg-white">
+          <label className="text-xs font-bold text-slate-900 block">
+            3. Identitas Pemilik Kupon (Opsional):
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] text-slate-500 font-semibold mb-1 block">Nama Pembeli / Pemilik:</label>
+              <input
+                type="text"
+                placeholder="Contoh: Pak Budi / Bu Ani"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-500 font-semibold mb-1 block">No. WhatsApp / HP:</label>
+              <input
+                type="text"
+                placeholder="Contoh: 08123456789"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                disabled={isLoading}
+                className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
+              />
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-500 font-medium">
+            🔒 Identitas ini memudahkan pencarian E-Voucher jika pembeli lupa token transaksi.
+          </p>
+        </div>
       </div>
 
       {/* Right Payment & Action Box */}
       <div className="space-y-6 bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between">
         <div className="space-y-4">
-          <h2 className="text-lg font-black text-slate-900">2. Metode Pembayaran</h2>
+          <h2 className="text-lg font-black text-slate-900">4. Metode Pembayaran</h2>
 
           {/* Payment Method Selector */}
           <div className="grid grid-cols-2 gap-3">

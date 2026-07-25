@@ -56,7 +56,9 @@ export function generateTransactionToken(): string {
 export function createPurchaseTransaction(
   qtyFisik: number,
   qtyNonFisik: number,
-  customCodes: string[] = []
+  customCodes: string[] = [],
+  customerName: string = '',
+  customerPhone: string = ''
 ): {
   transaction: Transaction;
   vouchers: Voucher[];
@@ -127,6 +129,8 @@ export function createPurchaseTransaction(
     qty_fisik: qtyFisik,
     qty_non_fisik: qtyNonFisik,
     total_harga: totalLembar * 5000,
+    customer_name: customerName.trim() || undefined,
+    customer_phone: customerPhone.trim() || undefined,
     created_at: new Date().toISOString(),
   };
 

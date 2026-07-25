@@ -37,7 +37,15 @@ export default function PenjualanPage() {
     }
   }, [lastTx]);
 
-  const handleCheckout = async (e: React.FormEvent, customCodes: string[] = []) => {
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+
+  const handleCheckout = async (
+    e: React.FormEvent,
+    customCodes: string[] = [],
+    name: string = '',
+    phone: string = ''
+  ) => {
     e.preventDefault();
     if (totalLembar <= 0 || isSubmitting) return;
 
@@ -47,7 +55,13 @@ export default function PenjualanPage() {
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qtyFisik, qtyNonFisik, customCodes }),
+        body: JSON.stringify({
+          qtyFisik,
+          qtyNonFisik,
+          customCodes,
+          customerName: name,
+          customerPhone: phone,
+        }),
       });
       const data = await res.json();
 
@@ -61,7 +75,7 @@ export default function PenjualanPage() {
     } catch (err) {
       console.error('Checkout error:', err);
       // Fallback local memory
-      const res = createPurchaseTransaction(qtyFisik, qtyNonFisik, customCodes);
+      const res = createPurchaseTransaction(qtyFisik, qtyNonFisik, customCodes, name, phone);
       setLastTx(res);
     } finally {
       setIsSubmitting(false);

@@ -10,6 +10,8 @@ export async function POST(request: NextRequest) {
     const qtyFisik = Number(body.qtyFisik) || 0;
     const qtyNonFisik = Number(body.qtyNonFisik) || 0;
     const customCodes: string[] = Array.isArray(body.customCodes) ? body.customCodes : [];
+    const customerName = (body.customerName || '').toString();
+    const customerPhone = (body.customerPhone || '').toString();
 
     const totalLembar = qtyFisik + qtyNonFisik;
 
@@ -86,6 +88,8 @@ export async function POST(request: NextRequest) {
         qty_fisik: qtyFisik,
         qty_non_fisik: qtyNonFisik,
         total_harga: totalLembar * 5000,
+        customer_name: customerName.trim() || undefined,
+        customer_phone: customerPhone.trim() || undefined,
         created_at: new Date().toISOString(),
       };
 
@@ -103,7 +107,7 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // Local storage fallback
-      const result = createPurchaseTransaction(qtyFisik, qtyNonFisik, customCodes);
+      const result = createPurchaseTransaction(qtyFisik, qtyNonFisik, customCodes, customerName, customerPhone);
       return NextResponse.json({
         success: true,
         ...result,

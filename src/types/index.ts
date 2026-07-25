@@ -23,6 +23,8 @@ export interface Transaction {
   qty_fisik: number;
   qty_non_fisik: number;
   total_harga: number; // qty * 5000
+  customer_name?: string;
+  customer_phone?: string;
   created_at: string;
 }
 

@@ -1,10 +1,12 @@
 import React from 'react';
-import { Sparkles, Share2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Share2, CheckCircle2, MessageSquare } from 'lucide-react';
 
 interface EVoucherHeaderProps {
   totalVouchers: number;
   checkinCount: number;
   qrDataUrl?: string;
+  customerName?: string;
+  customerPhone?: string;
   copied: boolean;
   onShare: () => void;
 }
@@ -13,10 +15,19 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
   totalVouchers,
   checkinCount,
   qrDataUrl,
+  customerName,
+  customerPhone,
   copied,
   onShare,
 }) => {
   const isFullyCheckedIn = totalVouchers > 0 && checkinCount >= totalVouchers;
+
+  const handleWhatsAppShare = () => {
+    if (typeof window !== 'undefined') {
+      const text = encodeURIComponent(`Kartu E-Voucher Jalan Sehat 2026 Saya: ${window.location.href}`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+  };
 
   return (
     <div className="relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
@@ -25,9 +36,17 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
         Kartu E-Voucher Resmi 🇮🇩
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
-        VOUCHER JALAN SEHAT 2026
-      </h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">
+          VOUCHER JALAN SEHAT 2026
+        </h1>
+        {customerName && (
+          <p className="text-sm font-bold text-slate-700">
+            Pemilik: <span className="text-[#E70013] font-black">{customerName}</span>
+            {customerPhone ? ` (${customerPhone})` : ''}
+          </p>
+        )}
+      </div>
 
       <div className="flex items-center justify-center gap-3 text-xs font-bold text-slate-600">
         <span>Jumlah: <strong className="text-slate-900">{totalVouchers} Kupon</strong></span>
@@ -62,13 +81,21 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
         )
       )}
 
-      <div className="pt-2">
+      <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
+        <button
+          onClick={handleWhatsAppShare}
+          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 border border-emerald-600"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Simpan Ke WhatsApp Saya
+        </button>
+
         <button
           onClick={onShare}
-          className="px-4 py-2.5 rounded-xl bg-[#E70013] text-white text-xs font-bold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 border border-[#E70013]"
+          className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 border border-slate-900"
         >
           <Share2 className="w-4 h-4" />
-          {copied ? 'Tautan Tersalin!' : 'Bagikan / Simpan Tautan Halaman Ini'}
+          {copied ? 'Tautan Tersalin!' : 'Bagikan / Salin Tautan'}
         </button>
       </div>
     </div>

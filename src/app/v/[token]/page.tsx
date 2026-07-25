@@ -72,6 +72,11 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         .then((url) => setTxQrDataUrl(url))
         .catch((err) => console.error('TX QR Gen error:', err));
+
+      // Auto-save token to localStorage so user never loses their E-Voucher
+      try {
+        localStorage.setItem('sikuja_last_token', transaction.token);
+      } catch (e) {}
     }
   }, [transaction]);
 
@@ -122,6 +127,8 @@ export default function ParticipantEVoucherPage({ params }: Props) {
         totalVouchers={vouchers.length}
         checkinCount={checkinCount}
         qrDataUrl={txQrDataUrl}
+        customerName={transaction.customer_name}
+        customerPhone={transaction.customer_phone}
         copied={copied}
         onShare={handleShare}
       />
