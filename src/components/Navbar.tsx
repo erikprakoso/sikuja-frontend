@@ -11,7 +11,7 @@ import {
   QrCode,
   Trophy,
   CheckCircle2,
-  ShieldAlert,
+  ShieldCheck,
   Volume2,
   VolumeX,
   LogOut,
@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { href: '/checkin', label: 'Pos Check-In', icon: QrCode, roles: ['pos', 'admin'] },
   { href: '/undian', label: 'Layar Undian', icon: Trophy, roles: ['mc', 'admin'] },
   { href: '/verifikasi', label: 'Verifikasi', icon: CheckCircle2, roles: ['verifikator', 'admin'] },
-  { href: '/admin', label: 'Admin', icon: ShieldAlert, roles: ['admin'] },
+  { href: '/admin', label: 'Admin', icon: ShieldCheck, roles: ['admin'] },
 ];
 
 export default function Navbar() {
@@ -73,36 +73,23 @@ export default function Navbar() {
     : [];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b-4 border-[#E70013] text-[#E70013] shadow-md no-print">
+    <header className="sticky top-0 z-50 bg-white border-b border-[#E70013]/20 no-print">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo & Brand */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-10 h-10 rounded-xl bg-[#E70013] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-              <span className="text-xl font-black text-white tracking-tighter">SK</span>
-              <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-              </span>
+        <div className="flex items-center justify-between h-14">
+
+          {/* Brand */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-[#E70013] flex items-center justify-center text-white text-sm font-black group-hover:opacity-90 transition-opacity">
+              SK
             </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-black text-xl text-[#E70013] tracking-wide">
-                  SIKUJA
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded-full bg-[#E70013] text-white tracking-wider">
-                  Agustusan 🇮🇩
-                </span>
-              </div>
-              <span className="text-[11px] text-[#E70013] font-bold hidden sm:inline">
-                Sistem Kupon & Undian Jalan Sehat
-              </span>
-            </div>
+            <span className="font-black text-base text-[#E70013] tracking-tight">
+              SIKUJA <span className="font-bold text-[#E70013]/60 text-sm">2026</span>
+            </span>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation */}
           {visibleNavItems.length > 0 && (
-            <nav className="hidden md:flex items-center gap-1">
+            <nav className="hidden md:flex items-center gap-0.5">
               {visibleNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname.startsWith(item.href);
@@ -110,10 +97,10 @@ export default function Navbar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3 py-2 rounded-xl text-sm font-black flex items-center gap-2 transition-all ${
+                    className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#E70013] text-white shadow-md'
-                        : 'text-[#E70013] hover:bg-[#E70013] hover:text-white'
+                        ? 'bg-[#E70013] text-white'
+                        : 'text-[#E70013]/70 hover:text-[#E70013] hover:bg-[#E70013]/8'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -124,55 +111,61 @@ export default function Navbar() {
             </nav>
           )}
 
-          {/* Right Status Controls */}
-          <div className="flex items-center gap-2">
-            {/* Online / Offline status */}
-            <div
-              title={isOnline ? 'Terhubung ke server' : 'Mode Offline Queue Aktif'}
-              className="px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 border-2 border-[#E70013] bg-white text-[#E70013]"
+          {/* Right Controls */}
+          <div className="flex items-center gap-1.5">
+            {/* Online Status */}
+            <span
+              title={isOnline ? 'Terhubung ke server' : 'Mode Offline Aktif'}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#E70013]/70 rounded-lg hover:bg-[#E70013]/8 transition-colors"
             >
-              {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline Mode'}</span>
-            </div>
+              {isOnline
+                ? <Wifi className="w-3.5 h-3.5 text-[#E70013]" />
+                : <WifiOff className="w-3.5 h-3.5 text-[#E70013]" />
+              }
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
 
-            {/* Sound Toggle Button */}
+            {/* Sound Toggle */}
             <button
               onClick={toggleSound}
-              title={isMuted ? 'Aktifkan Suara Effect' : 'Mute Suara Effect'}
-              className="p-2 rounded-xl bg-[#E70013] text-white hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow"
+              title={isMuted ? 'Aktifkan Suara' : 'Mute Suara'}
+              className="p-2 rounded-lg text-[#E70013]/70 hover:text-[#E70013] hover:bg-[#E70013]/8 transition-colors cursor-pointer"
             >
               {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
             </button>
 
-            {/* Session Info / Login */}
+            {/* Divider */}
+            <div className="w-px h-5 bg-[#E70013]/20 mx-1" />
+
+            {/* Session / Login */}
             {session ? (
-              <div className="flex items-center gap-2 pl-2 border-l-2 border-[#E70013]">
-                <span className="px-2.5 py-1 rounded-lg bg-[#E70013] text-white text-xs font-black capitalize hidden sm:inline shadow">
+              <div className="flex items-center gap-1.5">
+                <span className="hidden sm:block text-sm font-semibold text-[#E70013] capitalize px-2">
                   {session.name}
                 </span>
                 <button
                   onClick={handleLogout}
-                  title="Keluar Session"
-                  className="p-2 rounded-xl bg-white border-2 border-[#E70013] text-[#E70013] hover:bg-[#E70013] hover:text-white transition-all flex items-center gap-1 text-xs font-black cursor-pointer active:scale-95 shadow-sm"
+                  title="Keluar"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold text-white bg-[#E70013] hover:bg-[#E70013]/90 transition-colors cursor-pointer active:scale-95"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Keluar</span>
                 </button>
               </div>
             ) : (
               <Link
                 href="/login"
-                className="px-4 py-2 rounded-xl bg-[#E70013] text-white text-xs font-black hover:bg-[#E70013]/90 shadow-md transition-all active:scale-95"
+                className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white bg-[#E70013] hover:bg-[#E70013]/90 transition-colors active:scale-95"
               >
-                Login PIN
+                Masuk
               </Link>
             )}
           </div>
         </div>
 
-        {/* Mobile Navigation Row */}
+        {/* Mobile Bottom Nav */}
         {visibleNavItems.length > 0 && (
-          <div className="md:hidden flex items-center justify-around border-t-2 border-[#E70013] py-2 text-xs font-black">
+          <div className="md:hidden flex items-center border-t border-[#E70013]/15 py-1">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname.startsWith(item.href);
@@ -180,14 +173,19 @@ export default function Navbar() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex flex-col items-center gap-1 p-1.5 rounded-lg ${
+                  className={`flex-1 flex flex-col items-center gap-1 py-1.5 rounded-lg transition-all ${
                     isActive
-                      ? 'bg-[#E70013] text-white'
-                      : 'text-[#E70013]'
+                      ? 'text-[#E70013]'
+                      : 'text-[#E70013]/40 hover:text-[#E70013]/70'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  {item.label}
+                  <Icon className={`w-4 h-4 ${isActive ? 'stroke-[2.5px]' : ''}`} />
+                  <span className={`text-[10px] ${isActive ? 'font-black' : 'font-medium'}`}>
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <span className="w-4 h-0.5 bg-[#E70013] rounded-full" />
+                  )}
                 </Link>
               );
             })}
