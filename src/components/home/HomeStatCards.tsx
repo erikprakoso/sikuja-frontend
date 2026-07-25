@@ -20,42 +20,51 @@ export const HomeStatCards: React.FC<HomeStatCardsProps> = ({
 }) => {
   return (
     <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
+      {/* 1. Total Penerbitan */}
+      <div className="bg-white border-4 border-[#E70013] rounded-2xl p-5 shadow-md relative overflow-hidden group transition-all">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Penerbitan</span>
-          <Ticket className="w-5 h-5 text-red-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-black text-[#E70013] uppercase tracking-wider">Total Penerbitan</span>
+          <div className="p-2 rounded-xl bg-[#E70013] text-white group-hover:scale-110 transition-transform">
+            <Ticket className="w-4 h-4" />
+          </div>
         </div>
-        <p className="text-3xl font-black text-white mt-2">
-          {totalTerjual} <span className="text-xs font-normal text-slate-400">Lembar</span>
+        <p className="text-3xl font-black text-[#E70013] mt-2">
+          {totalTerjual} <span className="text-xs font-bold text-[#E70013]">Lembar</span>
         </p>
-        <div className="mt-2 text-[11px] text-slate-400 flex items-center gap-2">
-          <span className="text-red-400 font-semibold">{totalFisik} Kupon Fisik</span> • 
-          <span className="text-cyan-400 font-semibold">{totalNonFisik} E-Voucher</span>
+        <div className="mt-2 text-[11px] text-[#E70013] flex items-center gap-2 font-black">
+          <span className="bg-[#E70013] text-white px-2 py-0.5 rounded-md">{totalFisik} Kupon Fisik</span> • 
+          <span className="border border-[#E70013] px-2 py-0.5 rounded-md">{totalNonFisik} E-Voucher</span>
         </div>
       </div>
 
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
+      {/* 2. Kehadiran Peserta */}
+      <div className="bg-white border-4 border-[#E70013] rounded-2xl p-5 shadow-md relative overflow-hidden group transition-all">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kehadiran Peserta</span>
-          <QrCode className="w-5 h-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-black text-[#E70013] uppercase tracking-wider">Kehadiran Peserta</span>
+          <div className="p-2 rounded-xl bg-[#E70013] text-white group-hover:scale-110 transition-transform">
+            <QrCode className="w-4 h-4" />
+          </div>
         </div>
-        <p className="text-3xl font-black text-emerald-400 mt-2">
-          {totalCheckin} <span className="text-xs font-normal text-slate-400">Kupon</span>
+        <p className="text-3xl font-black text-[#E70013] mt-2">
+          {totalCheckin} <span className="text-xs font-bold text-[#E70013]">Kupon</span>
         </p>
-        <p className="mt-2 text-[11px] text-slate-400 font-medium">
+        <p className="mt-2 text-[11px] text-[#E70013] font-bold">
           Terverifikasi masuk ke sistem undian
         </p>
       </div>
 
-      <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
+      {/* 3. Kupon Terundi */}
+      <div className="bg-white border-4 border-[#E70013] rounded-2xl p-5 shadow-md relative overflow-hidden group transition-all">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Kupon Terundi</span>
-          <Trophy className="w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform" />
+          <span className="text-xs font-black text-[#E70013] uppercase tracking-wider">Kupon Terundi</span>
+          <div className="p-2 rounded-xl bg-[#E70013] text-white group-hover:scale-110 transition-transform">
+            <Trophy className="w-4 h-4" />
+          </div>
         </div>
-        <p className="text-3xl font-black text-amber-400 mt-2">
-          {winnersCount} <span className="text-xs font-normal text-slate-400">Kupon</span>
+        <p className="text-3xl font-black text-[#E70013] mt-2">
+          {winnersCount} <span className="text-xs font-bold text-[#E70013]">Kupon</span>
         </p>
-        <p className="mt-2 text-[11px] text-slate-400 font-medium">
+        <p className="mt-2 text-[11px] text-[#E70013] font-bold">
           {claimedCount} Hadiah telah diserahkan
         </p>
       </div>

@@ -70,7 +70,7 @@ export default function LoginPage() {
       <LoginHeader />
 
       {/* PIN Dots & Keypad Box */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+      <div className="bg-white border-4 border-[#E70013] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
         <PinDotsIndicator pinLength={pin.length} error={error} />
         <PinKeypad
           onKeyPress={handleKeyPress}

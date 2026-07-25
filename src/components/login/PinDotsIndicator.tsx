@@ -13,17 +13,17 @@ export const PinDotsIndicator: React.FC<PinDotsIndicatorProps> = ({ pinLength, e
         {[0, 1, 2, 3].map((idx) => (
           <div
             key={idx}
-            className={`w-5 h-5 rounded-full border-2 transition-all ${
+            className={`w-5 h-5 rounded-full border-2 border-[#E70013] transition-all ${
               pinLength > idx
-                ? 'bg-red-500 border-red-400 scale-110 shadow-md shadow-red-500/50'
-                : 'bg-slate-950 border-slate-700'
+                ? 'bg-[#E70013] scale-110 shadow-md'
+                : 'bg-white'
             }`}
           />
         ))}
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-950/80 border border-red-800 text-red-300 text-xs font-semibold flex items-center justify-center gap-2 animate-shake">
+        <div className="p-3 rounded-xl bg-[#E70013] text-white text-xs font-black flex items-center justify-center gap-2 animate-shake shadow">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>

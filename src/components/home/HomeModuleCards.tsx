@@ -19,10 +19,6 @@ interface ModuleCardItem {
   roles: string[];
   pinText: string;
   icon: LucideIcon;
-  borderColor: string;
-  shadowColor: string;
-  iconBg: string;
-  textColor: string;
 }
 
 export const MODULE_CARDS: ModuleCardItem[] = [
@@ -33,10 +29,6 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     roles: ['penjual', 'admin'],
     pinText: 'Akses Kasir',
     icon: Ticket,
-    borderColor: 'hover:border-red-600/60',
-    shadowColor: 'hover:shadow-red-950/40',
-    iconBg: 'bg-red-950 border-red-800/80 text-red-400',
-    textColor: 'text-red-400',
   },
   {
     href: '/checkin',
@@ -45,10 +37,6 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     roles: ['pos', 'admin'],
     pinText: 'Akses Petugas Pos',
     icon: QrCode,
-    borderColor: 'hover:border-emerald-600/60',
-    shadowColor: 'hover:shadow-emerald-950/40',
-    iconBg: 'bg-emerald-950 border-emerald-800/80 text-emerald-400',
-    textColor: 'text-emerald-400',
   },
   {
     href: '/undian',
@@ -57,10 +45,6 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     roles: ['mc', 'admin'],
     pinText: 'Akses Operator Panggung',
     icon: Trophy,
-    borderColor: 'hover:border-amber-500/60',
-    shadowColor: 'hover:shadow-amber-950/40',
-    iconBg: 'bg-amber-950 border-amber-800/80 text-amber-400',
-    textColor: 'text-amber-400',
   },
   {
     href: '/verifikasi',
@@ -69,10 +53,6 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     roles: ['verifikator', 'admin'],
     pinText: 'Akses Petugas Verifikasi',
     icon: CheckCircle2,
-    borderColor: 'hover:border-cyan-500/60',
-    shadowColor: 'hover:shadow-cyan-950/40',
-    iconBg: 'bg-cyan-950 border-cyan-800/80 text-cyan-400',
-    textColor: 'text-cyan-400',
   },
   {
     href: '/admin',
@@ -81,10 +61,6 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     roles: ['admin'],
     pinText: 'Akses Administrator',
     icon: ShieldCheck,
-    borderColor: 'hover:border-purple-500/60',
-    shadowColor: 'hover:shadow-purple-950/40',
-    iconBg: 'bg-purple-950 border-purple-800/80 text-purple-400',
-    textColor: 'text-purple-400',
   },
 ];
 
@@ -100,11 +76,11 @@ export const HomeModuleCards: React.FC<HomeModuleCardsProps> = ({ session }) => 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-black text-white flex items-center gap-2">
-          <Users className="w-5 h-5 text-red-500" />
+        <h2 className="text-xl font-black text-[#E70013] flex items-center gap-2">
+          <Users className="w-5 h-5 text-[#E70013]" />
           Menu Operasional Petugas ({session.name})
         </h2>
-        <span className="text-xs text-slate-400">Peran Akses: {session.role.toUpperCase()}</span>
+        <span className="text-xs text-[#E70013] font-bold">Peran Akses: {session.role.toUpperCase()}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -114,20 +90,20 @@ export const HomeModuleCards: React.FC<HomeModuleCardsProps> = ({ session }) => 
             <Link
               key={card.href}
               href={card.href}
-              className={`group relative bg-slate-900/80 border border-slate-800 ${card.borderColor} rounded-2xl p-5 transition-all hover:shadow-xl ${card.shadowColor} cursor-pointer active:scale-[0.98] flex flex-col justify-between`}
+              className="group relative bg-white border-4 border-[#E70013] hover:bg-[#E70013] rounded-2xl p-5 transition-all shadow-md cursor-pointer active:scale-[0.98] flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                <div className="w-10 h-10 rounded-xl bg-[#E70013] text-white group-hover:bg-white group-hover:text-[#E70013] flex items-center justify-center transition-colors shadow-md">
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-base font-bold text-white group-hover:text-red-400 transition-colors">
+                <h3 className="text-base font-black text-[#E70013] group-hover:text-white transition-colors">
                   {card.title}
                 </h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs text-[#E70013] group-hover:text-white leading-relaxed font-semibold transition-colors">
                   {card.desc}
                 </p>
               </div>
-              <div className={`mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-semibold ${card.textColor}`}>
+              <div className="mt-4 pt-3 border-t-2 border-[#E70013] group-hover:border-white flex items-center justify-between text-xs font-black text-[#E70013] group-hover:text-white transition-colors">
                 <span>{card.pinText}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>

@@ -11,22 +11,22 @@ export const CheckinHeader: React.FC<CheckinHeaderProps> = ({
   totalVoucherCount,
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b-4 border-[#E70013]">
       <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950 border border-emerald-800 text-emerald-300 text-xs font-bold uppercase tracking-wider mb-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E70013] text-white text-xs font-black uppercase tracking-wider mb-2">
           <QrCode className="w-3.5 h-3.5" />
           Pos Validasi Check-In
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Pemindaian & Validasi Kupon</h1>
-        <p className="text-xs text-slate-400">
+        <h1 className="text-2xl sm:text-3xl font-black text-[#E70013]">Pemindaian & Validasi Kupon</h1>
+        <p className="text-xs text-[#E70013] font-bold">
           Pindai QR Code E-Voucher atau masukkan 5-digit kode kupon fisik untuk konfirmasi kehadiran.
         </p>
       </div>
 
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3 text-center sm:text-right">
-        <span className="text-[10px] text-slate-400 font-bold uppercase">Total Terverifikasi</span>
-        <p className="text-xl font-black text-emerald-400 font-mono">
-          {totalCheckinCount} <span className="text-xs font-normal text-slate-400">/ {totalVoucherCount}</span>
+      <div className="bg-white border-4 border-[#E70013] rounded-2xl p-3 text-center sm:text-right shadow-sm">
+        <span className="text-[10px] text-[#E70013] font-black uppercase">Total Terverifikasi</span>
+        <p className="text-xl font-black text-[#E70013] font-mono">
+          {totalCheckinCount} <span className="text-xs font-bold text-[#E70013]">/ {totalVoucherCount}</span>
         </p>
       </div>
     </div>

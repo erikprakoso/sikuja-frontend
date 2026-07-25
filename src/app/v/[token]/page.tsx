@@ -40,7 +40,6 @@ export default function ParticipantEVoucherPage({ params }: Props) {
       console.error('Fetch e-voucher API error:', err);
     }
 
-    // Fallback local storage lookup if server API is unreachable or empty
     const allTxs = getStoredTransactions();
     const tx = allTxs.find((t) => t.token === token || t.id === token);
     setTransaction(tx || null);
@@ -66,12 +65,11 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     };
   }, [token]);
 
-  // Generate 1 Main Transaction QR Code
   useEffect(() => {
     if (transaction) {
       const baseUrl = getAppBaseUrl();
       const fullUrl = `${baseUrl}/v/${transaction.token}`;
-      QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+      QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#E70013', light: '#ffffff' } })
         .then((url) => setTxQrDataUrl(url))
         .catch((err) => console.error('TX QR Gen error:', err));
     }
@@ -93,19 +91,18 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     }
   };
 
-  // 1. Show Loading State while checking API & Storage
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto py-20 text-center space-y-4 animate-fade-in">
-        <div className="w-16 h-16 mx-auto rounded-full bg-slate-900 border border-slate-800 text-cyan-400 flex items-center justify-center shadow-xl">
+        <div className="w-16 h-16 mx-auto rounded-full bg-[#E70013] text-white flex items-center justify-center shadow-xl">
           <Loader2 className="w-8 h-8 animate-spin" />
         </div>
         <div className="space-y-1">
-          <h2 className="text-lg font-extrabold text-white flex items-center justify-center gap-2">
-            <Ticket className="w-5 h-5 text-red-500" />
+          <h2 className="text-lg font-black text-[#E70013] flex items-center justify-center gap-2">
+            <Ticket className="w-5 h-5 text-[#E70013]" />
             Memuat Data E-Voucher...
           </h2>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs font-bold text-[#E70013]">
             Mengambil data transaksi dan status kupon Anda.
           </p>
         </div>
@@ -113,7 +110,6 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     );
   }
 
-  // 2. Show Not Found state ONLY after loading is finished and transaction is verified null
   if (!transaction) {
     return <EVoucherNotFound token={token} />;
   }
@@ -122,7 +118,6 @@ export default function ParticipantEVoucherPage({ params }: Props) {
 
   return (
     <div className="max-w-xl mx-auto space-y-6 py-4 animate-fade-in">
-      {/* Header Banner with 1 Main Transaction QR Code */}
       <EVoucherHeader
         totalVouchers={vouchers.length}
         checkinCount={checkinCount}
@@ -131,10 +126,8 @@ export default function ParticipantEVoucherPage({ params }: Props) {
         onShare={handleShare}
       />
 
-      {/* POS Check-in instruction banner */}
       <EVoucherCheckinNotice totalVouchers={vouchers.length} checkinCount={checkinCount} />
 
-      {/* Vouchers List */}
       <EVoucherCardList vouchers={vouchers} />
     </div>
   );

@@ -15,13 +15,12 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
   isRolling,
   onSelectPrize,
 }) => {
-  // Hide prizes that are fully drawn (stok habis)
   const availablePrizes = prizes.filter((p) => p.drawn_count < p.stock);
 
   if (availablePrizes.length === 0) {
     return (
-      <div className="p-4 rounded-2xl bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-center font-bold flex items-center justify-center gap-2">
-        <CheckCircle className="w-5 h-5 text-emerald-400" />
+      <div className="p-4 rounded-2xl bg-[#E70013] text-white text-center font-black flex items-center justify-center gap-2 border-2 border-[#E70013]">
+        <CheckCircle className="w-5 h-5 text-white" />
         Seluruh Pengundian Hadiah telah Selesai 🏆
       </div>
     );
@@ -29,8 +28,8 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-        <Star className="w-4 h-4 text-amber-400" />
+      <label className="text-xs font-black uppercase tracking-wider text-[#E70013] flex items-center gap-1.5">
+        <Star className="w-4 h-4 text-[#E70013]" />
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -41,15 +40,17 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               key={p.id}
               disabled={isRolling}
               onClick={() => onSelectPrize(p.id)}
-              className={`p-3 rounded-2xl text-left border transition-all relative overflow-hidden cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
+              className={`p-3 rounded-2xl text-left border-2 transition-all relative overflow-hidden cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
                 isSelected
-                  ? 'bg-amber-950/80 border-amber-500 text-white shadow-lg shadow-amber-950/60 scale-105 ring-2 ring-amber-400/40'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
+                  ? 'bg-[#E70013] border-[#E70013] text-white shadow-lg font-black'
+                  : 'bg-white border-[#E70013] text-[#E70013] hover:bg-[#E70013]/10 font-bold'
               }`}
             >
               <div className="flex justify-between items-start">
-                <span className="text-[10px] uppercase font-bold text-amber-400">Kategori #{p.order_num}</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300 border border-slate-800">
+                <span className={`text-[10px] uppercase font-black ${isSelected ? 'text-white' : 'text-[#E70013]'}`}>
+                  Kategori #{p.order_num}
+                </span>
+                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${isSelected ? 'bg-white text-[#E70013] border-white' : 'bg-[#E70013] text-white border-[#E70013]'}`}>
                   {p.drawn_count}/{p.stock}
                 </span>
               </div>

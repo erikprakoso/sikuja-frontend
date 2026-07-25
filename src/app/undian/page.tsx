@@ -37,10 +37,8 @@ export default function LayarUndianPage() {
     const availablePrizes = p.filter((item) => item.drawn_count < item.stock);
 
     setSelectedPrizeId((prevId) => {
-      // Preserve current selection if it still has stock available
       const isStillAvailable = availablePrizes.some((item) => item.id === prevId);
       if (isStillAvailable) return prevId;
-      // Otherwise, select first available prize
       return availablePrizes.length > 0 ? availablePrizes[0].id : '';
     });
 
@@ -67,18 +65,17 @@ export default function LayarUndianPage() {
       angle: 60,
       spread: 60,
       origin: { x: 0, y: 0.7 },
-      colors: ['#ef4444', '#f59e0b', '#ffffff', '#10b981'],
+      colors: ['#E70013', '#ffffff'],
     });
     confetti({
       particleCount: 50,
       angle: 120,
       spread: 60,
       origin: { x: 1, y: 0.7 },
-      colors: ['#ef4444', '#f59e0b', '#ffffff', '#10b981'],
+      colors: ['#E70013', '#ffffff'],
     });
   };
 
-  // 1. Draw candidate code (random CSPRNG, status checkin unchanged)
   const handleStartDraw = async () => {
     if (isRolling || !selectedPrizeId) return;
     setIsRolling(true);
@@ -104,7 +101,6 @@ export default function LayarUndianPage() {
 
       soundManager.startDrumroll();
 
-      // Fast digit shuffling visual effect (3 seconds)
       rollIntervalRef.current = window.setInterval(() => {
         const random5Digit = Math.floor(Math.random() * 100000)
           .toString()
@@ -112,7 +108,6 @@ export default function LayarUndianPage() {
         setDisplayDigits(random5Digit);
       }, 80);
 
-      // Reveal candidate code
       setTimeout(() => {
         if (rollIntervalRef.current !== null) {
           clearInterval(rollIntervalRef.current);
@@ -132,7 +127,6 @@ export default function LayarUndianPage() {
     }
   };
 
-  // 2. Confirm candidate as official winner when person comes on stage
   const handleConfirmWinner = async () => {
     if (!candidateVoucher || !selectedPrizeId || isConfirming) return;
     setIsConfirming(true);
@@ -155,7 +149,6 @@ export default function LayarUndianPage() {
       setIsConfirmedWinner(true);
       setIsConfirming(false);
 
-      // Play victory fanfare & confetti
       soundManager.playVictoryFanfare();
       triggerConfetti();
       await loadData();
@@ -166,7 +159,6 @@ export default function LayarUndianPage() {
     }
   };
 
-  // 3. Candidate absent -> forfeit & redraw immediately for the same prize
   const handleForfeitAndRedraw = () => {
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
@@ -204,13 +196,11 @@ export default function LayarUndianPage() {
       />
 
       {/* BIG STAGE SCREEN (PROYEKTOR MODE) */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900 via-slate-950 to-red-950 border-4 border-amber-500/40 p-8 sm:p-14 text-center space-y-8 shadow-2xl shadow-red-950/80">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-white border-4 border-[#E70013] p-8 sm:p-14 text-center space-y-8 shadow-2xl">
         {/* Selected Prize Badge */}
         {currentPrize && (
-          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-amber-500/20 border border-amber-400/50 text-amber-300 text-sm font-black uppercase tracking-widest shadow-lg">
-            <Trophy className="w-5 h-5 text-amber-400 animate-bounce" />
+          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
+            <Trophy className="w-5 h-5 text-white animate-bounce" />
             Kategori Hadiah: {currentPrize.name}
           </div>
         )}
@@ -231,8 +221,8 @@ export default function LayarUndianPage() {
         )}
 
         {errorMsg && (
-          <div className="p-4 rounded-2xl bg-red-950/80 border border-red-800 text-red-200 text-sm font-bold inline-flex items-center gap-2 max-w-md">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 max-w-md shadow-md">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 text-white" />
             {errorMsg}
           </div>
         )}

@@ -90,13 +90,13 @@ export default function PenjualanPage() {
       {/* Screen Interactive UI (Hidden during print) */}
       <div className="no-print space-y-8">
         {/* Header Title */}
-        <div className="pb-4 border-b border-slate-800">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950 border border-red-800 text-red-300 text-xs font-bold uppercase tracking-wider mb-2">
+        <div className="pb-4 border-b-4 border-[#E70013]">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E70013] text-white text-xs font-black uppercase tracking-wider mb-2">
             <ShoppingBag className="w-3.5 h-3.5" />
             Kasir Penjualan Voucher
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Transaksi Penjualan Voucher</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-2xl sm:text-3xl font-black text-[#E70013]">Transaksi Penjualan Voucher</h1>
+          <p className="text-xs text-[#E70013] font-bold">
             Layanan penerbitan kupon fisik dan e-voucher digital peserta Jalan Sehat.
           </p>
         </div>

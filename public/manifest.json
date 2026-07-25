@@ -4,8 +4,8 @@
   "description": "Sistem Kupon & Undian Jalan Sehat Agustusan",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#dc2626",
+  "background_color": "#ffffff",
+  "theme_color": "#E70013",
   "icons": [
     {
       "src": "/favicon.ico",

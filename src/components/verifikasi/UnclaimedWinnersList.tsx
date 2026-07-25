@@ -13,13 +13,13 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-        <Trophy className="w-4 h-4 text-amber-400" />
+      <h2 className="text-sm font-black uppercase tracking-wider text-[#E70013] flex items-center gap-2">
+        <Trophy className="w-4 h-4 text-[#E70013]" />
         Daftar Pemenang Menunggu Klaim ({unclaimedWinners.length})
       </h2>
 
       {unclaimedWinners.length === 0 ? (
-        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 text-center text-xs text-slate-500">
+        <div className="p-6 rounded-2xl bg-white border-2 border-[#E70013] text-center text-xs text-[#E70013] font-bold">
           Tidak ada daftar pemenang yang belum diklaim.
         </div>
       ) : (
@@ -27,23 +27,23 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
           {unclaimedWinners.map((res) => (
             <div
               key={res.id}
-              className="bg-slate-900 border border-amber-500/40 rounded-2xl p-5 shadow-lg flex items-center justify-between gap-4"
+              className="bg-white border-4 border-[#E70013] rounded-2xl p-5 shadow-lg flex items-center justify-between gap-4"
             >
               <div className="space-y-1">
-                <span className="text-[10px] font-extrabold uppercase text-amber-400">
+                <span className="text-[10px] font-black uppercase text-[#E70013]">
                   Kategori Hadiah: {res.prize_name}
                 </span>
-                <p className="text-2xl font-black text-white font-mono tracking-widest">
+                <p className="text-2xl font-black text-[#E70013] font-mono tracking-widest">
                   {res.voucher_code}
                 </p>
-                <p className="text-[10px] text-slate-400">
+                <p className="text-[10px] text-[#E70013] font-bold">
                   Waktu Undi: {new Date(res.drawn_at).toLocaleTimeString('id-ID')}
                 </p>
               </div>
 
               <button
                 onClick={() => onQuickClaim(res.voucher_code)}
-                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95"
+                className="px-3.5 py-2 rounded-xl bg-[#E70013] hover:bg-[#E70013]/90 text-white font-black text-xs shadow-md transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95 border-2 border-[#E70013]"
               >
                 <CheckCircle2 className="w-4 h-4" />
                 Proses Klaim

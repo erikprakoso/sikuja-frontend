@@ -29,7 +29,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
           <button
             onClick={onStartDraw}
             disabled={isRolling}
-            className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-gradient-to-r from-red-600 to-amber-500 text-white hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 disabled:cursor-not-allowed"
+            className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-[#E70013] text-white hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 border-2 border-[#E70013] disabled:cursor-not-allowed"
           >
             <Play className="w-5 h-5 fill-current" />
             Undi Hadiah Berikutnya
@@ -40,7 +40,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
             <button
               onClick={onConfirmWinner}
               disabled={isConfirming}
-              className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 ring-4 ring-emerald-400/30 disabled:cursor-not-allowed"
+              className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-[#E70013] text-white hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 border-2 border-[#E70013] disabled:cursor-not-allowed"
             >
               <CheckCircle className="w-5 h-5" />
               {isConfirming ? 'Mengonfirmasi...' : 'Konfirmasi Pemenang'}
@@ -49,9 +49,9 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
             <button
               onClick={onForfeitAndRedraw}
               disabled={isConfirming}
-              className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-red-950 border border-red-500 text-red-300 hover:bg-red-900 hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 disabled:cursor-not-allowed"
+              className="px-8 py-4 rounded-2xl text-base font-black tracking-wide shadow-xl bg-white border-2 border-[#E70013] text-[#E70013] hover:bg-[#E70013] hover:text-white hover:scale-105 active:scale-95 cursor-pointer transition-all flex items-center gap-2 disabled:cursor-not-allowed"
             >
-              <XCircle className="w-5 h-5 text-red-400" />
+              <XCircle className="w-5 h-5" />
               Gugurkan & Undi Ulang
             </button>
           </>
@@ -61,10 +61,10 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
         <button
           onClick={onStartDraw}
           disabled={isRolling}
-          className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-2xl transition-all flex items-center gap-3 ${
+          className={`px-10 py-5 rounded-2xl text-xl font-black tracking-wide shadow-xl transition-all flex items-center gap-3 border-2 border-[#E70013] ${
             isRolling
-              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-red-600 via-amber-500 to-red-600 hover:scale-105 active:scale-95 cursor-pointer text-slate-950 shadow-amber-500/40 ring-4 ring-amber-400/30'
+              ? 'bg-white text-[#E70013] opacity-50 cursor-not-allowed'
+              : 'bg-[#E70013] hover:scale-105 active:scale-95 cursor-pointer text-white shadow-lg'
           }`}
         >
           <Play className="w-6 h-6 fill-current" />

@@ -26,15 +26,15 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
   onDeletePrize,
 }) => {
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+    <div className="bg-white border-4 border-[#E70013] rounded-3xl p-6 space-y-4 shadow-xl">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-black text-white flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-400" />
+        <h2 className="text-lg font-black text-[#E70013] flex items-center gap-2">
+          <Trophy className="w-5 h-5 text-[#E70013]" />
           Manajemen Kategori Doorprize
         </h2>
         <button
           onClick={() => setShowAddPrize(!showAddPrize)}
-          className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95"
+          className="px-3.5 py-2 rounded-xl bg-[#E70013] text-white text-xs font-black flex items-center gap-1.5 shadow-md transition-all cursor-pointer active:scale-95 border-2 border-[#E70013]"
         >
           <Plus className="w-4 h-4" />
           Tambah Kategori Hadiah
@@ -44,14 +44,14 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
       {showAddPrize && (
         <form
           onSubmit={onAddPrize}
-          className="p-4 rounded-2xl bg-slate-950 border border-amber-500/40 flex flex-col sm:flex-row gap-3"
+          className="p-4 rounded-2xl bg-white border-2 border-[#E70013] flex flex-col sm:flex-row gap-3"
         >
           <input
             type="text"
             placeholder="Nama Hadiah (contoh: Sepeda Listrik)..."
             value={newPrizeName}
             onChange={(e) => setNewPrizeName(e.target.value)}
-            className="flex-1 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            className="flex-1 px-3.5 py-2 bg-white border-2 border-[#E70013] rounded-xl text-[#E70013] text-xs font-black placeholder-[#E70013]/50 focus:outline-none"
             required
           />
           <input
@@ -68,12 +68,12 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
                 setNewPrizeStock(isNaN(parsed) ? '' : parsed);
               }
             }}
-            className="w-28 px-3.5 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-xs placeholder-slate-500 focus:outline-none focus:border-amber-500"
+            className="w-28 px-3.5 py-2 bg-white border-2 border-[#E70013] rounded-xl text-[#E70013] text-xs font-black placeholder-[#E70013]/50 focus:outline-none"
             required
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-colors cursor-pointer active:scale-95"
+            className="px-4 py-2 bg-[#E70013] text-white rounded-xl text-xs font-black transition-all cursor-pointer active:scale-95 border-2 border-[#E70013]"
           >
             Simpan Kategori
           </button>
@@ -84,20 +84,20 @@ export const PrizeManagement: React.FC<PrizeManagementProps> = ({
         {prizes.map((p) => (
           <div
             key={p.id}
-            className="bg-slate-950 border border-slate-800 rounded-2xl p-4 flex items-center justify-between"
+            className="bg-white border-2 border-[#E70013] rounded-2xl p-4 flex items-center justify-between shadow-sm"
           >
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-slate-500">#{p.order_num}</span>
-                <span className="text-sm font-bold text-white">{p.name}</span>
+                <span className="text-xs font-mono font-black text-[#E70013]">#{p.order_num}</span>
+                <span className="text-sm font-black text-[#E70013]">{p.name}</span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Stok: <span className="font-mono font-bold text-amber-400">{p.stock} Unit</span>
+              <p className="text-xs font-bold text-[#E70013] mt-0.5">
+                Stok: <span className="font-mono font-black">{p.stock} Unit</span>
               </p>
             </div>
             <button
               onClick={() => onDeletePrize(p.id)}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-red-950 text-slate-500 hover:text-red-400 border border-slate-800 hover:border-red-800 transition-colors cursor-pointer active:scale-95"
+              className="p-2 rounded-xl bg-white hover:bg-[#E70013] text-[#E70013] hover:text-white border-2 border-[#E70013] transition-colors cursor-pointer active:scale-95"
               title="Hapus Kategori Doorprize"
             >
               <Trash2 className="w-4 h-4" />
