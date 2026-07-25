@@ -18,7 +18,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
       {/* Left Stage Side Flare Column */}
       <div className="hidden md:flex flex-col items-center justify-center gap-3 opacity-90">
         <div
-          className={`w-12 sm:w-16 h-36 sm:h-44 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
+          className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
             winnerVoucher
               ? 'bg-[#E70013] border-[#E70013] text-white shadow-xl animate-bounce'
               : isRolling
@@ -29,7 +29,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
           <Sparkles className={`w-7 h-7 ${isRolling ? 'animate-spin' : 'animate-pulse'}`} />
           <Flame className="w-6 h-6 animate-bounce" />
           <span className="text-[10px] font-black uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
-            SIKUJA 2026
+            Jalan Sehat 2026
           </span>
         </div>
       </div>
@@ -80,7 +80,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
       {/* Right Stage Side Flare Column */}
       <div className="hidden md:flex flex-col items-center justify-center gap-3 opacity-90">
         <div
-          className={`w-12 sm:w-16 h-36 sm:h-44 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
+          className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
             winnerVoucher
               ? 'bg-[#E70013] border-[#E70013] text-white shadow-xl animate-bounce'
               : isRolling
@@ -91,7 +91,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
           <Sparkles className={`w-7 h-7 ${isRolling ? 'animate-spin' : 'animate-pulse'}`} />
           <Flame className="w-6 h-6 animate-bounce" />
           <span className="text-[10px] font-black uppercase tracking-widest [writing-mode:vertical-lr]">
-            SIVOJA 2026
+            Jalan Sehat 2026
           </span>
         </div>
       </div>

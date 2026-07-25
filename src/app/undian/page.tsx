@@ -206,7 +206,7 @@ export default function LayarUndianPage() {
       />
 
       {/* BIG STAGE SCREEN (PROYEKTOR MODE) */}
-      <div className="relative overflow-hidden rounded-3xl bg-white border-4 border-[#E70013] p-8 sm:p-14 text-center space-y-8 shadow-2xl">
+      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
         {/* Selected Prize Badge */}
         {currentPrize && (
           <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
