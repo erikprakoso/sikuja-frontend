@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   title: 'SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan',
   description: 'Aplikasi Digital Penjualan Kupon, Check-in Pos, dan Pengocokan Undian Agustusan Transparan & Realtime.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo-ri.png',
+    shortcut: '/logo-ri.png',
+    apple: '/logo-ri.png',
+  },
 };
 
 export const viewport = {
