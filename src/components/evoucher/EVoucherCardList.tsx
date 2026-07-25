@@ -10,24 +10,24 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-[#E70013]/80 flex items-center gap-1.5">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <Ticket className="w-4 h-4 text-[#E70013]" />
           Daftar Kupon Peserta ({vouchers.length})
         </h2>
-        <span className="text-[11px] text-[#E70013]/60 font-semibold">Kartu Kupon</span>
+        <span className="text-[11px] text-slate-500 font-medium">Kartu Kupon</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {vouchers.map((v, idx) => {
-          let cardBg = 'bg-white border border-[#E70013]/20';
-          let badgeBg = 'bg-white text-[#E70013] border border-[#E70013]/30';
+          let cardBg = 'bg-white border border-slate-200';
+          let badgeBg = 'bg-slate-100 text-slate-700 border border-slate-300';
           let statusText = 'Belum Terverifikasi';
           let StatusIcon = Ticket;
-          let codeColor = 'text-[#E70013]';
+          let codeColor = 'text-slate-900';
 
           if (v.status === 'checkin') {
-            cardBg = 'bg-[#E70013] border border-[#E70013] text-white';
-            badgeBg = 'bg-white text-[#E70013]';
+            cardBg = 'bg-emerald-900 border border-emerald-900 text-white';
+            badgeBg = 'bg-white text-emerald-900';
             statusText = '✓ Terverifikasi';
             StatusIcon = CheckCircle;
             codeColor = 'text-white';
@@ -38,8 +38,8 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
             StatusIcon = Trophy;
             codeColor = 'text-white';
           } else if (v.status === 'diklaim') {
-            cardBg = 'bg-[#E70013] border border-[#E70013] text-white';
-            badgeBg = 'bg-white text-[#E70013]';
+            cardBg = 'bg-purple-900 border border-purple-900 text-white';
+            badgeBg = 'bg-white text-purple-900';
             statusText = '✓ Hadiah Diserahkan';
             StatusIcon = Award;
             codeColor = 'text-white';
@@ -52,15 +52,15 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
             >
               {/* Top Row: Coupon Index & Icon */}
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className={`font-mono px-2 py-0.5 rounded-md text-[11px] ${v.status === 'terbit' ? 'bg-[#E70013] text-white' : 'bg-white text-[#E70013]'}`}>
+                <span className={`font-mono px-2 py-0.5 rounded-md text-[11px] ${v.status === 'terbit' ? 'bg-slate-100 text-slate-800 border border-slate-200' : 'bg-white text-slate-900'}`}>
                   #{idx + 1}
                 </span>
-                <StatusIcon className={`w-4 h-4 ${v.status === 'terbit' ? 'text-[#E70013]' : 'text-white'}`} />
+                <StatusIcon className={`w-4 h-4 ${v.status === 'terbit' ? 'text-slate-500' : 'text-white'}`} />
               </div>
 
               {/* Middle Section: Prominent 5-Digit Voucher Code */}
               <div className="my-auto py-1">
-                <span className={`text-[10px] uppercase font-bold tracking-wider block mb-0.5 ${v.status === 'terbit' ? 'text-[#E70013]/60' : 'text-white/80'}`}>
+                <span className={`text-[10px] uppercase font-bold tracking-wider block mb-0.5 ${v.status === 'terbit' ? 'text-slate-400' : 'text-white/80'}`}>
                   Kode Kupon
                 </span>
                 <div className={`text-2xl sm:text-3xl font-black font-mono tracking-wider ${codeColor}`}>

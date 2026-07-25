@@ -13,13 +13,13 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <h2 className="text-xs font-bold uppercase tracking-wider text-[#E70013]/80 flex items-center gap-2">
+      <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
         <Trophy className="w-4 h-4 text-[#E70013]" />
         Daftar Pemenang Menunggu Klaim ({unclaimedWinners.length})
       </h2>
 
       {unclaimedWinners.length === 0 ? (
-        <div className="p-6 rounded-2xl bg-[#E70013]/5 border border-[#E70013]/15 text-center text-xs text-[#E70013]/70 font-semibold">
+        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-200 text-center text-xs text-slate-500 font-semibold">
           Tidak ada daftar pemenang yang belum diklaim.
         </div>
       ) : (
@@ -27,16 +27,16 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
           {unclaimedWinners.map((res) => (
             <div
               key={res.id}
-              className="bg-white border border-[#E70013]/20 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4 hover:border-[#E70013]/40 transition-all"
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex items-center justify-between gap-4 hover:border-slate-300 transition-all"
             >
               <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase text-[#E70013]/70">
+                <span className="text-[10px] font-bold uppercase text-slate-500">
                   Hadiah: {res.prize_name}
                 </span>
-                <p className="text-2xl font-black text-[#E70013] font-mono tracking-widest">
+                <p className="text-2xl font-black text-slate-900 font-mono tracking-widest">
                   {res.voucher_code}
                 </p>
-                <p className="text-[10px] text-[#E70013]/60 font-semibold">
+                <p className="text-[10px] text-slate-400 font-semibold">
                   Waktu Undi: {new Date(res.drawn_at).toLocaleTimeString('id-ID')}
                 </p>
               </div>

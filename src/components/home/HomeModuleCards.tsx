@@ -76,11 +76,11 @@ export const HomeModuleCards: React.FC<HomeModuleCardsProps> = ({ session }) => 
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-black text-[#E70013] flex items-center gap-2">
+        <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
           <Users className="w-5 h-5 text-[#E70013]" />
           Menu Operasional Petugas ({session.name})
         </h2>
-        <span className="text-xs text-[#E70013]/70 font-semibold">Peran Akses: {session.role.toUpperCase()}</span>
+        <span className="text-xs text-slate-500 font-semibold">Peran Akses: {session.role.toUpperCase()}</span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -90,20 +90,20 @@ export const HomeModuleCards: React.FC<HomeModuleCardsProps> = ({ session }) => 
             <Link
               key={card.href}
               href={card.href}
-              className="group relative bg-white border border-[#E70013]/20 hover:border-[#E70013] hover:bg-[#E70013] rounded-2xl p-5 transition-all shadow-xs cursor-pointer active:scale-[0.98] flex flex-col justify-between"
+              className="group relative bg-white border border-slate-200 hover:border-[#E70013] hover:bg-[#E70013] rounded-2xl p-5 transition-all shadow-xs cursor-pointer active:scale-[0.98] flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="w-10 h-10 rounded-xl bg-[#E70013] text-white group-hover:bg-white group-hover:text-[#E70013] flex items-center justify-center transition-colors shadow-xs">
                   <Icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-base font-black text-[#E70013] group-hover:text-white transition-colors">
+                <h3 className="text-base font-black text-slate-900 group-hover:text-white transition-colors">
                   {card.title}
                 </h3>
-                <p className="text-xs text-[#E70013]/70 group-hover:text-white/90 leading-relaxed font-semibold transition-colors">
+                <p className="text-xs text-slate-600 group-hover:text-white/90 leading-relaxed font-medium transition-colors">
                   {card.desc}
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-[#E70013]/15 group-hover:border-white/30 flex items-center justify-between text-xs font-bold text-[#E70013] group-hover:text-white transition-colors">
+              <div className="mt-4 pt-3 border-t border-slate-200 group-hover:border-white/30 flex items-center justify-between text-xs font-bold text-slate-900 group-hover:text-white transition-colors">
                 <span>{card.pinText}</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </div>

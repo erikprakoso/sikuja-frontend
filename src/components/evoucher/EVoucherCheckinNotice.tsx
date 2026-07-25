@@ -14,11 +14,11 @@ export const EVoucherCheckinNotice: React.FC<EVoucherCheckinNoticeProps> = ({
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-[#E70013]/5 border border-[#E70013]/15 text-[#E70013] text-xs space-y-1 font-semibold shadow-xs">
-      <p className="font-bold flex items-center gap-1.5">
+    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs space-y-1 font-medium shadow-xs">
+      <p className="font-bold flex items-center gap-1.5 text-slate-900">
         📍 Petunjuk Verifikasi Peserta:
       </p>
-      <p className="text-[11px] text-[#E70013]/80 font-medium leading-relaxed">
+      <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
         Tunjukkan halaman ini kepada petugas di pos pemeriksaan untuk verifikasi {totalVouchers} kupon milik Anda.
       </p>
     </div>

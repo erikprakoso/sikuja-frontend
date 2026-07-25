@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { ShoppingBag, Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 import { checkCodeAvailable } from '@/lib/services/voucher';
 
@@ -113,11 +113,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     <form onSubmit={handleSubmitForm} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left Input Options */}
       <div className="space-y-6 bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <h2 className="text-lg font-black text-[#E70013]">1. Pilih Jenis & Jumlah Voucher</h2>
+        <h2 className="text-lg font-black text-slate-900">1. Pilih Jenis & Jumlah Voucher</h2>
 
         {/* 1. Select Voucher Type */}
         <div className="space-y-2">
-          <label className="text-xs font-semibold text-[#E70013]/70">Jenis Voucher:</label>
+          <label className="text-xs font-semibold text-slate-600">Jenis Voucher:</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -126,7 +126,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`p-4 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeType === 'fisik'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-md font-bold'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:border-[#E70013]/50 font-medium'
+                  : 'bg-white border-slate-200 text-slate-800 hover:border-[#E70013]/40 font-medium'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -144,7 +144,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`p-4 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed ${
                 activeType === 'non_fisik'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-md font-bold'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:border-[#E70013]/50 font-medium'
+                  : 'bg-white border-slate-200 text-slate-800 hover:border-[#E70013]/40 font-medium'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -158,13 +158,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         </div>
 
         {/* 2. Quantity Counter */}
-        <div className="p-5 rounded-2xl bg-[#E70013]/5 border border-[#E70013]/15 space-y-4">
+        <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-bold text-[#E70013]">
+              <h3 className="text-sm font-bold text-slate-900">
                 Jumlah {activeType === 'fisik' ? 'Voucher Fisik' : 'E-Voucher Digital'}
               </h3>
-              <p className="text-[11px] font-semibold text-[#E70013]/60">Harga: Rp5.000 / lembar</p>
+              <p className="text-[11px] font-semibold text-slate-500">Harga: Rp5.000 / lembar</p>
             </div>
             <span className="text-sm font-mono font-black text-[#E70013]">
               Rp {(currentQty * 5000).toLocaleString('id-ID')}
@@ -180,7 +180,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             >
               <Minus className="w-4 h-4" />
             </button>
-            <span className="text-3xl font-black font-mono px-4 text-[#E70013]">
+            <span className="text-3xl font-black font-mono px-4 text-slate-900">
               {currentQty}
             </span>
             <button
@@ -194,8 +194,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
 
           {/* Quick Batch Presets */}
-          <div className="flex items-center gap-1.5 pt-3 border-t border-[#E70013]/15">
-            <span className="text-[11px] text-[#E70013]/70 font-semibold mr-1">Preset:</span>
+          <div className="flex items-center gap-1.5 pt-3 border-t border-slate-200">
+            <span className="text-[11px] text-slate-500 font-semibold mr-1">Preset:</span>
             {[1, 2, 5, 10, 20].map((num) => (
               <button
                 key={num}
@@ -205,7 +205,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 className={`flex-1 py-1 rounded-lg text-xs font-bold transition-all text-center cursor-pointer active:scale-95 disabled:opacity-50 ${
                   currentQty === num
                     ? 'bg-[#E70013] text-white shadow-sm'
-                    : 'bg-white text-[#E70013] border border-[#E70013]/25 hover:bg-[#E70013]/10'
+                    : 'bg-white text-slate-700 border border-slate-200 hover:border-[#E70013]'
                 }`}
               >
                 {num}
@@ -215,8 +215,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         </div>
 
         {/* 3. Mode Penentuan Kode */}
-        <div className="space-y-3 p-5 rounded-2xl border border-[#E70013]/20 bg-white">
-          <label className="text-xs font-semibold text-[#E70013]/70 block">Penentuan Kode 5-Digit:</label>
+        <div className="space-y-3 p-5 rounded-2xl border border-slate-200 bg-white">
+          <label className="text-xs font-semibold text-slate-600 block">Penentuan Kode 5-Digit:</label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -225,7 +225,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
                 codeMode === 'auto'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-sm'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:bg-[#E70013]/5'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#E70013]/40'
               }`}
             >
               <Dices className="w-4 h-4" />
@@ -239,7 +239,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
                 codeMode === 'custom'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-sm'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:bg-[#E70013]/5'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-[#E70013]/40'
               }`}
             >
               <Hash className="w-4 h-4" />
@@ -250,7 +250,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Custom Codes Inputs Grid */}
           {codeMode === 'custom' && (
             <div className="pt-2 space-y-2">
-              <p className="text-[11px] text-[#E70013]/70 font-semibold leading-tight">
+              <p className="text-[11px] text-slate-500 font-medium leading-tight">
                 Ketik nomor pilihan pembeli (misal `77` -&gt; `00077`). Jika slot kosong, otomatis diisi acak.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
@@ -261,7 +261,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
                   return (
                     <div key={idx} className="relative flex items-center">
-                      <span className="absolute left-3 text-[10px] font-mono font-bold text-[#E70013]/60">
+                      <span className="absolute left-3 text-[10px] font-mono font-bold text-slate-400">
                         #{idx + 1}
                       </span>
                       <input
@@ -271,19 +271,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                         value={val}
                         onChange={(e) => handleCustomCodeInputChange(idx, e.target.value)}
                         disabled={isLoading}
-                        className={`w-full pl-9 pr-8 py-2 bg-white border rounded-xl font-mono text-xs text-[#E70013] font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/30 transition-all ${
+                        className={`w-full pl-9 pr-8 py-2 bg-white border rounded-xl font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 transition-all ${
                           isFilled
                             ? isAvailable
                               ? 'border-[#E70013] bg-white'
                               : 'border-[#E70013] bg-[#E70013] text-white'
-                            : 'border-[#E70013]/25'
+                            : 'border-slate-200'
                         }`}
                       />
                       {isFilled && (
                         <div className="absolute right-2.5">
                           {isAvailable ? (
                             <span title="🟢 Kode Tersedia">
-                              <CheckCircle className="w-4 h-4 text-[#E70013]" />
+                              <CheckCircle className="w-4 h-4 text-emerald-600" />
                             </span>
                           ) : (
                             <span title="🔴 Kode Sudah Terbit">
@@ -310,7 +310,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       {/* Right Payment & Action Box */}
       <div className="space-y-6 bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col justify-between">
         <div className="space-y-4">
-          <h2 className="text-lg font-black text-[#E70013]">2. Metode Pembayaran</h2>
+          <h2 className="text-lg font-black text-slate-900">2. Metode Pembayaran</h2>
 
           {/* Payment Method Selector */}
           <div className="grid grid-cols-2 gap-3">
@@ -321,7 +321,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`p-4 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-98 disabled:opacity-50 ${
                 paymentMethod === 'cash'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-md font-bold'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:border-[#E70013]/50 font-medium'
+                  : 'bg-white border-slate-200 text-slate-800 hover:border-[#E70013]/40 font-medium'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -339,7 +339,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`p-4 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-98 disabled:opacity-50 ${
                 paymentMethod === 'qris'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-md font-bold'
-                  : 'bg-white border-[#E70013]/20 text-[#E70013] hover:border-[#E70013]/50 font-medium'
+                  : 'bg-white border-slate-200 text-slate-800 hover:border-[#E70013]/40 font-medium'
               }`}
             >
               <div className="flex items-center justify-between">
@@ -353,47 +353,47 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
           {/* QRIS Code Display */}
           {paymentMethod === 'qris' && (
-            <div className="p-5 rounded-2xl bg-white border border-[#E70013]/20 text-center space-y-3 shadow-sm">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E70013] text-white text-xs font-bold uppercase tracking-wider">
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-3 shadow-xs">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold uppercase tracking-wider">
                 <QrCode className="w-3.5 h-3.5 text-white" />
-                QRIS Pembayaran
+                QRIS Pembayaran Standar
               </div>
 
               {qrisDataUrl ? (
                 <div className="py-1">
-                  <div className="p-3 bg-white rounded-2xl inline-block border-2 border-[#E70013] shadow-md">
+                  <div className="p-3 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
                     <img src={qrisDataUrl} alt="Kode QRIS Pembayaran" className="w-48 h-48 sm:w-52 sm:h-52 object-contain" />
                   </div>
-                  <p className="text-xs font-bold text-[#E70013] mt-2">
+                  <p className="text-xs font-bold text-slate-800 mt-2">
                     Total Tagihan: <span className="text-[#E70013] font-mono text-base font-black">Rp {totalHarga.toLocaleString('id-ID')}</span>
                   </p>
-                  <p className="text-[11px] text-[#E70013]/70 font-medium mt-0.5">
+                  <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                     Silakan lakukan pemindaian QRIS melalui m-Banking / E-Wallet.
                   </p>
                 </div>
               ) : (
-                <p className="text-xs text-[#E70013]/60 font-medium">Memuat Kode QRIS...</p>
+                <p className="text-xs text-slate-500 font-medium">Memuat Kode QRIS...</p>
               )}
             </div>
           )}
 
           {/* Summary Box */}
-          <div className="space-y-2 border-y border-[#E70013]/15 py-3 text-xs font-semibold text-[#E70013]">
+          <div className="space-y-2 border-y border-slate-200 py-3 text-xs font-semibold text-slate-700">
             <div className="flex justify-between">
-              <span className="text-[#E70013]/70">Jumlah Voucher:</span>
-              <span className="font-bold">
+              <span className="text-slate-500">Jumlah Voucher:</span>
+              <span className="font-bold text-slate-900">
                 {activeType === 'fisik' ? `Voucher Fisik (${qtyFisik} Lembar)` : `E-Voucher Digital (${qtyNonFisik} Lembar)`}
               </span>
             </div>
             <div className="flex justify-between pt-1">
-              <span className="text-[#E70013]/70">Mode Kode:</span>
-              <span className="font-bold uppercase">
+              <span className="text-slate-500">Mode Kode:</span>
+              <span className="font-bold text-slate-900 uppercase">
                 {codeMode === 'auto' ? 'Acak Otomatis' : 'Pilih Nomor Hoki'}
               </span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-[#E70013]/15 font-bold uppercase">
-              <span className="text-[#E70013]/70">Metode Pembayaran:</span>
-              <span>
+            <div className="flex justify-between pt-2 border-t border-slate-150 font-bold uppercase">
+              <span className="text-slate-500">Metode Pembayaran:</span>
+              <span className="text-slate-900">
                 {paymentMethod === 'cash' ? 'Tunai / Cash' : 'QRIS Digital'}
               </span>
             </div>

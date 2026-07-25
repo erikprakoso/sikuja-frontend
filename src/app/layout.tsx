@@ -34,17 +34,17 @@ export default function RootLayout({
       lang="id"
       className={`${outfit.variable} ${inter.variable} h-full antialiased light`}
     >
-      <body className="min-h-full flex flex-col bg-white text-[#E70013] font-sans selection:bg-[#E70013] selection:text-white">
+      <body className="min-h-full flex flex-col bg-white text-slate-900 font-sans selection:bg-[#E70013] selection:text-white">
         <Navbar />
         <SyncProvider>
           <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
             {children}
           </main>
         </SyncProvider>
-        <footer className="border-t-4 border-[#E70013] bg-white py-6 text-center text-xs text-[#E70013] font-black">
+        <footer className="border-t border-[#E70013]/20 bg-white py-6 text-center text-xs text-slate-600 font-medium">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>© 2026 SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan 🇮🇩</p>
-            <p className="text-[#E70013] font-bold">Aplikasi Web PWA • Bebas Kecurangan • Transparan</p>
+            <p className="text-slate-500 font-semibold">Aplikasi Web PWA • Bebas Kecurangan • Transparan</p>
           </div>
         </footer>
       </body>
