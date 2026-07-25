@@ -1,4 +1,5 @@
 import { RoleType, UserSession } from '@/types';
+import { SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 export const PIN_CONFIG: Record<string, { role: RoleType; name: string }> = {
   '1111': { role: 'penjual', name: 'Panitia Penjualan' },
@@ -9,6 +10,12 @@ export const PIN_CONFIG: Record<string, { role: RoleType; name: string }> = {
 };
 
 const SESSION_KEY = 'sikuja_session';
+
+function notifySessionChange() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(SIKUJA_EVENT_NAME));
+  }
+}
 
 export function verifyPin(pin: string): { success: boolean; session?: UserSession; error?: string } {
   const match = PIN_CONFIG[pin];
@@ -24,6 +31,7 @@ export function verifyPin(pin: string): { success: boolean; session?: UserSessio
 
   if (typeof window !== 'undefined') {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    notifySessionChange();
   }
 
   return { success: true, session };
@@ -43,5 +51,6 @@ export function getCurrentSession(): UserSession | null {
 export function logoutSession(): void {
   if (typeof window !== 'undefined') {
     localStorage.removeItem(SESSION_KEY);
+    notifySessionChange();
   }
 }
