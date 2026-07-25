@@ -33,6 +33,11 @@ export const ThermalReceiptPrint: React.FC<ThermalReceiptPrintProps> = ({
       <div className="text-center pb-2 border-b border-black border-dashed mb-2 space-y-0.5">
         <p className="font-bold text-sm">PANITIA JALAN SEHAT 🇮🇩</p>
         <p className="text-[10px]">SIKUJA 2026</p>
+        {transaction.customer_name && (
+          <p className="text-[10px] font-bold">
+            Pemilik: {transaction.customer_name} {transaction.customer_phone ? `(${transaction.customer_phone})` : ''}
+          </p>
+        )}
         <p className="text-[9px]">
           Tx: {transaction.id.slice(-8)} • {new Date(transaction.created_at).toLocaleTimeString('id-ID')}
         </p>

@@ -10,8 +10,14 @@ CREATE TABLE IF NOT EXISTS public.transactions (
   qty_fisik INT NOT NULL DEFAULT 0,
   qty_non_fisik INT NOT NULL DEFAULT 0,
   total_harga INT NOT NULL DEFAULT 0,
+  customer_name TEXT,
+  customer_phone TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migration query untuk database yang sudah berjalan:
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customer_phone TEXT;
 
 -- 2. Tabel Vouchers (Pool 5-digit Kode Unik)
 CREATE TABLE IF NOT EXISTS public.vouchers (
