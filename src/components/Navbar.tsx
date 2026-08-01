@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { getCurrentSession, logoutSession, refreshSession } from '@/lib/services/auth';
@@ -30,6 +30,29 @@ export default function Navbar() {
   const [isOnline, setIsOnline] = useState<boolean>(
     () => typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+
+  // Akses login tersembunyi: ketuk logo 5x cepat → /login.
+  const [brandTaps, setBrandTaps] = useState(0);
+  const brandTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleBrandClick = (e: React.MouseEvent) => {
+    const next = brandTaps + 1;
+    setBrandTaps(next);
+    if (brandTapTimer.current) clearTimeout(brandTapTimer.current);
+    brandTapTimer.current = setTimeout(() => setBrandTaps(0), 2000);
+
+    if (next >= 5) {
+      e.preventDefault();
+      setBrandTaps(0);
+      router.push('/login');
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (brandTapTimer.current) clearTimeout(brandTapTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     refreshSession().then((s) => {
@@ -75,8 +98,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
 
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          {/* Brand Logo (ketuk 5x untuk akses login panitia) */}
+          <Link href="/" onClick={handleBrandClick} className="flex items-center gap-2.5 group">
             <img
               src="/logo-ri.png"
               alt="Logo 81 Tahun RI"
