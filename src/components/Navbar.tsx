@@ -30,6 +30,7 @@ export default function Navbar() {
   const [isOnline, setIsOnline] = useState<boolean>(
     () => typeof navigator !== 'undefined' ? navigator.onLine : true
   );
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Akses login tersembunyi: ketuk logo 5x cepat → /login.
   // Hanya untuk yang BELUM login; panitia yang sudah login pakai menu navigasi / logout.
@@ -65,14 +66,22 @@ export default function Navbar() {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
+    // Layar Undian: navbar tampil normal, namun hilang otomatis saat mode
+    // fullscreen diaktifkan (stage proyektor murni) dan kembali saat keluar.
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
     if (typeof window !== 'undefined') {
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
     }
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
   }, [pathname]);
 
@@ -88,7 +97,9 @@ export default function Navbar() {
     router.push('/');
   };
 
-  if (pathname === '/undian' || pathname.startsWith('/v/')) {
+  // Layar Undian: tampil navbar seperti biasa; saat fullscreen (stage proyektor)
+  // navbar disembunyikan agar layar panggung bersih. Halaman e-voucher publik (/v/) tetap tanpa navbar.
+  if ((pathname === '/undian' && isFullscreen) || pathname.startsWith('/v/')) {
     return null;
   }
 
