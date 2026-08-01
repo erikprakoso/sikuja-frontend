@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Loader2 } from 'lucide-react';
 
@@ -12,13 +12,13 @@ interface RequireAuthProps {
 
 /**
  * Client-side route guard.
- * - Belum login → redirect ke /login?next=<pathname>, lalu kembali setelah login.
+ * - Belum login → redirect diam-diam ke home (TIDAK ke /login, agar halaman login
+ *   hanya "ditemukan" lewat ketuk logo 5x di navbar).
  * - Sudah login tapi role tidak diizinkan → redirect ke home.
  * - Menampilkan spinner sambil memvalidasi sesi ke server (tanpa flash konten).
  */
 export function RequireAuth({ roles, children }: RequireAuthProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [ready, setReady] = useState(false);
   const rolesKey = roles ? roles.join(',') : '';
 
@@ -36,8 +36,7 @@ export function RequireAuth({ roles, children }: RequireAuthProps) {
       if (cancelled) return;
 
       if (!session) {
-        const next = encodeURIComponent(pathname);
-        router.replace(`/login?next=${next}`);
+        router.replace('/');
         return;
       }
 
@@ -52,7 +51,7 @@ export function RequireAuth({ roles, children }: RequireAuthProps) {
     return () => {
       cancelled = true;
     };
-  }, [router, pathname, rolesKey]);
+  }, [router, rolesKey]);
 
   if (!ready) {
     return (
