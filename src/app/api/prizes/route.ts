@@ -19,12 +19,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const prizes: Prize[] = Array.isArray(body.prizes) ? body.prizes : [];
 
-    if (prizes.length === 0) {
-      return NextResponse.json({ error: 'Daftar hadiah kosong' }, { status: 400 });
-    }
-
     if (!isServerSupabaseConfigured()) {
       return NextResponse.json({ success: true, count: prizes.length });
+    }
+
+    if (prizes.length === 0) {
+      const { error } = await serverSupabase.from('prizes').delete().neq('id', '');
+      if (error) throw error;
+      return NextResponse.json({ success: true, count: 0 });
     }
 
     // Remove prizes that no longer exist in the list, then upsert the rest.

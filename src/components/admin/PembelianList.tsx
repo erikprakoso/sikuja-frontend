@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory, removePurchaseFromPrizeCategory } from '@/lib/storage';
+import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory, removePurchaseFromPrizeCategory, updatePurchasePrizeCategoryStock } from '@/lib/storage';
 import { Purchase } from '@/types';
 
 export const PembelianList = () => {
@@ -99,7 +99,7 @@ export const PembelianList = () => {
 
       if (res.ok && data.success) {
         setPurchases((prev) => prev.filter((p) => p.id !== id));
-        if (target && target.is_doorprize !== false) {
+        if (target) {
           await removePurchaseFromPrizeCategory(target.item_name, target.qty);
         }
       } else {
@@ -164,20 +164,23 @@ export const PembelianList = () => {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        if (isEdit) {
-          if (editingPurchase && editingPurchase.is_doorprize !== false) {
-            await removePurchaseFromPrizeCategory(editingPurchase.item_name, editingPurchase.qty);
-          }
+        if (isEdit && editingPurchase) {
+          await updatePurchasePrizeCategoryStock(
+            editingPurchase.item_name,
+            editingPurchase.qty,
+            editingPurchase.is_doorprize,
+            newItem.trim(),
+            Number(newQty),
+            isDoorprize
+          );
           setPurchases((prev) =>
             prev.map((p) => (p.id === data.purchase.id ? data.purchase : p))
           );
         } else {
           setPurchases((prev) => [data.purchase, ...prev]);
-        }
-
-        // Auto-sync to Prize Category if isDoorprize is true
-        if (isDoorprize) {
-          await syncPurchaseToPrizeCategory(newItem.trim(), Number(newQty));
+          if (isDoorprize) {
+            await syncPurchaseToPrizeCategory(newItem.trim(), Number(newQty));
+          }
         }
 
         setNewItem('');

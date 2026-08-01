@@ -53,7 +53,7 @@ export async function syncFromSupabase(): Promise<boolean> {
 
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions || []));
     localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(data.vouchers || []));
-    if (data.prizes && data.prizes.length > 0) {
+    if (Array.isArray(data.prizes)) {
       localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(data.prizes));
     }
     localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(data.drawResults || []));
@@ -202,12 +202,13 @@ export async function syncPurchaseToPrizeCategory(itemName: string, qty: number)
 
 export async function removePurchaseFromPrizeCategory(itemName: string, qty: number) {
   if (typeof window === 'undefined' || !itemName.trim() || qty <= 0) return;
-  const normalizedName = itemName.trim();
+  const normalizedName = itemName.trim().toLowerCase();
   const currentPrizes = getStoredPrizes();
 
-  const existingIndex = currentPrizes.findIndex(
-    (p) => p.name.toLowerCase().trim() === normalizedName.toLowerCase()
-  );
+  const existingIndex = currentPrizes.findIndex((p) => {
+    const pName = p.name.trim().toLowerCase();
+    return pName === normalizedName || normalizedName.includes(pName) || pName.includes(normalizedName);
+  });
 
   if (existingIndex < 0) return;
 
@@ -240,6 +241,77 @@ export async function removePurchaseFromPrizeCategory(itemName: string, qty: num
     });
   } catch (err) {
     console.error('Failed to sync prize deletion to server:', err);
+  }
+}
+
+export async function updatePurchasePrizeCategoryStock(
+  oldName: string | undefined,
+  oldQty: number | undefined,
+  oldIsDoorprize: boolean | undefined,
+  newName: string,
+  newQty: number,
+  newIsDoorprize: boolean
+) {
+  if (typeof window === 'undefined') return;
+
+  let currentPrizes = getStoredPrizes();
+
+  // 1. Deduct old stock if old purchase was a doorprize
+  if (oldName && oldQty && oldQty > 0 && oldIsDoorprize !== false) {
+    const normOld = oldName.trim().toLowerCase();
+    const oldIdx = currentPrizes.findIndex((p) => {
+      const pName = p.name.trim().toLowerCase();
+      return pName === normOld || normOld.includes(pName) || pName.includes(normOld);
+    });
+
+    if (oldIdx >= 0) {
+      const target = currentPrizes[oldIdx];
+      const remainingStock = Math.max(0, target.stock - oldQty);
+      if (remainingStock <= 0) {
+        currentPrizes = currentPrizes.filter((_, idx) => idx !== oldIdx);
+      } else {
+        currentPrizes = currentPrizes.map((p, idx) =>
+          idx === oldIdx ? { ...p, stock: remainingStock } : p
+        );
+      }
+    }
+  }
+
+  // 2. Add new stock if new item is a doorprize
+  if (newName.trim() && newQty > 0 && newIsDoorprize) {
+    const normNew = newName.trim().toLowerCase();
+    const newIdx = currentPrizes.findIndex((p) => {
+      const pName = p.name.trim().toLowerCase();
+      return pName === normNew || normNew.includes(pName) || pName.includes(normNew);
+    });
+
+    if (newIdx >= 0) {
+      currentPrizes = currentPrizes.map((p, idx) =>
+        idx === newIdx ? { ...p, stock: p.stock + newQty } : p
+      );
+    } else {
+      const newPrize: Prize = {
+        id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        name: newName.trim(),
+        stock: newQty,
+        drawn_count: 0,
+        order_num: currentPrizes.length + 1,
+      };
+      currentPrizes = [...currentPrizes, newPrize];
+    }
+  }
+
+  // 3. Save atomically once
+  await savePrizes(currentPrizes);
+
+  try {
+    await fetch('/api/prizes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prizes: currentPrizes }),
+    });
+  } catch (err) {
+    console.error('Failed to update prize stock on server:', err);
   }
 }
 
