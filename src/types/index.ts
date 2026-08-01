@@ -25,6 +25,7 @@ export interface Transaction {
   total_harga: number; // qty * 5000
   customer_name?: string;
   customer_phone?: string;
+  created_by?: string;
   created_at: string;
 }
 
@@ -58,7 +59,16 @@ export interface PosCheckin {
 }
 
 export interface UserSession {
+  userId?: string | null;
   role: RoleType;
   name: string;
   authenticatedAt: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  role: RoleType;
+  active: boolean;
+  created_at: string;
 }

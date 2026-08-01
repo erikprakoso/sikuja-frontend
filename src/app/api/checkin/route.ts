@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
         // Batch check-in all vouchers under this transaction
         const { data: updatedVouchers, error: uErr } = await serverSupabase
           .from('vouchers')
-          .update({ status: 'checkin', checkin_at: now })
+          .update({ status: 'checkin', checkin_at: now, ...(auth.userId ? { checkin_by: auth.userId } : {}) })
           .eq('transaction_id', tx.id)
           .eq('status', 'terbit')
           .select();
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString();
       const { data: updated, error: updateErr } = await serverSupabase
         .from('vouchers')
-        .update({ status: 'checkin', checkin_at: now })
+        .update({ status: 'checkin', checkin_at: now, ...(auth.userId ? { checkin_by: auth.userId } : {}) })
         .eq('code', codeOrToken)
         .select()
         .single();

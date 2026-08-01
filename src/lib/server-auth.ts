@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual, randomBytes } from 'crypto';
+import { createHmac, timingSafeEqual, randomBytes, scryptSync, randomInt } from 'crypto';
 import { RoleType, UserSession } from '@/types';
 import { PIN_CONFIG } from '@/lib/pin-config';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 
 export const SESSION_COOKIE = 'sikuja_session';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 hari
@@ -62,14 +63,67 @@ export function verifySessionToken(token: string): UserSession | null {
   }
 }
 
-export function verifyPinServer(pin: string): UserSession | null {
-  const match = PIN_CONFIG[pin];
-  if (!match) return null;
-  return {
-    role: match.role,
-    name: match.name,
-    authenticatedAt: new Date().toISOString(),
+const SCRYPT_KEYLEN = 32;
+
+/** Generate PIN acak 6 digit (100000–999999, tanpa leading zero). */
+export function generateRandomPin(): string {
+  return String(randomInt(100000, 1000000));
+}
+
+/** Hash PIN dengan scrypt + salt acak per user. */
+export function hashPin(pin: string): { salt: string; hash: string } {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(pin, salt, SCRYPT_KEYLEN).toString('hex');
+  return { salt, hash };
+}
+
+/** Verifikasi PIN terhadap hash tersimpan (timing-safe). */
+export function verifyPinHash(pin: string, salt: string, hash: string): boolean {
+  const candidate = scryptSync(pin, salt, SCRYPT_KEYLEN);
+  const expected = Buffer.from(hash, 'hex');
+  if (candidate.length !== expected.length) return false;
+  return timingSafeEqual(candidate, expected);
+}
+
+/**
+ * Login: verifikasi PIN terhadap tabel `users` di database.
+ * Fallback ke PIN_CONFIG (PIN lama) HANYA selama DB belum dikonfigurasi
+ * atau tabel `users` masih kosong — agar admin bisa login pertama kali.
+ */
+export async function verifyPinServer(pin: string): Promise<UserSession | null> {
+  const fallback = (): UserSession | null => {
+    const match = PIN_CONFIG[pin];
+    if (!match) return null;
+    return {
+      userId: null,
+      role: match.role,
+      name: match.name,
+      authenticatedAt: new Date().toISOString(),
+    };
   };
+
+  if (!isServerSupabaseConfigured()) return fallback();
+
+  const { data: users, error } = await serverSupabase
+    .from('users')
+    .select('id, name, role, pin_salt, pin_hash, active');
+
+  if (error) throw error;
+
+  if (!users || users.length === 0) return fallback();
+
+  for (const u of users) {
+    if (u.active !== true) continue;
+    if (verifyPinHash(pin, u.pin_salt, u.pin_hash)) {
+      return {
+        userId: u.id,
+        role: u.role as RoleType,
+        name: u.name,
+        authenticatedAt: new Date().toISOString(),
+      };
+    }
+  }
+  return null;
 }
 
 export function getSessionFromRequest(request: NextRequest): UserSession | null {

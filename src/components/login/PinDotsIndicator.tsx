@@ -3,14 +3,15 @@ import { AlertCircle } from 'lucide-react';
 
 interface PinDotsIndicatorProps {
   pinLength: number;
+  maxLength?: number;
   error?: string;
 }
 
-export const PinDotsIndicator: React.FC<PinDotsIndicatorProps> = ({ pinLength, error }) => {
+export const PinDotsIndicator: React.FC<PinDotsIndicatorProps> = ({ pinLength, maxLength = 6, error }) => {
   return (
     <div className="space-y-4">
-      <div className="flex justify-center items-center gap-4 py-2">
-        {[0, 1, 2, 3].map((idx) => (
+      <div className="flex justify-center items-center gap-3 py-2">
+        {Array.from({ length: maxLength }).map((_, idx) => (
           <div
             key={idx}
             className={`w-5 h-5 rounded-full transition-all ${

@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       prize_name: prize.name,
       drawn_at: now,
       claimed: false,
+      ...(auth.userId ? { created_by: auth.userId } : {}),
     };
 
     await serverSupabase.from('draw_results').insert([drawResult]);

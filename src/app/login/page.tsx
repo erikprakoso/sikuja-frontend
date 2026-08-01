@@ -9,6 +9,8 @@ import { PinDotsIndicator } from '@/components/login/PinDotsIndicator';
 import { PinKeypad } from '@/components/login/PinKeypad';
 import { PinCheatSheet } from '@/components/login/PinCheatSheet';
 
+const PIN_LENGTH = 6;
+
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState('');
@@ -16,11 +18,11 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleKeyPress = (num: string) => {
-    if (pin.length < 4 && !isSubmitting) {
+    if (pin.length < PIN_LENGTH && !isSubmitting) {
       const nextPin = pin + num;
       setPin(nextPin);
       setError('');
-      if (nextPin.length === 4) {
+      if (nextPin.length === PIN_LENGTH) {
         submitPin(nextPin);
       }
     }
@@ -77,7 +79,7 @@ export default function LoginPage() {
 
       {/* PIN Dots & Keypad Box */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-        <PinDotsIndicator pinLength={pin.length} error={error} />
+        <PinDotsIndicator pinLength={pin.length} maxLength={PIN_LENGTH} error={error} />
         <PinKeypad
           onKeyPress={handleKeyPress}
           onClear={handleClear}

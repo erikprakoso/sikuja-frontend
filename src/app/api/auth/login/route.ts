@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Request tidak valid' }, { status: 400 });
   }
 
-  const session = verifyPinServer(pin);
+  const session = await verifyPinServer(pin);
   if (!session) {
     return NextResponse.json({ error: 'PIN salah! Silakan coba lagi.' }, { status: 401 });
   }

@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         customer_name: customerName.trim() || undefined,
         customer_phone: customerPhone.trim() || undefined,
         created_at: new Date().toISOString(),
+        ...(auth.userId ? { created_by: auth.userId } : {}),
       };
 
       // Save transaction & vouchers to Supabase
