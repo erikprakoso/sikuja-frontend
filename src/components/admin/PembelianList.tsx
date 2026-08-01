@@ -1,21 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Download, Search, Loader2 } from 'lucide-react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
-interface Purchase {
-  id: string;
-  supplier_name: string;
-  item_name: string;
-  qty: number;
-  price_per_unit: number;
-  total_price: number;
-  purchase_date: string;
-  payment_method: 'cash' | 'qris' | 'transfer';
-  note?: string;
-  created_at: string;
-}
-
 export const PembelianList = () => {
+  interface Purchase {
+    id: string;
+    supplier_name: string;
+    item_name: string;
+    qty: number;
+    price_per_unit: number;
+    total_price: number;
+    purchase_date: string;
+    payment_method: 'cash' | 'qris' | 'transfer';
+  }
+  
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,21 +40,7 @@ export const PembelianList = () => {
   }, []);
 
   useEffect(() => {
-    // TODO: Fetch dari Supabase /api/keuangan/purchases
-    // Mock data untuk sekarang:
-    setPurchases([
-      {
-        id: 'p1',
-        supplier_name: 'Toko Sepeda Jaya',
-        item_name: 'Sepeda Gunung MTB',
-        qty: 2,
-        price_per_unit: 1750000,
-        total_price: 3500000,
-        purchase_date: '2026-07-28',
-        payment_method: 'cash',
-        created_at: '2026-07-28T10:00:00Z',
-      },
-    ]);
+    setPurchases([]);
   }, []);
 
   const formatRupiah = (amount: number) => {
@@ -113,8 +97,9 @@ export const PembelianList = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredPurchases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-500">
-                    Belum ada data pembelian.
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    <p className="text-lg font-semibold">Belum ada data pembelian doorprize.</p>
+                    <p className="text-xs mt-2">Form pembelian dan API belum diimplementasi.</p>
                   </td>
                 </tr>
               ) : (

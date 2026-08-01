@@ -40,33 +40,9 @@ export const PengeluaranList = () => {
           {isSyncing && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 font-bold text-slate-700">Item</th>
-                <th className="p-4 font-bold text-slate-700">Kategori</th>
-                <th className="p-4 font-bold text-slate-700">Jumlah</th>
-                <th className="p-4 font-bold text-slate-700">Harga Total</th>
-                <th className="p-4 font-bold text-slate-700">Tgl Beli</th>
-                <th className="p-4 font-bold text-slate-700">Bayar</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr className="hover:bg-slate-50">
-                <td className="p-4 font-medium text-slate-900">Snack & Minuman</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Snack</span>
-                </td>
-                <td className="p-4 text-slate-600">50 pax</td>
-                <td className="p-4 text-amber-700 font-bold">Rp750.000</td>
-                <td className="p-4 text-slate-500">25/07/2026</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold">Cash</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="p-12 text-center text-slate-500">
+          <p className="text-lg font-semibold">Belum ada data pengeluaran biaya.</p>
+          <p className="text-xs mt-2">Form pengeluaran dan API belum diimplementasi.</p>
         </div>
       </div>
     </div>

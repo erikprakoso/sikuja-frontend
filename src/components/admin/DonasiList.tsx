@@ -40,31 +40,9 @@ export const DonasiList = () => {
           {isSyncing && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 font-bold text-slate-700">Nama Donatur</th>
-                <th className="p-4 font-bold text-slate-700">Jumlah</th>
-                <th className="p-4 font-bold text-slate-700">Tipe</th>
-                <th className="p-4 font-bold text-slate-700">Sumber</th>
-                <th className="p-4 font-bold text-slate-700">Tanggal</th>
-                <th className="p-4 font-bold text-slate-700">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              <tr className="hover:bg-slate-50">
-                <td className="p-4 font-medium text-slate-900">Nama Donatur</td>
-                <td className="p-4 text-emerald-700 font-bold">Rp500.000</td>
-                <td className="p-4 text-slate-600">Tunai</td>
-                <td className="p-4 text-slate-600">Umum</td>
-                <td className="p-4 text-slate-500">01/08/2026</td>
-                <td className="p-4">
-                  <span className="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold">Diterima</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="p-12 text-center text-slate-500">
+          <p className="text-lg font-semibold">Belum ada data donasi masuk.</p>
+          <p className="text-xs mt-2">Form donasi dan API belum diimplementasi.</p>
         </div>
       </div>
     </div>
