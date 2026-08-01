@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Download, Search, Loader2, X } from 'lucide-react';
+import { Plus, Download, Search, Loader2, X, Edit, Trash2 } from 'lucide-react';
 
 export const DonasiList = () => {
   interface Donation {
@@ -16,6 +16,7 @@ export const DonasiList = () => {
   
   const [donations, setDonations] = useState<Donation[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
   const [newDonorName, setNewDonorName] = useState('');
   const [newDonorPhone, setNewDonorPhone] = useState('');
   const [newAmount, setNewAmount] = useState<string>('');
@@ -34,6 +35,37 @@ export const DonasiList = () => {
         d.amount.toString().includes(q)
     );
   }, [donations, searchQuery]);
+
+  const handleEditDonation = (d: Donation) => {
+    setEditingDonation(d);
+    setNewDonorName(d.donor_name);
+    setNewDonorPhone(d.donor_phone || '');
+    setNewAmount(d.amount.toString());
+    setNewType(d.type);
+    setNewSource(d.source);
+    setNewNote(d.note || '');
+    setIsAdding(true);
+  };
+
+  const handleDeleteDonation = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus donasi ini?')) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/keuangan/donasi?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setDonations((prev) => prev.filter((d) => d.id !== id));
+      } else {
+        alert(data.error || 'Gagal menghapus donasi');
+      }
+    } catch (err) {
+      alert('Gagal terhubung ke server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const totalDonations = useMemo(() => {
     return donations.reduce((acc, d) => acc + d.amount, 0);
@@ -57,6 +89,37 @@ export const DonasiList = () => {
     fetchDonations();
   }, []);
 
+  const handleEditDonation = (d: Donation) => {
+    setEditingDonation(d);
+    setNewDonorName(d.donor_name);
+    setNewDonorPhone(d.donor_phone || '');
+    setNewAmount(d.amount.toString());
+    setNewType(d.type);
+    setNewSource(d.source);
+    setNewNote(d.note || '');
+    setIsAdding(true);
+  };
+
+  const handleDeleteDonation = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus donasi ini?')) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/keuangan/donasi?id=${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setDonations((prev) => prev.filter((d) => d.id !== id));
+      } else {
+        alert(data.error || 'Gagal menghapus donasi');
+      }
+    } catch (err) {
+      alert('Gagal terhubung ke server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAddDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDonorName.trim() || !newAmount) return;
@@ -77,16 +140,50 @@ export const DonasiList = () => {
       });
       const data = await res.json();
       
+      const res = editingDonation
+        ? await fetch('/api/keuangan/donasi', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: editingDonation.id,
+              donor_name: newDonorName,
+              donor_phone: newDonorPhone.trim() || null,
+              amount: Number(newAmount),
+              type: newType,
+              source: newSource.trim() || 'umum',
+              note: newNote.trim() || null,
+            }),
+          })
+        : await fetch('/api/keuangan/donasi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              donor_name: newDonorName,
+              donor_phone: newDonorPhone.trim() || null,
+              amount: Number(newAmount),
+              type: newType,
+              source: newSource.trim() || 'umum',
+              note: newNote.trim() || null,
+            }),
+          });
+
+      const data = await res.json();
+      
       if (res.ok && data.success) {
-        setDonations((prev) => [data.donation, ...prev]);
+        if (editingDonation) {
+          setDonations((prev) => prev.map((d) => d.id === data.donation.id ? data.donation : d));
+        } else {
+          setDonations((prev) => [data.donation, ...prev]);
+        }
         setNewDonorName('');
         setNewDonorPhone('');
         setNewAmount('');
         setNewSource('');
         setNewNote('');
+        setEditingDonation(null);
         setIsAdding(false);
       } else {
-        alert(data.error || 'Gagal menambahkan donasi');
+        alert(data.error || 'Gagal menyimpan donasi');
       }
     } catch (err) {
       alert('Gagal terhubung ke server');

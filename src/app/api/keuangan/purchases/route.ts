@@ -91,3 +91,98 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase belum dikonfigurasi. Tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const { id, supplier_name, item_name, qty, price_per_unit, payment_method, note } = body;
+
+    if (!id || !supplier_name || !item_name || !qty || !price_per_unit) {
+      return NextResponse.json({ error: 'Data pembelian wajib diisi lengkap' }, { status: 400 });
+    }
+
+    if (typeof qty !== 'number' || qty <= 0) {
+      return NextResponse.json({ error: 'Jumlah harus angka positif' }, { status: 400 });
+    }
+
+    if (typeof price_per_unit !== 'number' || price_per_unit < 0) {
+      return NextResponse.json({ error: 'Harga per unit harus angka non-negatif' }, { status: 400 });
+    }
+
+    const total_price = qty * price_per_unit;
+    const purchase = {
+      supplier_name: supplier_name.trim(),
+      item_name: item_name.trim(),
+      qty: Math.floor(qty),
+      price_per_unit: price_per_unit,
+      total_price: total_price,
+      purchase_date: new Date().toISOString().slice(0, 10),
+      payment_method: payment_method || 'cash',
+      note: note?.trim() || null,
+      created_by: auth.name,
+    };
+
+    const { data: updatedPurchase, error } = await serverSupabase
+      .from('purchases')
+      .update(purchase)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pembelian berhasil diupdate.',
+      purchase: updatedPurchase,
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /keuangan/purchases PUT error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase belum dikonfigurasi. Tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID pembelian wajib diisi' }, { status: 400 });
+    }
+
+    const { error } = await serverSupabase.from('purchases').delete().eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pembelian berhasil dihapus.',
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /keuangan/purchases DELETE error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

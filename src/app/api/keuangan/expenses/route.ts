@@ -92,3 +92,99 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase belum dikonfigurasi. Tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const { id, category, item_name, qty, price_per_unit, payment_method, note } = body;
+
+    if (!id || !item_name || !qty || !price_per_unit) {
+      return NextResponse.json({ error: 'Data pengeluaran wajib diisi lengkap' }, { status: 400 });
+    }
+
+    if (typeof qty !== 'number' || qty <= 0) {
+      return NextResponse.json({ error: 'Jumlah harus angka positif' }, { status: 400 });
+    }
+
+    if (typeof price_per_unit !== 'number' || price_per_unit < 0) {
+      return NextResponse.json({ error: 'Harga per unit harus angka non-negatif' }, { status: 400 });
+    }
+
+    const total_price = qty * price_per_unit;
+    const expense = {
+      category: category || 'umum',
+      item_name: item_name.trim(),
+      qty: Math.floor(qty),
+      price_per_unit: price_per_unit,
+      total_price: total_price,
+      expense_date: new Date().toISOString().slice(0, 10),
+      payment_method: payment_method || 'cash',
+      note: note?.trim() || null,
+      approved_by: auth.name,
+      created_by: auth.name,
+    };
+
+    const { data: updatedExpense, error } = await serverSupabase
+      .from('expenses')
+      .update(expense)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pengeluaran berhasil diupdate.',
+      expense: updatedExpense,
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /keuangan/expenses PUT error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json(
+        { error: 'Supabase belum dikonfigurasi. Tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID pengeluaran wajib diisi' }, { status: 400 });
+    }
+
+    const { error } = await serverSupabase.from('expenses').delete().eq('id', id);
+
+    if (error) throw error;
+
+    return NextResponse.json({
+      success: true,
+      message: 'Pengeluaran berhasil dihapus.',
+    });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /keuangan/expenses DELETE error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
