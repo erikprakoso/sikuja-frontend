@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Download, Search, Loader2 } from 'lucide-react';
+import { Plus, Download, Search, Loader2, X } from 'lucide-react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 export const PembelianList = () => {
@@ -16,8 +16,15 @@ export const PembelianList = () => {
   
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [newSupplier, setNewSupplier] = useState('');
+  const [newItem, setNewItem] = useState('');
+  const [newQty, setNewQty] = useState<string>('');
+  const [newPrice, setNewPrice] = useState<string>('');
+  const [newPaymentMethod, setNewPaymentMethod] = useState<'cash' | 'qris' | 'transfer'>('cash');
+  const [newNote, setNewNote] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const totalSpent = useMemo(() => {
     return purchases.reduce((acc, p) => acc + p.total_price, 0);
@@ -34,10 +41,62 @@ export const PembelianList = () => {
   }, [purchases, searchQuery]);
 
   useEffect(() => {
-    syncFromSupabase().then(() => setIsSyncing(false));
-    window.addEventListener(SIKUJA_EVENT_NAME, () => setIsSyncing(false));
-    return () => window.removeEventListener(SIKUJA_EVENT_NAME, () => setIsSyncing(false));
+    const fetchPurchases = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/keuangan/purchases');
+        const data = await res.json();
+        if (res.ok && data.purchases) {
+          setPurchases(data.purchases);
+        }
+      } catch (err) {
+        console.error('Fetch purchases error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPurchases();
+    window.addEventListener(SIKUJA_EVENT_NAME, fetchPurchases);
+    return () => window.removeEventListener(SIKUJA_EVENT_NAME, fetchPurchases);
   }, []);
+
+  const handleAddPurchase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSupplier.trim() || !newItem.trim() || !newQty || !newPrice) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/keuangan/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supplier_name: newSupplier,
+          item_name: newItem,
+          qty: Number(newQty),
+          price_per_unit: Number(newPrice),
+          payment_method: newPaymentMethod,
+          note: newNote,
+        }),
+      });
+      const data = await res.json();
+      
+      if (res.ok && data.success) {
+        setPurchases((prev) => [data.purchase, ...prev]);
+        setNewSupplier('');
+        setNewItem('');
+        setNewQty('');
+        setNewPrice('');
+        setNewNote('');
+        setIsAdding(false);
+      } else {
+        alert(data.error || 'Gagal menambahkan pembelian');
+      }
+    } catch (err) {
+      alert('Gagal terhubung ke server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
@@ -126,6 +185,113 @@ export const PembelianList = () => {
           </table>
         </div>
       </div>
+
+      {isAdding && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-slate-900">Tambah Pembelian Doorprize</h3>
+              <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddPurchase} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Supplier</label>
+                <input
+                  type="text"
+                  value={newSupplier}
+                  onChange={(e) => setNewSupplier(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  placeholder="Nama supplier..."
+                />
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Item</label>
+                <input
+                  type="text"
+                  value={newItem}
+                  onChange={(e) => setNewItem(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  placeholder="Nama item..."
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={newQty}
+                    onChange={(e) => setNewQty(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    placeholder="Contoh: 2"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1 block">Harga Satuan (Rp)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    placeholder="Contoh: 1750000"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Metode Bayar</label>
+                <select
+                  value={newPaymentMethod}
+                  onChange={(e) => setNewPaymentMethod(e.target.value as any)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                >
+                  <option value="cash">Tunai</option>
+                  <option value="qris">QRIS</option>
+                  <option value="transfer">Transfer</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan (opsional)</label>
+                <textarea
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-24 resize-none"
+                  placeholder="Catatan tambahan..."
+                />
+              </div>
+              
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAdding(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 flex items-center gap-2"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  Simpan Pembelian
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
