@@ -1,5 +1,6 @@
 import React from 'react';
 import { DrawResult } from '@/types';
+import { Ticket, Banknote, QrCode, Trophy } from 'lucide-react';
 
 interface AdminStatCardsProps {
   totalSales: number;
@@ -7,6 +8,7 @@ interface AdminStatCardsProps {
   totalNonFisik: number;
   totalCheckin: number;
   drawResults: DrawResult[];
+  hargaPerKupon?: number;
 }
 
 export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
@@ -15,29 +17,75 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
   totalNonFisik,
   totalCheckin,
   drawResults,
+  hargaPerKupon = 5000,
 }) => {
   const participationRate = totalSales > 0 ? ((totalCheckin / totalSales) * 100).toFixed(0) : '0';
   const totalClaimed = drawResults.filter((r) => r.claimed).length;
+  const totalOmzet = totalSales * hargaPerKupon;
+
+  const formatRupiah = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+  };
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-      <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Penerbitan</span>
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">{totalSales} <span className="text-sm font-semibold text-slate-500">Lembar</span></p>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 1. Total Penerbitan */}
+      <div className="bg-[#E70013]/5 border border-[#E70013]/20 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Penerbitan</span>
+          <div className="p-2 rounded-xl bg-[#E70013] text-white">
+            <Ticket className="w-4 h-4" />
+          </div>
+        </div>
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">
+          {totalSales} <span className="text-sm font-semibold text-slate-500">Lembar</span>
+        </p>
         <span className="text-[11px] font-semibold text-slate-500 block mt-1">
           {totalFisik} Fisik • {totalNonFisik} E-Voucher
         </span>
       </div>
 
+      {/* 2. Hasil Penjualan */}
+      <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hasil Penjualan</span>
+          <div className="p-2 rounded-xl bg-emerald-600 text-white">
+            <Banknote className="w-4 h-4" />
+          </div>
+        </div>
+        <p className="text-2xl sm:text-3xl font-black text-emerald-700 mt-1.5">
+          {formatRupiah(totalOmzet)}
+        </p>
+        <span className="text-[11px] font-semibold text-slate-500 block mt-1">
+          Omzet ({totalSales} × Rp{hargaPerKupon.toLocaleString('id-ID')})
+        </span>
+      </div>
+
+      {/* 3. Kehadiran Peserta */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kehadiran Peserta</span>
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">{totalCheckin} <span className="text-sm font-semibold text-slate-500">Kupon</span></p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kehadiran Peserta</span>
+          <div className="p-2 rounded-xl bg-slate-900 text-white">
+            <QrCode className="w-4 h-4" />
+          </div>
+        </div>
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">
+          {totalCheckin} <span className="text-sm font-semibold text-slate-500">Kupon</span>
+        </p>
         <span className="text-[11px] font-semibold text-slate-500 block mt-1">Kehadiran {participationRate}%</span>
       </div>
 
+      {/* 4. Kupon Terundi */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kupon Terundi</span>
-        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">{drawResults.length} <span className="text-sm font-semibold text-slate-500">Kupon</span></p>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kupon Terundi</span>
+          <div className="p-2 rounded-xl bg-[#E70013] text-white">
+            <Trophy className="w-4 h-4" />
+          </div>
+        </div>
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">
+          {drawResults.length} <span className="text-sm font-semibold text-slate-500">Kupon</span>
+        </p>
         <span className="text-[11px] font-semibold text-slate-500 block mt-1">{totalClaimed} Hadiah Diserahkan</span>
       </div>
     </div>
