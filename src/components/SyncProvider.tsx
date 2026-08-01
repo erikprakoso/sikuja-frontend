@@ -2,15 +2,18 @@
 
 import React, { useEffect } from 'react';
 import { syncFromSupabase } from '@/lib/storage';
+import { refreshSession } from '@/lib/services/auth';
 
 /**
- * SyncProvider: Auto-syncs data from Supabase into localStorage cache
- * on initial app mount. This ensures all pages have fresh data
- * regardless of which device or browser tab is used.
+ * SyncProvider: Auto-syncs operational data from the server into the
+ * localStorage cache on initial app mount — HANYA saat sudah login.
+ * Pengunjung anonim tidak pernah men-download data operasional (PII).
  */
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    syncFromSupabase();
+    refreshSession().then((session) => {
+      if (session) syncFromSupabase();
+    });
   }, []);
 
   return <>{children}</>;

@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { getStoredVouchers, getStoredDrawResults, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Voucher, DrawResult, UserSession } from '@/types';
-import { WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { WifiOff, RefreshCw, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 
 import { HomeHeroBanner } from '@/components/home/HomeHeroBanner';
 import { HomeStatCards } from '@/components/home/HomeStatCards';
@@ -28,6 +29,8 @@ export default function HomePage() {
   }, []);
 
   const runSync = useCallback(async () => {
+    // Anonim tidak boleh men-download data operasional (PII) dari server.
+    if (!getCurrentSession()) return;
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setIsOnline(false);
       return;
@@ -137,21 +140,43 @@ export default function HomePage() {
       {/* Hero Banner Section */}
       <HomeHeroBanner />
 
-      {/* Live Stat Summary Section */}
-      <HomeStatCards
-        totalTerjual={totalTerjual}
-        totalFisik={totalFisik}
-        totalNonFisik={totalNonFisik}
-        totalCheckin={totalCheckin}
-        winnersCount={winners.length}
-        claimedCount={claimedCount}
-      />
+      {/* Login CTA for anonymous visitors */}
+      {!session && (
+        <section className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-3 shadow-sm animate-fade-in">
+          <div className="w-12 h-12 mx-auto rounded-2xl bg-[#E70013] text-white flex items-center justify-center shadow-xs">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900">Akses Panitia</h2>
+          <p className="text-sm text-slate-600 max-w-md mx-auto">
+            Login dengan PIN petugas Anda untuk melihat dashboard operasional, penjualan, check-in, dan pengundian.
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#E70013] hover:bg-[#E70013]/90 shadow-xs transition-all cursor-pointer active:scale-95"
+          >
+            Login Petugas
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </section>
+      )}
+
+      {/* Live Stat Summary Section (hanya untuk panitia yang login) */}
+      {session && (
+        <HomeStatCards
+          totalTerjual={totalTerjual}
+          totalFisik={totalFisik}
+          totalNonFisik={totalNonFisik}
+          totalCheckin={totalCheckin}
+          winnersCount={winners.length}
+          claimedCount={claimedCount}
+        />
+      )}
 
       {/* Role-Based Module Cards Section */}
       {session && <HomeModuleCards session={session} />}
 
-      {/* Live Recent Winners Section */}
-      <HomeRecentWinners winners={winners} lastSyncedAt={lastSyncedAt} />
+      {/* Live Recent Winners Section (hanya untuk panitia yang login) */}
+      {session && <HomeRecentWinners winners={winners} lastSyncedAt={lastSyncedAt} />}
     </div>
   );
 }

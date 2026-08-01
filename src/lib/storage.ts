@@ -1,5 +1,5 @@
 import { Voucher, Transaction, Prize, DrawResult, PosCheckin } from '@/types';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 const STORAGE_KEYS = {
   TRANSACTIONS: 'sikuja_transactions',
@@ -42,26 +42,26 @@ const INITIAL_PRIZES: Prize[] = [
 ];
 
 export async function syncFromSupabase(): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
   try {
-    const [txRes, vRes, pRes, dRes] = await Promise.all([
-      supabase.from('transactions').select('*'),
-      supabase.from('vouchers').select('*'),
-      supabase.from('prizes').select('*').order('order_num', { ascending: true }),
-      supabase.from('draw_results').select('*'),
-    ]);
+    // Semua read data operasional lewat API server yang WAJIB login.
+    // Anonim mendapat 401 → tidak menimpa data lokal & tidak men-download PII.
+    const res = await fetch('/api/data');
+    if (!res.ok) return false;
 
-    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txRes.data || []));
-    localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(vRes.data || []));
-    if (pRes.data && pRes.data.length > 0) {
-      localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(pRes.data));
+    const data = await res.json();
+    if (!data.success) return false;
+
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions || []));
+    localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(data.vouchers || []));
+    if (data.prizes && data.prizes.length > 0) {
+      localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(data.prizes));
     }
-    localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(dRes.data || []));
+    localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(data.drawResults || []));
 
     notifyListeners();
     return true;
   } catch (err) {
-    console.error('Failed to sync from Supabase', err);
+    console.error('Failed to sync from server', err);
     return false;
   }
 }

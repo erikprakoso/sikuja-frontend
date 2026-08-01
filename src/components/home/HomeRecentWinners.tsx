@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { DrawResult } from '@/types';
 import { Flame } from 'lucide-react';
 
@@ -8,11 +8,15 @@ interface HomeRecentWinnersProps {
 }
 
 export const HomeRecentWinners: React.FC<HomeRecentWinnersProps> = ({ winners, lastSyncedAt }) => {
-  if (winners.length === 0) return null;
-
-  const sortedWinners = [...winners].sort(
-    (a, b) => new Date(b.drawn_at).getTime() - new Date(a.drawn_at).getTime()
+  const sortedWinners = useMemo(
+    () =>
+      [...winners].sort(
+        (a, b) => new Date(b.drawn_at).getTime() - new Date(a.drawn_at).getTime()
+      ),
+    [winners]
   );
+
+  if (winners.length === 0) return null;
 
   return (
     <section className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
