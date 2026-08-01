@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
-import { soundManager } from '@/lib/services/audio';
+import { playSuccessFeedback, playErrorFeedback } from '@/lib/services/feedback';
 import { getStoredVouchers, getOfflineQueue, saveOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
 
@@ -58,20 +58,6 @@ export default function CheckinPosPage() {
       }
     };
   }, []);
-
-  const playSuccessFeedback = () => {
-    soundManager.playSuccess();
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate(50);
-    }
-  };
-
-  const playErrorFeedback = () => {
-    soundManager.playError();
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-      navigator.vibrate([90, 60, 90]);
-    }
-  };
 
   // Pesan sukses otomatis hilang setelah 3,5 dtk agar siap untuk scan berikutnya.
   const scheduleAutoClearSuccess = () => {

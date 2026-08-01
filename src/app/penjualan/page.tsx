@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { getAppBaseUrl } from '@/lib/storage';
+import { playSuccessFeedback, playErrorFeedback } from '@/lib/services/feedback';
 import { Transaction, Voucher } from '@/types';
 import { ShoppingBag, AlertCircle } from 'lucide-react';
 
@@ -22,6 +23,8 @@ export default function PenjualanPage() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [conflictCode, setConflictCode] = useState('');
+  const copiedTimerRef = useRef<number | null>(null);
 
   const totalLembar = qtyFisik + qtyNonFisik;
 
@@ -46,6 +49,7 @@ export default function PenjualanPage() {
     if (totalLembar <= 0 || isSubmitting) return;
 
     setSubmitError('');
+    setConflictCode('');
     setIsSubmitting(true);
 
     try {
@@ -65,17 +69,22 @@ export default function PenjualanPage() {
 
       if (!res.ok || data.error) {
         setSubmitError(data.error || 'Gagal memproses transaksi.');
+        setConflictCode(data.conflictCode || '');
+        playErrorFeedback();
         setIsSubmitting(false);
         return;
       }
 
       setLastTx({ transaction: data.transaction, vouchers: data.vouchers });
+      setConflictCode('');
+      playSuccessFeedback();
     } catch (err) {
       console.error('Checkout error:', err);
       // TIDAK menyimpan transaksi lokal: biar tidak ada kode 5-digit ganda antar kasir.
       setSubmitError(
         'Tidak dapat terhubung ke server. Transaksi TIDAK diproses agar kode voucher tidak ganda. Periksa koneksi lalu coba lagi.'
       );
+      playErrorFeedback();
     } finally {
       setIsSubmitting(false);
     }
@@ -89,15 +98,41 @@ export default function PenjualanPage() {
     setCopied(false);
     setShowPrintModal(false);
     setSubmitError('');
+    setConflictCode('');
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (!lastTx) return;
     const url = `${getAppBaseUrl()}/v/${lastTx.transaction.token}`;
-    navigator.clipboard.writeText(url);
+
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Fallback untuk browser yang menolak Clipboard API (iOS / non-HTTPS).
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      } catch {
+        // Salin manual jika semua cara gagal.
+      }
+    }
+
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copiedTimerRef.current !== null) clearTimeout(copiedTimerRef.current);
+    copiedTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
   };
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current !== null) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   return (
     <RequireAuth roles={['penjual', 'admin']}>
@@ -131,6 +166,8 @@ export default function PenjualanPage() {
             qtyNonFisik={qtyNonFisik}
             paymentMethod={paymentMethod}
             isLoading={isSubmitting}
+            conflictCode={conflictCode}
+            onClearConflict={() => setConflictCode('')}
             setQtyFisik={setQtyFisik}
             setQtyNonFisik={setQtyNonFisik}
             setPaymentMethod={setPaymentMethod}

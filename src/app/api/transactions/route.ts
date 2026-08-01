@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           if (!formatted) continue;
           if (usedCodes.has(formatted)) {
             return NextResponse.json(
-              { error: `Kode voucher ${formatted} sudah terbit / dimiliki peserta lain.` },
+              { error: `Kode voucher ${formatted} sudah terbit / dimiliki peserta lain.`, conflictCode: formatted },
               { status: 400 }
             );
           }

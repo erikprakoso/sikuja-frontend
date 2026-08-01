@@ -9,17 +9,23 @@ interface TransactionFormProps {
   qtyNonFisik: number;
   paymentMethod: 'cash' | 'qris';
   isLoading?: boolean;
+  conflictCode?: string;
+  onClearConflict?: () => void;
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
   setPaymentMethod: (method: 'cash' | 'qris') => void;
   onSubmit: (e: React.FormEvent, customCodes?: string[], customerName?: string, customerPhone?: string) => void;
 }
 
+const MAX_VOUCHERS_PER_SALE = 200;
+
 export const TransactionForm: React.FC<TransactionFormProps> = ({
   qtyFisik,
   qtyNonFisik,
   paymentMethod,
   isLoading = false,
+  conflictCode = '',
+  onClearConflict = () => {},
   setQtyFisik,
   setQtyNonFisik,
   setPaymentMethod,
@@ -37,6 +43,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
+
+  // Derive, bukan setState di dalam effect (mengikuti aturan react-hooks):
+  // - activeCodeMode: saat server menolak nomor hoki, paksa tampil mode custom.
+  // - qrisPayload/qrisNotConfigured: QRIS kosong berarti belum dikonfigurasi.
+  const activeCodeMode: 'auto' | 'custom' = conflictCode ? 'custom' : codeMode;
+  const qrisBase = getSavedStaticQris();
+  const qrisPayload = totalHarga > 0 ? generateDynamicQris(qrisBase, totalHarga) : qrisBase;
+  const qrisNotConfigured = paymentMethod === 'qris' && !qrisPayload;
 
   useEffect(() => {
     setCustomCodes((prev) => {
@@ -62,7 +76,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   };
 
   const handleQtyChange = (newQty: number) => {
-    const safeQty = Math.max(1, newQty);
+    const safeQty = Math.min(MAX_VOUCHERS_PER_SALE, Math.max(1, newQty));
     if (activeType === 'fisik') {
       setQtyFisik(safeQty);
       setQtyNonFisik(0);
@@ -73,6 +87,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   };
 
   const handleCustomCodeInputChange = (index: number, val: string) => {
+    // Setelah server menolak kode tertentu, begitu slot tersebut diubah konflik selesai.
+    if (conflictCode && customCodes[index] === conflictCode) {
+      onClearConflict();
+    }
+
     const digitsOnly = val.replace(/\D/g, '').slice(0, 5);
     const updated = [...customCodes];
     updated[index] = digitsOnly;
@@ -94,20 +113,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   };
 
   useEffect(() => {
-    if (paymentMethod === 'qris') {
-      const baseQris = getSavedStaticQris();
-      const payload = totalHarga > 0 ? generateDynamicQris(baseQris, totalHarga) : baseQris;
-      QRCode.toDataURL(payload, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+    if (paymentMethod === 'qris' && qrisPayload) {
+      QRCode.toDataURL(qrisPayload, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         .then((url) => setQrisDataUrl(url))
         .catch((err) => console.error('QRIS Gen error:', err));
     }
-  }, [paymentMethod, totalHarga]);
+  }, [paymentMethod, totalHarga, qrisPayload]);
 
   const hasCustomCodeError = Object.values(customCodeStatuses).some((s) => s.formatted && !s.available);
+  const hasServerConflict = conflictCode !== '';
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
-    const activeCustomCodes = codeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
+    const activeCustomCodes = activeCodeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
     onSubmit(e, activeCustomCodes, customerName, customerPhone);
   };
 
@@ -188,12 +206,18 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <button
               type="button"
               onClick={() => handleQtyChange(currentQty + 1)}
-              disabled={isLoading}
+              disabled={isLoading || currentQty >= MAX_VOUCHERS_PER_SALE}
               className="w-11 h-11 rounded-xl bg-[#E70013] text-white font-bold flex items-center justify-center transition-all cursor-pointer active:scale-95 disabled:opacity-50 shadow-sm"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
+
+          {currentQty >= MAX_VOUCHERS_PER_SALE && (
+            <p className="text-[11px] text-[#E70013] font-bold bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              Maksimal {MAX_VOUCHERS_PER_SALE} voucher per transaksi.
+            </p>
+          )}
 
           {/* Quick Batch Presets */}
           <div className="flex items-center gap-1.5 pt-3 border-t border-slate-200">
@@ -222,10 +246,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => setCodeMode('auto')}
+              onClick={() => {
+                setCodeMode('auto');
+                onClearConflict();
+              }}
               disabled={isLoading}
               className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
-                codeMode === 'auto'
+                activeCodeMode === 'auto'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-700 hover:border-[#E70013]/40'
               }`}
@@ -239,7 +266,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               onClick={() => setCodeMode('custom')}
               disabled={isLoading}
               className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 ${
-                codeMode === 'custom'
+                activeCodeMode === 'custom'
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-sm'
                   : 'bg-white border-slate-200 text-slate-700 hover:border-[#E70013]/40'
               }`}
@@ -250,7 +277,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </div>
 
           {/* Custom Codes Inputs Grid */}
-          {codeMode === 'custom' && (
+          {activeCodeMode === 'custom' && (
             <div className="pt-2 space-y-2">
               <p className="text-[11px] text-slate-500 font-medium leading-tight">
                 Ketik nomor pilihan pembeli (misal `77` -&gt; `00077`). Jika slot kosong, otomatis diisi acak.
@@ -258,7 +285,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
                 {customCodes.map((val, idx) => {
                   const status = customCodeStatuses[idx];
-                  const isAvailable = status?.available;
+                  const isConflictSlot = conflictCode !== '' && val === conflictCode;
+                  const isAvailable = status?.available && !isConflictSlot;
                   const isFilled = val.length > 0;
 
                   return (
@@ -283,7 +311,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                       />
                       {isFilled && (
                         <div className="absolute right-2.5">
-                          {isAvailable ? (
+                          {isConflictSlot ? (
+                            <span title="🔴 Ditolak server (sudah terbit oleh kasir lain)">
+                              <AlertCircle className="w-4 h-4 text-white animate-pulse" />
+                            </span>
+                          ) : isAvailable ? (
                             <span title="🟢 Kode Tersedia">
                               <CheckCircle className="w-4 h-4 text-emerald-600" />
                             </span>
@@ -298,7 +330,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   );
                 })}
               </div>
-              {hasCustomCodeError && (
+              {conflictCode && (
+                <p className="text-[11px] text-white bg-[#E70013] p-2.5 rounded-xl font-bold flex items-center gap-1.5 mt-1 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  Kode {conflictCode} ditolak server karena sudah terbit oleh kasir lain. Silakan ganti dengan angka lain.
+                </p>
+              )}
+              {hasCustomCodeError && !conflictCode && (
                 <p className="text-[11px] text-white bg-[#E70013] p-2.5 rounded-xl font-bold flex items-center gap-1.5 mt-1">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   Beberapa nomor hoki sudah pernah terbit/terpakai. Mohon ganti dengan angka lain.
@@ -395,7 +433,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 QRIS Pembayaran Standar
               </div>
 
-              {qrisDataUrl ? (
+              {qrisNotConfigured ? (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-start gap-2 text-left animate-fade-in">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    QRIS belum dikonfigurasi panitia, sehingga kode QR tidak dapat dibuat. Silakan pilih metode{' '}
+                    <span className="font-black">Tunai / Cash</span> atau hubungi panitia terlebih dahulu.
+                  </span>
+                </div>
+              ) : qrisDataUrl ? (
                 <div className="py-1">
                   <div className="p-3 bg-white rounded-2xl inline-block border border-slate-200 shadow-md">
                     <img src={qrisDataUrl} alt="Kode QRIS Pembayaran" className="w-48 h-48 sm:w-52 sm:h-52 object-contain" />
@@ -424,7 +470,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="flex justify-between pt-1">
               <span className="text-slate-500">Mode Kode:</span>
               <span className="font-bold text-slate-900 uppercase">
-                {codeMode === 'auto' ? 'Acak Otomatis' : 'Pilih Nomor Hoki'}
+                {activeCodeMode === 'auto' ? 'Acak Otomatis' : 'Pilih Nomor Hoki'}
               </span>
             </div>
             <div className="flex justify-between pt-2 border-t border-slate-150 font-bold uppercase">
@@ -447,7 +493,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         <button
           type="submit"
-          disabled={totalLembar <= 0 || isLoading || hasCustomCodeError}
+          disabled={totalLembar <= 0 || isLoading || hasCustomCodeError || hasServerConflict || (paymentMethod === 'qris' && qrisNotConfigured)}
           className="w-full py-4 px-6 rounded-2xl font-black text-base shadow-md bg-[#E70013] hover:bg-[#E70013]/90 text-white cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2 border border-[#E70013] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
