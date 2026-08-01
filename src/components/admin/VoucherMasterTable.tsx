@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Voucher } from '@/types';
-import { Ticket, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Voucher, Transaction } from '@/types';
+import { Ticket, Search, ChevronLeft, ChevronRight, User, Phone } from 'lucide-react';
 
 interface VoucherMasterTableProps {
   vouchers: Voucher[];
+  transactions?: Transaction[];
   searchQuery: string;
   statusFilter: string;
   setSearchQuery: (query: string) => void;
@@ -12,6 +13,7 @@ interface VoucherMasterTableProps {
 
 export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   vouchers,
+  transactions = [],
   searchQuery,
   statusFilter,
   setSearchQuery,
@@ -20,17 +22,45 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
+  const txMap = useMemo(() => {
+    const map = new Map<string, Transaction>();
+    transactions.forEach((tx) => map.set(tx.id, tx));
+    return map;
+  }, [transactions]);
+
+  const filteredVouchers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return vouchers.filter((v) => {
+      const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
+      if (!matchesStatus) return false;
+      if (!q) return true;
+
+      const tx = txMap.get(v.transaction_id);
+      const custName = (tx?.customer_name || '').toLowerCase();
+      const custPhone = (tx?.customer_phone || '').toLowerCase();
+      const prizeName = (v.prize_name || '').toLowerCase();
+
+      return (
+        v.code.toLowerCase().includes(q) ||
+        custName.includes(q) ||
+        custPhone.includes(q) ||
+        prizeName.includes(q)
+      );
+    });
+  }, [vouchers, txMap, statusFilter, searchQuery]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter, pageSize]);
 
-  const totalVouchers = vouchers.length;
+  const totalVouchers = filteredVouchers.length;
   const totalPages = Math.max(1, Math.ceil(totalVouchers / pageSize));
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalVouchers);
-  const currentVouchers = vouchers.slice(startIndex, endIndex);
+  const currentVouchers = filteredVouchers.slice(startIndex, endIndex);
 
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
@@ -43,13 +73,13 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           {/* Search Input */}
-          <div className="relative flex-1 sm:w-48">
+          <div className="relative flex-1 sm:w-64">
             <input
               type="text"
-              placeholder="Cari kode kupon..."
+              placeholder="Cari kode, nama, atau no. HP..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
+              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
             />
             <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
           </div>
@@ -87,48 +117,63 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <thead className="bg-slate-900 text-white uppercase font-bold text-[10px]">
             <tr>
               <th className="p-3">Kode Kupon</th>
+              <th className="p-3">Pembeli / Pemegang</th>
               <th className="p-3">Jenis</th>
               <th className="p-3">Status</th>
               <th className="p-3">Hadiah</th>
               <th className="p-3">Waktu Transaksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200 font-mono font-bold">
+          <tbody className="divide-y divide-slate-200 font-sans">
             {currentVouchers.length > 0 ? (
-              currentVouchers.map((v) => (
-                <tr key={v.code} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-3 font-black text-slate-900 tracking-widest">{v.code}</td>
-                  <td className="p-3 capitalize font-sans font-semibold text-slate-700">{v.type}</td>
-                  <td className="p-3 font-sans">
-                    <span
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        v.status === 'checkin'
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+              currentVouchers.map((v) => {
+                const tx = txMap.get(v.transaction_id);
+                const custName = tx?.customer_name || '-';
+                const custPhone = tx?.customer_phone || '';
+
+                return (
+                  <tr key={v.code} className="hover:bg-slate-50 transition-colors">
+                    <td className="p-3 font-mono font-black text-slate-900 tracking-widest">{v.code}</td>
+                    <td className="p-3">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{custName}</span>
+                        {custPhone ? (
+                          <span className="text-[11px] text-slate-500 font-mono font-semibold">{custPhone}</span>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="p-3 capitalize font-semibold text-slate-700">{v.type}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          v.status === 'checkin'
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : v.status === 'menang'
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : v.status === 'diklaim'
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                            : 'bg-slate-100 text-slate-600 border border-slate-300'
+                        }`}
+                      >
+                        {v.status === 'checkin'
+                          ? 'Terverifikasi'
                           : v.status === 'menang'
-                          ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                          ? 'Pemenang'
                           : v.status === 'diklaim'
-                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                          : 'bg-slate-100 text-slate-600 border border-slate-300'
-                      }`}
-                    >
-                      {v.status === 'checkin'
-                        ? 'Terverifikasi'
-                        : v.status === 'menang'
-                        ? 'Pemenang'
-                        : v.status === 'diklaim'
-                        ? 'Diserahkan'
-                        : 'Terbit'}
-                    </span>
-                  </td>
-                  <td className="p-3 font-sans font-semibold text-slate-700">{v.prize_name || '-'}</td>
-                  <td className="p-3 text-[11px] font-semibold text-slate-500">
-                    {new Date(v.created_at).toLocaleTimeString('id-ID')}
-                  </td>
-                </tr>
-              ))
+                          ? 'Diserahkan'
+                          : 'Terbit'}
+                      </span>
+                    </td>
+                    <td className="p-3 font-semibold text-slate-700">{v.prize_name || '-'}</td>
+                    <td className="p-3 text-[11px] font-mono font-semibold text-slate-500">
+                      {new Date(v.created_at).toLocaleTimeString('id-ID')}
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-slate-500 font-semibold font-sans">
+                <td colSpan={6} className="p-6 text-center text-slate-500 font-semibold font-sans">
                   Tidak ada data kupon yang sesuai.
                 </td>
               </tr>

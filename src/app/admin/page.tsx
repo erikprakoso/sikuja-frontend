@@ -78,7 +78,8 @@ export default function AdminDashboardPage() {
 
       {/* Vouchers Master Table */}
       <VoucherMasterTable
-        vouchers={filteredVouchers}
+        vouchers={vouchers}
+        transactions={transactions}
         searchQuery={searchQuery}
         statusFilter={statusFilter}
         setSearchQuery={setSearchQuery}
