@@ -197,6 +197,12 @@ export function addToOfflineQueue(item: PosCheckin) {
   notifyListeners();
 }
 
+export function saveOfflineQueue(queue: PosCheckin[]) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.OFFLINE_QUEUE, JSON.stringify(queue));
+  notifyListeners();
+}
+
 export function clearOfflineQueue() {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(STORAGE_KEYS.OFFLINE_QUEUE);

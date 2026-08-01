@@ -48,12 +48,31 @@ export async function POST(request: NextRequest) {
 
       if (tx) {
         const now = new Date().toISOString();
-        
-        // Fetch all vouchers for this transaction to check status
+
+        // Kumpulkan SEMUA transaksi milik pembeli yang sama (prioritas: no. HP, lalu nama).
+        // Contoh: user A beli 10 kupon lalu beli lagi 5 kupon → scan 1 barcode memverifikasi 15 kupon.
+        let allTx = [tx];
+        if (tx.customer_phone && tx.customer_phone.trim()) {
+          const { data: phoneTxs } = await serverSupabase
+            .from('transactions')
+            .select('id')
+            .eq('customer_phone', tx.customer_phone.trim());
+          if (phoneTxs && phoneTxs.length > 0) allTx = phoneTxs;
+        } else if (tx.customer_name && tx.customer_name.trim()) {
+          const { data: nameTxs } = await serverSupabase
+            .from('transactions')
+            .select('id')
+            .eq('customer_name', tx.customer_name.trim());
+          if (nameTxs && nameTxs.length > 0) allTx = nameTxs;
+        }
+
+        const txIds = allTx.map((t) => t.id);
+
+        // Fetch all vouchers for these transactions to check status
         const { data: allVouchers } = await serverSupabase
           .from('vouchers')
           .select('*')
-          .eq('transaction_id', tx.id);
+          .in('transaction_id', txIds);
 
         const totalInTx = allVouchers ? allVouchers.length : 0;
         const pendingVouchers = allVouchers ? allVouchers.filter((v) => v.status === 'terbit') : [];
@@ -61,16 +80,16 @@ export async function POST(request: NextRequest) {
         if (totalInTx > 0 && pendingVouchers.length === 0) {
           return NextResponse.json({
             success: true,
-            message: `Seluruh ${totalInTx} voucher dari transaksi ini (${tx.token}) sudah berstatus check-in sebelumnya!`,
+            message: `Seluruh ${totalInTx} voucher milik ${tx.customer_name || 'pembeli ini'} sudah berstatus check-in sebelumnya!`,
             count: 0,
           });
         }
 
-        // Batch check-in all vouchers under this transaction
+        // Batch check-in all vouchers of the customer (atomik: hanya status 'terbit')
         const { data: updatedVouchers, error: uErr } = await serverSupabase
           .from('vouchers')
           .update({ status: 'checkin', checkin_at: now, ...(auth.userId ? { checkin_by: auth.userId } : {}) })
-          .eq('transaction_id', tx.id)
+          .in('transaction_id', txIds)
           .eq('status', 'terbit')
           .select();
 
@@ -79,7 +98,7 @@ export async function POST(request: NextRequest) {
         const count = updatedVouchers ? updatedVouchers.length : 0;
         return NextResponse.json({
           success: true,
-          message: `Berhasil batch check-in ${count} voucher (dari transaksi E-Voucher ${tx.token}).`,
+          message: `Berhasil check-in ${count} voucher (dari total ${totalInTx}) milik ${tx.customer_name || 'pembeli ini'} via E-Voucher.`,
           count,
         });
       }
@@ -104,14 +123,32 @@ export async function POST(request: NextRequest) {
       }
 
       const now = new Date().toISOString();
+      // Atomik: hanya update baris yang masih 'terbit' sehingga dua petugas yang
+      // memindai kode yang sama nyaris bersamaan tidak dua-duanya mendapat "Berhasil".
       const { data: updated, error: updateErr } = await serverSupabase
         .from('vouchers')
         .update({ status: 'checkin', checkin_at: now, ...(auth.userId ? { checkin_by: auth.userId } : {}) })
         .eq('code', codeOrToken)
+        .eq('status', 'terbit')
         .select()
         .single();
 
-      if (updateErr) throw updateErr;
+      if (updateErr) {
+        // 0 baris ter-update → sudah di-check-in / status lain oleh petugas lain.
+        const { data: current } = await serverSupabase
+          .from('vouchers')
+          .select('*')
+          .eq('code', codeOrToken)
+          .maybeSingle();
+        if (current) {
+          return NextResponse.json({
+            success: true,
+            message: `Kode voucher ${codeOrToken} sudah berstatus ${current.status} sebelumnya.`,
+            voucher: current,
+          });
+        }
+        throw updateErr;
+      }
 
       return NextResponse.json({
         success: true,

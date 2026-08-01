@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
-import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredVouchers, getOfflineQueue, saveOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
@@ -23,6 +23,13 @@ export default function CheckinPosPage() {
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-reader-pos';
+
+  // Guard untuk mode pemindaian kontinu (banyak peserta):
+  // - jangan proses frame baru selama masih memproses kode sebelumnya
+  // - abaikan kode yang sama dalam 2,5 detik (mencegah trigger ganda QR yang sama)
+  const processingRef = useRef(false);
+  const lastCodeRef = useRef('');
+  const lastCodeTimeRef = useRef(0);
 
   const refreshStats = () => {
     const v = getStoredVouchers();
@@ -121,8 +128,16 @@ export default function CheckinPosPage() {
 
       const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
       const onScanSuccess = (decodedText: string) => {
-        handleProcessCode(decodedText);
-        stopCamera();
+        // Mode kontinu: kamera tetap menyala, cukup guard anti-trigger ganda.
+        const now = Date.now();
+        if (processingRef.current) return;
+        if (decodedText === lastCodeRef.current && now - lastCodeTimeRef.current < 2500) return;
+        processingRef.current = true;
+        lastCodeRef.current = decodedText;
+        lastCodeTimeRef.current = now;
+        void handleProcessCode(decodedText).finally(() => {
+          processingRef.current = false;
+        });
       };
 
       try {
@@ -149,13 +164,14 @@ export default function CheckinPosPage() {
           throw primaryErr;
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Camera start error:', err);
       setIsScanning(false);
 
+      const message = err instanceof Error ? err.message : '';
       setResultMessage({
         success: false,
-        text: `Gagal mengakses kamera perangkat: ${err?.message || 'Pastikan izin akses kamera diizinkan pada browser Anda.'}`,
+        text: `Gagal mengakses kamera perangkat: ${message || 'Pastikan izin akses kamera diizinkan pada browser Anda.'}`,
       });
     }
   };
@@ -167,19 +183,49 @@ export default function CheckinPosPage() {
     setIsScanning(false);
   };
 
-  const handleSyncOffline = () => {
+  const handleSyncOffline = async () => {
     const queue = getOfflineQueue();
     if (queue.length === 0) return;
 
-    queue.forEach((q) => {
-      checkInVoucher(q.voucher_code);
-    });
-    clearOfflineQueue();
+    setIsProcessing(true);
+    setResultMessage(null);
+
+    let synced = 0;
+    let failed = 0;
+    const syncedIds = new Set<string>();
+
+    // Benar-benar kirim ke server; hanya hapus dari antrean yang server sudah catat.
+    for (const item of queue) {
+      try {
+        const res = await fetch('/api/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codeOrToken: item.voucher_code }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          synced++;
+          syncedIds.add(item.id);
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+    }
+
+    if (syncedIds.size > 0) {
+      saveOfflineQueue(getOfflineQueue().filter((q) => !syncedIds.has(q.id)));
+    }
+
     refreshStats();
-    setResultMessage({
-      success: true,
-      text: `Berhasil menyinkronkan ${queue.length} data validasi offline ke server.`,
-    });
+    setIsProcessing(false);
+
+    setResultMessage(
+      failed > 0
+        ? { success: false, text: `Sinkron ${synced} data berhasil, ${failed} gagal (tetap tersimpan & siap dicoba lagi).` }
+        : { success: true, text: `Berhasil menyinkronkan ${synced} data validasi offline ke server.` }
+    );
   };
 
   return (
