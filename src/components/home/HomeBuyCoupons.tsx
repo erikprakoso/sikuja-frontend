@@ -1,38 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
+import React from 'react';
 import { Store, MessageCircle, ArrowRight, Ticket, Smartphone, Banknote, QrCode } from 'lucide-react';
 import { isWhatsAppConfigured, getWhatsAppOrderUrl } from '@/lib/services/whatsapp';
-import { getSavedStaticQris } from '@/lib/services/qris';
 
 export const HomeBuyCoupons: React.FC = () => {
   const waUrl = getWhatsAppOrderUrl();
   const hasWhatsApp = isWhatsAppConfigured();
-  const [qrisDataUrl, setQrisDataUrl] = useState('');
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const payload = getSavedStaticQris();
-      if (!payload) return;
-      try {
-        const url = await QRCode.toDataURL(payload, {
-          width: 280,
-          margin: 2,
-          color: { dark: '#000000', light: '#ffffff' },
-        });
-        if (!cancelled) setQrisDataUrl(url);
-      } catch (err) {
-        console.error('QRIS Gen error:', err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const hasQris = Boolean(qrisDataUrl);
 
   return (
     <section className="space-y-4">
@@ -93,43 +67,6 @@ export const HomeBuyCoupons: React.FC = () => {
             </span>
           )}
         </div>
-      </div>
-
-      {/* 3. QRIS Payment (scan langsung) */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-center gap-5">
-        <div className="flex-1 space-y-2 text-center sm:text-left">
-          <div className="inline-flex items-center gap-2 text-sm font-black text-slate-900">
-            <span className="p-1.5 rounded-lg bg-[#E70013] text-white">
-              <QrCode className="w-4 h-4" />
-            </span>
-            Pembayaran QRIS
-          </div>
-          <p className="text-xs text-slate-600 font-medium leading-relaxed">
-            Scan kode QRIS di samping dengan aplikasi e-wallet / m-banking Anda,
-            lalu masukkan nominal sesuai jumlah kupon yang dibeli
-            (Rp5.000 × jumlah kupon).
-          </p>
-          <p className="text-[11px] text-slate-500 font-semibold">
-            Berlaku untuk pembelian di counter maupun pesanan E-Voucher.
-          </p>
-        </div>
-
-        {hasQris ? (
-          <div className="shrink-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-xs">
-            <img
-              src={qrisDataUrl}
-              alt="Kode QRIS Pembayaran"
-              className="w-44 h-44 sm:w-48 sm:h-48 object-contain"
-            />
-            <p className="mt-1.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              Scan untuk bayar
-            </p>
-          </div>
-        ) : (
-          <span className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200">
-            Kode QRIS segera tersedia
-          </span>
-        )}
       </div>
     </section>
   );
