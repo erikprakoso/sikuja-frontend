@@ -66,7 +66,8 @@ export function createPurchaseTransaction(
   qtyNonFisik: number,
   customCodes: string[] = [],
   customerName: string = '',
-  customerPhone: string = ''
+  customerPhone: string = '',
+  paymentMethod: 'cash' | 'qris' = 'cash'
 ): {
   transaction: Transaction;
   vouchers: Voucher[];
@@ -142,6 +143,7 @@ export function createPurchaseTransaction(
     total_harga: totalLembar * 5000,
     customer_name: customerName.trim() || undefined,
     customer_phone: customerPhone.trim() || undefined,
+    payment_method: paymentMethod,
     created_at: new Date().toISOString(),
   };
 

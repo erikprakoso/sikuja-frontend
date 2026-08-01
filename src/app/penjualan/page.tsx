@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { createPurchaseTransaction } from '@/lib/services/voucher';
 import { getAppBaseUrl } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, AlertCircle } from 'lucide-react';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { TransactionForm } from '@/components/penjualan/TransactionForm';
@@ -22,6 +21,7 @@ export default function PenjualanPage() {
   const [copied, setCopied] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const totalLembar = qtyFisik + qtyNonFisik;
 
@@ -33,13 +33,8 @@ export default function PenjualanPage() {
       QRCode.toDataURL(fullUrl, { width: 300, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
         .then((url) => setQrDataUrl(url))
         .catch((err) => console.error('QR Gen error', err));
-    } else {
-      setQrDataUrl('');
     }
   }, [lastTx]);
-
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
 
   const handleCheckout = async (
     e: React.FormEvent,
@@ -50,6 +45,7 @@ export default function PenjualanPage() {
     e.preventDefault();
     if (totalLembar <= 0 || isSubmitting) return;
 
+    setSubmitError('');
     setIsSubmitting(true);
 
     try {
@@ -62,12 +58,13 @@ export default function PenjualanPage() {
           customCodes,
           customerName: name,
           customerPhone: phone,
+          paymentMethod,
         }),
       });
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        alert(data.error || 'Gagal memproses transaksi.');
+        setSubmitError(data.error || 'Gagal memproses transaksi.');
         setIsSubmitting(false);
         return;
       }
@@ -75,9 +72,10 @@ export default function PenjualanPage() {
       setLastTx({ transaction: data.transaction, vouchers: data.vouchers });
     } catch (err) {
       console.error('Checkout error:', err);
-      // Fallback local memory
-      const res = createPurchaseTransaction(qtyFisik, qtyNonFisik, customCodes, name, phone);
-      setLastTx(res);
+      // TIDAK menyimpan transaksi lokal: biar tidak ada kode 5-digit ganda antar kasir.
+      setSubmitError(
+        'Tidak dapat terhubung ke server. Transaksi TIDAK diproses agar kode voucher tidak ganda. Periksa koneksi lalu coba lagi.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -90,11 +88,12 @@ export default function PenjualanPage() {
     setQrDataUrl('');
     setCopied(false);
     setShowPrintModal(false);
+    setSubmitError('');
   };
 
   const copyToClipboard = () => {
     if (!lastTx) return;
-    const url = `${window.location.origin}/v/${lastTx.transaction.token}`;
+    const url = `${getAppBaseUrl()}/v/${lastTx.transaction.token}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -116,6 +115,14 @@ export default function PenjualanPage() {
             Layanan penerbitan kupon fisik dan e-voucher digital peserta Jalan Sehat.
           </p>
         </div>
+
+        {/* Main Content Layout */}
+        {submitError && (
+          <div className="flex items-start gap-2.5 p-4 rounded-2xl bg-[#E70013] text-white text-sm font-bold shadow-md animate-fade-in">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <span>{submitError}</span>
+          </div>
+        )}
 
         {/* Main Content Layout */}
         {!lastTx ? (
