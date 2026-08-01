@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Download, Search, Loader2, X, Edit, Trash2 } from 'lucide-react';
+import { Plus, Download, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 
 interface Donation {
   id: string;
@@ -26,6 +26,10 @@ export const DonasiList = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
+
   const filteredDonations = useMemo(() => {
     if (!searchQuery.trim()) return donations;
     const q = searchQuery.toLowerCase();
@@ -40,6 +44,20 @@ export const DonasiList = () => {
   const totalDonations = useMemo(() => {
     return donations.reduce((acc, d) => acc + d.amount, 0);
   }, [donations]);
+
+  // Reset to first page when search query or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, pageSize]);
+
+  const totalCount = filteredDonations.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalCount);
+  const paginatedDonations = useMemo(() => {
+    return filteredDonations.slice(startIndex, endIndex);
+  }, [filteredDonations, startIndex, endIndex]);
 
   useEffect(() => {
     const fetchDonations = async () => {
@@ -168,16 +186,21 @@ export const DonasiList = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-black text-slate-900">Daftar Donasi Masuk</h2>
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-black text-slate-900">Daftar Donasi Masuk</h2>
+          <p className="text-xs text-slate-500 font-medium">Kelola seluruh donasi dan sponsor acara</p>
+        </div>
+
         <div className="flex items-center gap-2">
-          <button className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-xs hover:border-slate-300 transition-colors flex items-center gap-1.5">
+          <button className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-xs hover:border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer">
             <Download className="w-4 h-4" />
             Ekspor CSV
           </button>
           <button
             onClick={handleOpenNewDonation}
-            className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95"
+            className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Donasi Baru
@@ -185,21 +208,53 @@ export const DonasiList = () => {
         </div>
       </div>
 
+      {/* Modern Summary Stat Banner */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl text-white border border-white/20">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100">Total Donasi Terkumpul</span>
+            <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalDonations)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
+          <span>{donations.length} Transaksi Donasi</span>
+        </div>
+      </div>
+
+      {/* Main Table Card */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="relative flex-1">
+        {/* Search & Filter Bar */}
+        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari donatur atau jumlah..."
+              placeholder="Cari donatur, sumber, atau nominal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
-          {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => setPageSize(Number(e.target.value))}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value={10}>10 per hlm</option>
+              <option value={25}>25 per hlm</option>
+              <option value={50}>50 per hlm</option>
+            </select>
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+          </div>
         </div>
 
+        {/* Table Data */}
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50">
@@ -214,7 +269,7 @@ export const DonasiList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredDonations.length === 0 ? (
+              {paginatedDonations.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data donasi masuk.</p>
@@ -222,8 +277,8 @@ export const DonasiList = () => {
                   </td>
                 </tr>
               ) : (
-                filteredDonations.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50">
+                paginatedDonations.map((d) => (
+                  <tr key={d.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-medium text-slate-900">
                       {d.donor_name}
                       {d.donor_phone && (
@@ -241,14 +296,14 @@ export const DonasiList = () => {
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => handleEditDonation(d)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
                           title="Edit Donasi"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleDeleteDonation(d.id)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                           title="Hapus Donasi"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -259,17 +314,69 @@ export const DonasiList = () => {
                 ))
               )}
             </tbody>
-            <tfoot className="bg-slate-50">
-              <tr>
-                <td colSpan={1} className="p-4 font-bold text-slate-700 text-right">Total Donasi:</td>
-                <td className="p-4 text-2xl font-black text-emerald-700 text-right">{formatRupiah(totalDonations)}</td>
-                <td colSpan={5}></td>
-              </tr>
-            </tfoot>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalCount > 0 && (
+          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-600">
+            <span>
+              Menampilkan <strong className="font-black text-slate-900">{startIndex + 1}</strong>–
+              <strong className="font-black text-slate-900">{endIndex}</strong> dari{' '}
+              <strong className="font-black text-slate-900">{totalCount}</strong> donasi
+            </span>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={safeCurrentPage <= 1}
+                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum = i + 1;
+                  if (totalPages > 5) {
+                    if (safeCurrentPage > 3) {
+                      pageNum = safeCurrentPage - 2 + i;
+                    }
+                    if (pageNum > totalPages) {
+                      pageNum = totalPages - (4 - i);
+                    }
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer active:scale-95 border ${
+                        safeCurrentPage === pageNum
+                          ? 'bg-[#E70013] border-[#E70013] text-white shadow-xs'
+                          : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                disabled={safeCurrentPage >= totalPages}
+                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
+                title="Halaman Selanjutnya"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Form Modal */}
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
