@@ -8,6 +8,7 @@ import { LoginHeader } from '@/components/login/LoginHeader';
 import { PinDotsIndicator } from '@/components/login/PinDotsIndicator';
 import { PinKeypad } from '@/components/login/PinKeypad';
 import { PinCheatSheet } from '@/components/login/PinCheatSheet';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -96,11 +97,19 @@ export default function LoginPage() {
       {/* PIN Dots & Keypad Box */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
         <PinDotsIndicator pinLength={pin.length} maxLength={pinLength} error={error} />
-        <PinKeypad
-          onKeyPress={handleKeyPress}
-          onClear={handleClear}
-          onDelete={handleDelete}
-        />
+        <div className="relative">
+          <PinKeypad
+            onKeyPress={handleKeyPress}
+            onClear={handleClear}
+            onDelete={handleDelete}
+          />
+          {isSubmitting && (
+            <div className="absolute inset-0 bg-white/85 backdrop-blur-[2px] rounded-2xl flex flex-col items-center justify-center gap-3 animate-fade-in">
+              <Loader2 className="w-8 h-8 animate-spin text-[#E70013]" />
+              <p className="text-xs font-bold text-slate-600">Memverifikasi PIN...</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* PIN Reference Cheat Sheet */}
