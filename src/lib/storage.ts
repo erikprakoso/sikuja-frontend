@@ -1,10 +1,10 @@
-import { Voucher, Transaction, Prize, DrawResult, PosCheckin } from '@/types';
+import { Voucher, Transaction, Purchase, Prize, DrawResult, PosCheckin } from '@/types';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 const STORAGE_KEYS = {
   TRANSACTIONS: 'sikuja_transactions',
   VOUCHERS: 'sikuja_vouchers',
-  PRIZES: 'sikuja_prizes',
+  PURCHASES: 'sikuja_purchases',
   DRAW_RESULTS: 'sikuja_draw_results',
   OFFLINE_QUEUE: 'sikuja_offline_queue',
 };
@@ -31,20 +31,9 @@ function notifyListeners() {
   }
 }
 
-// Initial Seed Data for testing & immediate deployment
-const INITIAL_PRIZES: Prize[] = [
-  { id: 'p1', name: 'Kipas Angin Stand Fan', stock: 5, drawn_count: 0, order_num: 1, icon: 'Wind' },
-  { id: 'p2', name: 'Kompor Gas 2 Tungku', stock: 3, drawn_count: 0, order_num: 2, icon: 'Flame' },
-  { id: 'p3', name: 'Rice Cooker Digital', stock: 3, drawn_count: 0, order_num: 3, icon: 'Utensils' },
-  { id: 'p4', name: 'TV LED 32 Inch', stock: 2, drawn_count: 0, order_num: 4, icon: 'Tv' },
-  { id: 'p5', name: 'Sepeda Gunung MTB', stock: 2, drawn_count: 0, order_num: 5, icon: 'Bike' },
-  { id: 'p6', name: 'Hadiah Utama: Sepeda Motor', stock: 1, drawn_count: 0, order_num: 6, icon: 'Trophy' },
-];
-
 export async function syncFromSupabase(): Promise<boolean> {
   try {
-    // Semua read data operasional lewat API server yang WAJIB login.
-    // Anonim mendapat 401 → tidak menimpa data lokal & tidak men-download PII.
+    // Read operational data via authenticated server route
     const res = await fetch('/api/data');
     if (!res.ok) return false;
 
@@ -53,8 +42,8 @@ export async function syncFromSupabase(): Promise<boolean> {
 
     localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(data.transactions || []));
     localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(data.vouchers || []));
-    if (Array.isArray(data.prizes)) {
-      localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(data.prizes));
+    if (Array.isArray(data.purchases)) {
+      localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(data.purchases));
     }
     localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(data.drawResults || []));
 
@@ -88,7 +77,6 @@ export function getStoredVouchers(): Voucher[] {
     const raw = localStorage.getItem(STORAGE_KEYS.VOUCHERS);
     if (raw) return JSON.parse(raw);
     
-    // Only seed initial vouchers if Supabase is NOT configured (standalone local demo mode)
     if (!isSupabaseConfigured()) {
       const seed = seedInitialVouchers();
       localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(seed));
@@ -132,194 +120,72 @@ export async function saveVouchers(vouchers: Voucher[]) {
   notifyListeners();
 }
 
-export function getStoredPrizes(): Prize[] {
-  if (typeof window === 'undefined') return INITIAL_PRIZES;
+export function getStoredPurchases(): Purchase[] {
+  if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.PRIZES);
-    if (!raw) {
-      if (!isSupabaseConfigured()) {
-        localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(INITIAL_PRIZES));
-        return INITIAL_PRIZES;
-      }
-      return [];
-    }
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(STORAGE_KEYS.PURCHASES);
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    return INITIAL_PRIZES;
+    return [];
   }
 }
 
-export async function savePrizes(prizes: Prize[]) {
+export function savePurchases(purchases: Purchase[]) {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
+  localStorage.setItem(STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
   notifyListeners();
 }
 
-export async function syncPurchaseToPrizeCategory(itemName: string, qty: number) {
-  if (typeof window === 'undefined' || !itemName.trim() || qty <= 0) return;
-  const normalizedName = itemName.trim();
-  const currentPrizes = getStoredPrizes();
-  
-  const existingIndex = currentPrizes.findIndex(
-    (p) => p.name.toLowerCase().trim() === normalizedName.toLowerCase()
-  );
+/**
+ * Compute Prize Categories & Stock dynamically from Purchases (is_doorprize: true) and Draw Results
+ */
+export function computePrizesFromPurchases(purchases: Purchase[], drawResults: DrawResult[] = []): Prize[] {
+  const doorprizePurchases = purchases.filter((p) => p.is_doorprize !== false);
 
-  let updatedPrizes: Prize[];
+  const map = new Map<string, { name: string; stock: number; firstId: string }>();
 
-  if (existingIndex >= 0) {
-    updatedPrizes = currentPrizes.map((p, idx) => {
-      if (idx === existingIndex) {
-        return {
-          ...p,
-          stock: p.stock + qty,
-        };
-      }
-      return p;
-    });
-  } else {
-    const newPrize: Prize = {
-      id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-      name: normalizedName,
-      stock: qty,
-      drawn_count: 0,
-      order_num: currentPrizes.length + 1,
-    };
-    updatedPrizes = [...currentPrizes, newPrize];
-  }
-
-  await savePrizes(updatedPrizes);
-
-  try {
-    await fetch('/api/prizes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prizes: updatedPrizes }),
-    });
-  } catch (err) {
-    console.error('Failed to sync prize to server:', err);
-  }
-}
-
-export async function removePurchaseFromPrizeCategory(itemName: string, qty: number) {
-  if (typeof window === 'undefined' || !itemName.trim() || qty <= 0) return;
-  const normalizedName = itemName.trim().toLowerCase();
-  const currentPrizes = getStoredPrizes();
-
-  const existingIndex = currentPrizes.findIndex((p) => {
-    const pName = p.name.trim().toLowerCase();
-    return pName === normalizedName || normalizedName.includes(pName) || pName.includes(normalizedName);
-  });
-
-  if (existingIndex < 0) return;
-
-  const targetPrize = currentPrizes[existingIndex];
-  const newStock = Math.max(0, targetPrize.stock - qty);
-
-  let updatedPrizes: Prize[];
-
-  if (newStock <= 0) {
-    updatedPrizes = currentPrizes.filter((_, idx) => idx !== existingIndex);
-  } else {
-    updatedPrizes = currentPrizes.map((p, idx) => {
-      if (idx === existingIndex) {
-        return {
-          ...p,
-          stock: newStock,
-        };
-      }
-      return p;
-    });
-  }
-
-  await savePrizes(updatedPrizes);
-
-  try {
-    await fetch('/api/prizes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prizes: updatedPrizes }),
-    });
-  } catch (err) {
-    console.error('Failed to sync prize deletion to server:', err);
-  }
-}
-
-export async function updatePurchasePrizeCategoryStock(
-  oldName: string | undefined,
-  oldQty: number | undefined,
-  oldIsDoorprize: boolean | undefined,
-  newName: string,
-  newQty: number,
-  newIsDoorprize: boolean
-) {
-  if (typeof window === 'undefined') return;
-
-  let currentPrizes = getStoredPrizes();
-
-  // 1. Deduct old stock if old purchase was a doorprize
-  if (oldName && oldQty && oldQty > 0 && oldIsDoorprize !== false) {
-    const normOld = oldName.trim().toLowerCase();
-    const oldIdx = currentPrizes.findIndex((p) => {
-      const pName = p.name.trim().toLowerCase();
-      return pName === normOld || normOld.includes(pName) || pName.includes(normOld);
-    });
-
-    if (oldIdx >= 0) {
-      const target = currentPrizes[oldIdx];
-      const remainingStock = Math.max(0, target.stock - oldQty);
-      if (remainingStock <= 0) {
-        currentPrizes = currentPrizes.filter((_, idx) => idx !== oldIdx);
-      } else {
-        currentPrizes = currentPrizes.map((p, idx) =>
-          idx === oldIdx ? { ...p, stock: remainingStock } : p
-        );
-      }
-    }
-  }
-
-  // 2. Add new stock if new item is a doorprize
-  if (newName.trim() && newQty > 0 && newIsDoorprize) {
-    const normNew = newName.trim().toLowerCase();
-    const newIdx = currentPrizes.findIndex((p) => {
-      const pName = p.name.trim().toLowerCase();
-      return pName === normNew || normNew.includes(pName) || pName.includes(normNew);
-    });
-
-    if (newIdx >= 0) {
-      currentPrizes = currentPrizes.map((p, idx) =>
-        idx === newIdx ? { ...p, stock: p.stock + newQty } : p
-      );
+  for (const p of doorprizePurchases) {
+    const trimmedName = p.item_name.trim();
+    const key = trimmedName.toLowerCase();
+    if (map.has(key)) {
+      const existing = map.get(key)!;
+      existing.stock += p.qty;
     } else {
-      const newPrize: Prize = {
-        id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-        name: newName.trim(),
-        stock: newQty,
-        drawn_count: 0,
-        order_num: currentPrizes.length + 1,
-      };
-      currentPrizes = [...currentPrizes, newPrize];
+      map.set(key, {
+        name: trimmedName,
+        stock: p.qty,
+        firstId: p.id,
+      });
     }
   }
 
-  // 3. Save atomically once
-  await savePrizes(currentPrizes);
+  const prizes: Prize[] = [];
+  let orderNum = 1;
 
-  try {
-    await fetch('/api/prizes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prizes: currentPrizes }),
+  for (const [key, item] of map.entries()) {
+    const drawn = drawResults.filter(
+      (r) =>
+        (r.prize_name && r.prize_name.trim().toLowerCase() === key) ||
+        (r.prize_id && r.prize_id.trim().toLowerCase() === key) ||
+        r.prize_id === item.firstId
+    ).length;
+
+    prizes.push({
+      id: item.firstId,
+      name: item.name,
+      stock: item.stock,
+      drawn_count: drawn,
+      order_num: orderNum++,
     });
-  } catch (err) {
-    console.error('Failed to update prize stock on server:', err);
   }
+
+  return prizes;
 }
 
-export async function deletePrizeFromStore(prizeId: string) {
-  if (typeof window === 'undefined') return;
-  const prizes = getStoredPrizes().filter((p) => p.id !== prizeId);
-  localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
-  notifyListeners();
+export function getStoredPrizes(): Prize[] {
+  const purchases = getStoredPurchases();
+  const drawResults = getStoredDrawResults();
+  return computePrizesFromPurchases(purchases, drawResults);
 }
 
 export function getStoredDrawResults(): DrawResult[] {

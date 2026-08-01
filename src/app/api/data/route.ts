@@ -3,9 +3,7 @@ import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-serve
 import { requireAuth } from '@/lib/server-auth';
 
 /**
- * GET /api/data — Data operasional lengkap (transactions, vouchers, prizes, draw_results).
- * WAJIB login (sembarang role). Anonim dapat 401 dan tidak akan pernah men-download
- * PII peserta (nama, no. HP, token) ke browser publik.
+ * GET /api/data — Data operasional lengkap (transactions, vouchers, purchases, draw_results).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,15 +15,15 @@ export async function GET(request: NextRequest) {
         success: true,
         transactions: [],
         vouchers: [],
-        prizes: [],
+        purchases: [],
         drawResults: [],
       });
     }
 
-    const [txRes, vRes, pRes, dRes] = await Promise.all([
+    const [txRes, vRes, purRes, dRes] = await Promise.all([
       serverSupabase.from('transactions').select('*'),
       serverSupabase.from('vouchers').select('*'),
-      serverSupabase.from('prizes').select('*').order('order_num', { ascending: true }),
+      serverSupabase.from('purchases').select('*').order('created_at', { ascending: false }),
       serverSupabase.from('draw_results').select('*'),
     ]);
 
@@ -33,7 +31,7 @@ export async function GET(request: NextRequest) {
       success: true,
       transactions: txRes.data || [],
       vouchers: vRes.data || [],
-      prizes: pRes.data || [],
+      purchases: purRes.data || [],
       drawResults: dRes.data || [],
     });
   } catch (err: unknown) {

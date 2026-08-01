@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet } from 'lucide-react';
+import { SIKUJA_EVENT_NAME, getStoredVouchers } from '@/lib/storage';
 
 interface Donation {
   id: string;
@@ -57,6 +58,24 @@ export const DonasiList = () => {
     return filteredDonations.slice(startIndex, endIndex);
   }, [filteredDonations, startIndex, endIndex]);
 
+  const [totalPurchases, setTotalPurchases] = useState(0);
+  const [voucherSales, setVoucherSales] = useState(0);
+
+  const fetchOverallStats = async () => {
+    try {
+      const purRes = await fetch('/api/keuangan/purchases');
+      const purData = await purRes.json();
+      if (purRes.ok && purData.purchases) {
+        const sum = purData.purchases.reduce((acc: number, p: any) => acc + p.total_price, 0);
+        setTotalPurchases(sum);
+      }
+      const vouchers = getStoredVouchers();
+      setVoucherSales(vouchers.length * 5000);
+    } catch (err) {
+      console.error('Fetch overall stats error:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchDonations = async () => {
       setIsLoading(true);
@@ -73,7 +92,15 @@ export const DonasiList = () => {
       }
     };
     fetchDonations();
+    fetchOverallStats();
+
+    window.addEventListener(SIKUJA_EVENT_NAME, () => {
+      fetchDonations();
+      fetchOverallStats();
+    });
   }, []);
+
+  const sisaKas = totalDonations + voucherSales - totalPurchases;
 
   const handleOpenNewDonation = () => {
     setEditingDonation(null);
@@ -205,7 +232,7 @@ export const DonasiList = () => {
       </div>
 
       {/* Modern Summary Stat Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl text-white border border-white/20">
             <TrendingUp className="w-6 h-6" />
@@ -215,8 +242,15 @@ export const DonasiList = () => {
             <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalDonations)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-          <span>{donations.length} Transaksi Pemasukan</span>
+
+        <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 w-full md:w-auto justify-between md:justify-end">
+          <div className="text-left md:text-right">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100 block">Sisa Saldo Kas Panitia</span>
+            <p className="text-xl sm:text-2xl font-black text-white">{formatRupiah(sisaKas)}</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
+            <span>{donations.length} Transaksi</span>
+          </div>
         </div>
       </div>
 

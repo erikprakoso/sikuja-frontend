@@ -5,7 +5,6 @@ import {
   getStoredTransactions,
   saveTransactions,
   getStoredPrizes,
-  savePrizes,
   getStoredDrawResults,
   saveDrawResults,
   addToOfflineQueue,

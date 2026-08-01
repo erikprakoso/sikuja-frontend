@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory, removePurchaseFromPrizeCategory, updatePurchasePrizeCategoryStock } from '@/lib/storage';
+import { SIKUJA_EVENT_NAME, getStoredVouchers } from '@/lib/storage';
 import { Purchase } from '@/types';
 
 export const PembelianList = () => {
@@ -47,6 +47,24 @@ export const PembelianList = () => {
     return filteredPurchases.slice(startIndex, endIndex);
   }, [filteredPurchases, startIndex, endIndex]);
 
+  const [totalDonations, setTotalDonations] = useState(0);
+  const [voucherSales, setVoucherSales] = useState(0);
+
+  const fetchOverallStats = async () => {
+    try {
+      const donRes = await fetch('/api/keuangan/donasi');
+      const donData = await donRes.json();
+      if (donRes.ok && donData.donations) {
+        const sum = donData.donations.reduce((acc: number, d: any) => acc + d.amount, 0);
+        setTotalDonations(sum);
+      }
+      const vouchers = getStoredVouchers();
+      setVoucherSales(vouchers.length * 5000);
+    } catch (err) {
+      console.error('Fetch overall stats error:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchPurchases = async () => {
       setIsLoading(true);
@@ -63,9 +81,15 @@ export const PembelianList = () => {
       }
     };
     fetchPurchases();
-    window.addEventListener(SIKUJA_EVENT_NAME, fetchPurchases);
-    return () => window.removeEventListener(SIKUJA_EVENT_NAME, fetchPurchases);
+    fetchOverallStats();
+
+    window.addEventListener(SIKUJA_EVENT_NAME, () => {
+      fetchPurchases();
+      fetchOverallStats();
+    });
   }, []);
+
+  const sisaKas = totalDonations + voucherSales - totalSpent;
 
   const handleOpenNewPurchase = () => {
     setEditingPurchase(null);
@@ -99,9 +123,6 @@ export const PembelianList = () => {
 
       if (res.ok && data.success) {
         setPurchases((prev) => prev.filter((p) => p.id !== id));
-        if (target) {
-          await removePurchaseFromPrizeCategory(target.item_name, target.qty);
-        }
       } else {
         alert(data.error || 'Gagal menghapus pengeluaran');
       }
@@ -164,23 +185,12 @@ export const PembelianList = () => {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        if (isEdit && editingPurchase) {
-          await updatePurchasePrizeCategoryStock(
-            editingPurchase.item_name,
-            editingPurchase.qty,
-            editingPurchase.is_doorprize,
-            newItem.trim(),
-            Number(newQty),
-            isDoorprize
-          );
+        if (isEdit) {
           setPurchases((prev) =>
             prev.map((p) => (p.id === data.purchase.id ? data.purchase : p))
           );
         } else {
           setPurchases((prev) => [data.purchase, ...prev]);
-          if (isDoorprize) {
-            await syncPurchaseToPrizeCategory(newItem.trim(), Number(newQty));
-          }
         }
 
         setNewItem('');
@@ -224,7 +234,7 @@ export const PembelianList = () => {
       </div>
 
       {/* Modern Summary Stat Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl text-white border border-white/20">
             <ShoppingBag className="w-6 h-6" />
@@ -234,8 +244,15 @@ export const PembelianList = () => {
             <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalSpent)}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-          <span>{purchases.length} Transaksi Pengeluaran</span>
+
+        <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 w-full md:w-auto justify-between md:justify-end">
+          <div className="text-left md:text-right">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Kas Panitia</span>
+            <p className="text-xl sm:text-2xl font-black text-white">{formatRupiah(sisaKas)}</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
+            <span>{purchases.length} Transaksi</span>
+          </div>
         </div>
       </div>
 

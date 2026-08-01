@@ -77,16 +77,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // 3. Validasi hadiah
-    const { data: prize, error: pErr } = await serverSupabase
-      .from('prizes')
+    // 3. Validasi hadiah dari pengadaan purchases
+    const { data: purchases } = await serverSupabase
+      .from('purchases')
       .select('*')
-      .eq('id', prizeId)
-      .maybeSingle();
+      .neq('is_doorprize', false);
 
-    if (pErr || !prize) {
+    const targetPurchase = (purchases || []).find(
+      (p) => p.id === prizeId || p.item_name.trim().toLowerCase() === prizeId.trim().toLowerCase()
+    );
+
+    if (!targetPurchase) {
       return NextResponse.json({ error: 'Hadiah tidak ditemukan' }, { status: 404 });
     }
+
+    const prize = {
+      id: targetPurchase.id,
+      name: targetPurchase.item_name.trim(),
+    };
 
     // 4. MUTEX: konsumsi kandidat. Hanya satu konfirmasi yang bisa mengubah
     //    status pending -> confirmed; yang kalah mendapat 0 baris.
@@ -126,28 +134,6 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // 6. Increment stok terpakai secara ATOMIK dengan guard stok (anti over-draw).
-    const { data: updatedPrize, error: incErr } = await serverSupabase
-      .from('prizes')
-      .update({ drawn_count: prize.drawn_count + 1 })
-      .eq('id', prize.id)
-      .lt('drawn_count', prize.stock)
-      .select()
-      .maybeSingle();
-
-    if (incErr) throw incErr;
-    if (!updatedPrize) {
-      // Rollback voucher + kandidat.
-      await serverSupabase
-        .from('vouchers')
-        .update({ status: 'checkin', won_at: null, prize_id: null, prize_name: null })
-        .eq('code', code);
-      await serverSupabase.from('pending_draws').update({ status: 'pending' }).eq('id', pending.id);
-      return NextResponse.json({
-        error: `Stok hadiah "${prize.name}" sudah habis!`,
-      }, { status: 409 });
-    }
-
     // 7. Ambil nama pembeli dari transaction untuk tampilan panggung.
     const { data: customer, error: custErr } = await serverSupabase
       .from('transactions')
@@ -176,7 +162,6 @@ export async function POST(request: NextRequest) {
         .from('vouchers')
         .update({ status: 'checkin', won_at: null, prize_id: null, prize_name: null })
         .eq('code', code);
-      await serverSupabase.from('prizes').update({ drawn_count: prize.drawn_count - 1 }).eq('id', prize.id);
       await serverSupabase.from('pending_draws').update({ status: 'pending' }).eq('id', pending.id);
       throw resErr;
     }

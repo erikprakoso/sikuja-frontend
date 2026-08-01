@@ -42,20 +42,48 @@ export async function POST(request: NextRequest) {
     }
 
     if (isServerSupabaseConfigured()) {
-      // 1. Fetch Prize details
-      const { data: prize, error: prizeErr } = await serverSupabase
-        .from('prizes')
+      // 1. Fetch Prize details from Purchases & Draw Results
+      const { data: purchases } = await serverSupabase
+        .from('purchases')
         .select('*')
-        .eq('id', prizeId)
-        .single();
+        .neq('is_doorprize', false);
 
-      if (prizeErr || !prize) {
+      if (!purchases || purchases.length === 0) {
+        return NextResponse.json({ error: 'Belum ada pengadaan barang doorprize' }, { status: 400 });
+      }
+
+      const targetPurchase = purchases.find(
+        (p) => p.id === prizeId || p.item_name.trim().toLowerCase() === prizeId.trim().toLowerCase()
+      );
+
+      if (!targetPurchase) {
         return NextResponse.json({ error: 'Hadiah tidak ditemukan' }, { status: 404 });
       }
 
-      if (prize.drawn_count >= prize.stock) {
-        return NextResponse.json({ error: `Stok hadiah ${prize.name} sudah habis!` }, { status: 400 });
+      const targetName = targetPurchase.item_name.trim();
+      const sameCategoryPurchases = purchases.filter(
+        (p) => p.item_name.trim().toLowerCase() === targetName.toLowerCase()
+      );
+      const totalStock = sameCategoryPurchases.reduce((acc, p) => acc + p.qty, 0);
+
+      const { data: drawResults } = await serverSupabase.from('draw_results').select('*');
+      const drawnCount = (drawResults || []).filter(
+        (r) =>
+          (r.prize_name && r.prize_name.trim().toLowerCase() === targetName.toLowerCase()) ||
+          (r.prize_id && r.prize_id.trim().toLowerCase() === targetName.toLowerCase()) ||
+          r.prize_id === targetPurchase.id
+      ).length;
+
+      if (drawnCount >= totalStock) {
+        return NextResponse.json({ error: `Stok hadiah ${targetName} sudah habis!` }, { status: 400 });
       }
+
+      const prize = {
+        id: targetPurchase.id,
+        name: targetName,
+        stock: totalStock,
+        drawn_count: drawnCount,
+      };
 
       // 2. Fetch eligible vouchers (status == 'checkin')
       const { data: eligibleVouchers, error: vErr } = await serverSupabase
