@@ -4,10 +4,15 @@ import { Flame } from 'lucide-react';
 
 interface HomeRecentWinnersProps {
   winners: DrawResult[];
+  lastSyncedAt?: Date | null;
 }
 
-export const HomeRecentWinners: React.FC<HomeRecentWinnersProps> = ({ winners }) => {
+export const HomeRecentWinners: React.FC<HomeRecentWinnersProps> = ({ winners, lastSyncedAt }) => {
   if (winners.length === 0) return null;
+
+  const sortedWinners = [...winners].sort(
+    (a, b) => new Date(b.drawn_at).getTime() - new Date(a.drawn_at).getTime()
+  );
 
   return (
     <section className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 space-y-4 shadow-sm">
@@ -17,12 +22,14 @@ export const HomeRecentWinners: React.FC<HomeRecentWinnersProps> = ({ winners })
           Pengundian Terakhir
         </h2>
         <span className="text-xs text-slate-500 font-semibold">
-          Pembaruan Real-Time
+          {lastSyncedAt
+            ? `Pembaruan ${lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`
+            : 'Pembaruan Otomatis'}
         </span>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {winners.slice(0, 6).map((win) => (
+        {sortedWinners.slice(0, 6).map((win) => (
           <div
             key={win.id}
             className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-all"
