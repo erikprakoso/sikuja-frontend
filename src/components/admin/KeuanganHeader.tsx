@@ -9,9 +9,9 @@ export const KeuanganHeader: React.FC = () => {
           <Wallet className="w-3.5 h-3.5" />
           Dashboard Keuangan & Laporan
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Keuangan, Donasi, & Pengeluaran</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Keuangan & Kas Panitia</h1>
         <p className="text-xs text-slate-600 font-medium mt-0.5">
-          Ringkasan real-time donasi masuk, pembelian doorprize, dan pengeluaran biaya operasional.
+          Ringkasan real-time pemasukan & sponsor serta pengeluaran belanja acara.
         </p>
       </div>
     </div>

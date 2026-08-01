@@ -189,8 +189,8 @@ export const DonasiList = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900">Daftar Donasi Masuk</h2>
-          <p className="text-xs text-slate-500 font-medium">Kelola seluruh donasi dan sponsor acara</p>
+          <h2 className="text-lg font-black text-slate-900">Daftar Pemasukan & Sponsor</h2>
+          <p className="text-xs text-slate-500 font-medium">Kelola seluruh donasi, bantuan dana, dan sponsor acara</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export const DonasiList = () => {
             className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Donasi Baru
+            Pemasukan Baru
           </button>
         </div>
       </div>
@@ -211,12 +211,12 @@ export const DonasiList = () => {
             <TrendingUp className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100">Total Donasi Terkumpul</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100">Total Pemasukan & Sponsor</span>
             <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalDonations)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-          <span>{donations.length} Transaksi Donasi</span>
+          <span>{donations.length} Transaksi Pemasukan</span>
         </div>
       </div>
 
@@ -255,8 +255,8 @@ export const DonasiList = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="p-4 font-bold text-slate-700">Nama Donatur</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Jumlah Donasi</th>
+                <th className="p-4 font-bold text-slate-700">Nama Donatur / Sponsor</th>
+                <th className="p-4 font-bold text-slate-700 text-right">Jumlah Pemasukan</th>
                 <th className="p-4 font-bold text-slate-700">Tanggal</th>
                 <th className="p-4 font-bold text-slate-700">Status</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
@@ -266,8 +266,8 @@ export const DonasiList = () => {
               {paginatedDonations.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-slate-500">
-                    <p className="text-lg font-semibold">Belum ada data donasi masuk.</p>
-                    <p className="text-xs mt-2">Klik "Donasi Baru" untuk menambahkan donasi.</p>
+                    <p className="text-lg font-semibold">Belum ada data pemasukan & sponsor.</p>
+                    <p className="text-xs mt-2">Klik "Pemasukan Baru" untuk menambahkan data.</p>
                   </td>
                 </tr>
               ) : (
@@ -374,7 +374,7 @@ export const DonasiList = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900">
-                {editingDonation ? 'Edit Donasi' : 'Catat Donasi Masuk'}
+                {editingDonation ? 'Edit Pemasukan & Sponsor' : 'Catat Pemasukan & Sponsor'}
               </h3>
               <button
                 onClick={() => {
@@ -389,14 +389,14 @@ export const DonasiList = () => {
 
             <form onSubmit={handleSaveDonation} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Nama Donatur</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Nama Donatur / Sponsor</label>
                 <input
                   type="text"
                   value={newDonorName}
                   onChange={(e) => setNewDonorName(e.target.value)}
                   required
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
-                  placeholder="Nama lengkap donatur..."
+                  placeholder="Nama donatur atau perusahaan sponsor..."
                 />
               </div>
 
@@ -412,7 +412,7 @@ export const DonasiList = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah Donasi (Rp)</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah Pemasukan (Rp)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
                   <input

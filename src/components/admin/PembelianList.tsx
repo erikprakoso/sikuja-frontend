@@ -197,8 +197,8 @@ export const PembelianList = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900">Daftar Pembelian Barang & Doorprize</h2>
-          <p className="text-xs text-slate-500 font-medium">Pengadaan dan pengeluaran belanja doorprize maupun operasional</p>
+          <h2 className="text-lg font-black text-slate-900">Daftar Pengeluaran & Belanja</h2>
+          <p className="text-xs text-slate-500 font-medium">Pengadaan barang doorprize maupun belanja operasional acara</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -207,7 +207,7 @@ export const PembelianList = () => {
             className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            Pembelian Baru
+            Pengeluaran Baru
           </button>
         </div>
       </div>
@@ -219,12 +219,12 @@ export const PembelianList = () => {
             <ShoppingBag className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Belanja Barang</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Pengeluaran & Belanja</span>
             <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalSpent)}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-          <span>{purchases.length} Transaksi Pembelian</span>
+          <span>{purchases.length} Transaksi Pengeluaran</span>
         </div>
       </div>
 
@@ -276,8 +276,8 @@ export const PembelianList = () => {
               {paginatedPurchases.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-12 text-center text-slate-500">
-                    <p className="text-lg font-semibold">Belum ada data pembelian.</p>
-                    <p className="text-xs mt-2">Klik "Pembelian Baru" untuk menambahkan data.</p>
+                    <p className="text-lg font-semibold">Belum ada data pengeluaran & belanja.</p>
+                    <p className="text-xs mt-2">Klik "Pengeluaran Baru" untuk menambahkan data.</p>
                   </td>
                 </tr>
               ) : (
@@ -391,7 +391,7 @@ export const PembelianList = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900">
-                {editingPurchase ? 'Edit Pembelian' : 'Tambah Pembelian Baru'}
+                {editingPurchase ? 'Edit Pengeluaran & Belanja' : 'Catat Pengeluaran & Belanja'}
               </h3>
               <button
                 onClick={() => {
