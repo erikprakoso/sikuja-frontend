@@ -30,6 +30,18 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface Purchase {
+  id: string;
+  item_name: string;
+  qty: number;
+  price_per_unit: number;
+  total_price: number;
+  purchase_date: string;
+  is_doorprize: boolean;
+  note?: string | null;
+  created_by?: string;
+}
+
 export interface Prize {
   id: string;
   name: string;

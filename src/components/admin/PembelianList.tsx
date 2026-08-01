@@ -1,29 +1,19 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
-import { SIKUJA_EVENT_NAME } from '@/lib/storage';
-
-interface Purchase {
-  id: string;
-  supplier_name: string;
-  item_name: string;
-  qty: number;
-  price_per_unit: number;
-  total_price: number;
-  purchase_date: string;
-  payment_method: 'cash' | 'qris' | 'transfer';
-  note?: string | null;
-}
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package } from 'lucide-react';
+import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory } from '@/lib/storage';
+import { Purchase } from '@/types';
 
 export const PembelianList = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
-  const [newSupplier, setNewSupplier] = useState('');
+  
   const [newItem, setNewItem] = useState('');
   const [newQty, setNewQty] = useState<string>('');
-  const [newPrice, setNewPrice] = useState<string>('');
-  const [newPaymentMethod, setNewPaymentMethod] = useState<'cash' | 'qris' | 'transfer'>('cash');
+  const [newPrice, setNewPrice] = useState<string>(''); // Raw numeric string
+  const [isDoorprize, setIsDoorprize] = useState<boolean>(true);
   const [newNote, setNewNote] = useState('');
+
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,9 +30,7 @@ export const PembelianList = () => {
     if (!searchQuery.trim()) return purchases;
     const q = searchQuery.toLowerCase();
     return purchases.filter(
-      (p) =>
-        p.item_name.toLowerCase().includes(q) ||
-        p.supplier_name.toLowerCase().includes(q)
+      (p) => p.item_name.toLowerCase().includes(q)
     );
   }, [purchases, searchQuery]);
 
@@ -81,22 +69,20 @@ export const PembelianList = () => {
 
   const handleOpenNewPurchase = () => {
     setEditingPurchase(null);
-    setNewSupplier('');
     setNewItem('');
     setNewQty('');
     setNewPrice('');
-    setNewPaymentMethod('cash');
+    setIsDoorprize(true);
     setNewNote('');
     setIsAdding(true);
   };
 
   const handleEditPurchase = (p: Purchase) => {
     setEditingPurchase(p);
-    setNewSupplier(p.supplier_name);
     setNewItem(p.item_name);
     setNewQty(p.qty.toString());
     setNewPrice(p.price_per_unit.toString());
-    setNewPaymentMethod(p.payment_method);
+    setIsDoorprize(typeof p.is_doorprize === 'boolean' ? p.is_doorprize : true);
     setNewNote(p.note || '');
     setIsAdding(true);
   };
@@ -121,38 +107,53 @@ export const PembelianList = () => {
     }
   };
 
+  const handlePriceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    setNewPrice(digitsOnly);
+  };
+
+  const formattedDisplayPrice = useMemo(() => {
+    if (!newPrice) return '';
+    const num = parseInt(newPrice, 10);
+    if (isNaN(num)) return '';
+    return new Intl.NumberFormat('id-ID').format(num);
+  }, [newPrice]);
+
+  const calculatedTotalPrice = useMemo(() => {
+    const qty = parseInt(newQty, 10);
+    const price = parseInt(newPrice, 10);
+    if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) return 0;
+    return qty * price;
+  }, [newQty, newPrice]);
+
   const handleSavePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newSupplier.trim() || !newItem.trim() || !newQty || !newPrice) return;
+    if (!newItem.trim() || !newQty || !newPrice) return;
 
     setIsLoading(true);
     try {
       const isEdit = !!editingPurchase;
+      const payload = {
+        item_name: newItem.trim(),
+        qty: Number(newQty),
+        price_per_unit: Number(newPrice),
+        is_doorprize: isDoorprize,
+        note: newNote.trim() || null,
+      };
+
       const res = isEdit
         ? await fetch('/api/keuangan/purchases', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: editingPurchase.id,
-              supplier_name: newSupplier.trim(),
-              item_name: newItem.trim(),
-              qty: Number(newQty),
-              price_per_unit: Number(newPrice),
-              payment_method: newPaymentMethod,
-              note: newNote.trim() || null,
+              ...payload,
             }),
           })
         : await fetch('/api/keuangan/purchases', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              supplier_name: newSupplier.trim(),
-              item_name: newItem.trim(),
-              qty: Number(newQty),
-              price_per_unit: Number(newPrice),
-              payment_method: newPaymentMethod,
-              note: newNote.trim() || null,
-            }),
+            body: JSON.stringify(payload),
           });
 
       const data = await res.json();
@@ -165,7 +166,12 @@ export const PembelianList = () => {
         } else {
           setPurchases((prev) => [data.purchase, ...prev]);
         }
-        setNewSupplier('');
+
+        // Auto-sync to Prize Category if isDoorprize is true
+        if (isDoorprize) {
+          await syncPurchaseToPrizeCategory(newItem.trim(), Number(newQty));
+        }
+
         setNewItem('');
         setNewQty('');
         setNewPrice('');
@@ -191,8 +197,8 @@ export const PembelianList = () => {
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900">Daftar Pembelian Doorprize</h2>
-          <p className="text-xs text-slate-500 font-medium">Pengadaan dan pengeluaran belanja hadiah doorprize</p>
+          <h2 className="text-lg font-black text-slate-900">Daftar Pembelian Barang & Doorprize</h2>
+          <p className="text-xs text-slate-500 font-medium">Pengadaan dan pengeluaran belanja doorprize maupun operasional</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -213,7 +219,7 @@ export const PembelianList = () => {
             <ShoppingBag className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Belanja Doorprize</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Belanja Barang</span>
             <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalSpent)}</p>
           </div>
         </div>
@@ -230,7 +236,7 @@ export const PembelianList = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari supplier atau item..."
+              placeholder="Cari nama item barang..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
@@ -257,21 +263,20 @@ export const PembelianList = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="p-4 font-bold text-slate-700">Item</th>
-                <th className="p-4 font-bold text-slate-700">Supplier</th>
+                <th className="p-4 font-bold text-slate-700">Item Barang</th>
+                <th className="p-4 font-bold text-slate-700">Tipe Barang</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Jumlah</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Harga Satuan</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Harga Total</th>
                 <th className="p-4 font-bold text-slate-700">Tgl Beli</th>
-                <th className="p-4 font-bold text-slate-700">Bayar</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {paginatedPurchases.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-slate-500">
-                    <p className="text-lg font-semibold">Belum ada data pembelian doorprize.</p>
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    <p className="text-lg font-semibold">Belum ada data pembelian.</p>
                     <p className="text-xs mt-2">Klik "Pembelian Baru" untuk menambahkan data.</p>
                   </td>
                 </tr>
@@ -279,16 +284,23 @@ export const PembelianList = () => {
                 paginatedPurchases.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-medium text-slate-900">{p.item_name}</td>
-                    <td className="p-4 text-slate-600">{p.supplier_name}</td>
-                    <td className="p-4 text-slate-600 text-right">{p.qty} unit</td>
+                    <td className="p-4">
+                      {p.is_doorprize !== false ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold inline-flex items-center gap-1">
+                          <Gift className="w-3.5 h-3.5 text-amber-600" />
+                          Doorprize Undian
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold inline-flex items-center gap-1">
+                          <Package className="w-3.5 h-3.5 text-slate-500" />
+                          Operasional
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-4 text-slate-600 text-right font-semibold">{p.qty} unit</td>
                     <td className="p-4 text-slate-600 text-right">{formatRupiah(p.price_per_unit)}</td>
                     <td className="p-4 text-blue-700 font-bold text-right">{formatRupiah(p.total_price)}</td>
                     <td className="p-4 text-slate-500">{new Date(p.purchase_date).toLocaleDateString('id-ID')}</td>
-                    <td className="p-4">
-                      <span className="px-2 py-1 rounded-lg bg-blue-100 text-blue-700 text-xs font-bold capitalize">
-                        {p.payment_method}
-                      </span>
-                    </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -376,10 +388,10 @@ export const PembelianList = () => {
       {/* Form Modal */}
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900">
-                {editingPurchase ? 'Edit Pembelian Doorprize' : 'Tambah Pembelian Doorprize'}
+                {editingPurchase ? 'Edit Pembelian' : 'Tambah Pembelian Baru'}
               </h3>
               <button
                 onClick={() => {
@@ -394,67 +406,90 @@ export const PembelianList = () => {
 
             <form onSubmit={handleSavePurchase} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Supplier</label>
-                <input
-                  type="text"
-                  value={newSupplier}
-                  onChange={(e) => setNewSupplier(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  placeholder="Nama supplier..."
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Item</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Nama Item Barang</label>
                 <input
                   type="text"
                   value={newItem}
                   onChange={(e) => setNewItem(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  placeholder="Nama item..."
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
+                  placeholder="Contoh: Sepeda Listrik / Kipas Angin..."
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah</label>
+                  <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah (Qty)</label>
                   <input
                     type="number"
                     min="1"
                     value={newQty}
                     onChange={(e) => setNewQty(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
                     placeholder="Contoh: 2"
                   />
                 </div>
+
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Harga Satuan (Rp)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                    placeholder="Contoh: 1750000"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
+                    <input
+                      type="text"
+                      value={formattedDisplayPrice}
+                      onChange={handlePriceInputChange}
+                      required
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
+                      placeholder="1.750.000"
+                    />
+                  </div>
                 </div>
               </div>
 
+              {/* Total Price Auto Preview */}
+              {calculatedTotalPrice > 0 && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-700">Total Harga Belanja:</span>
+                  <span className="text-base font-black text-blue-900">{formatRupiah(calculatedTotalPrice)}</span>
+                </div>
+              )}
+
+              {/* Apakah ini Doorprize? Selector */}
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Metode Bayar</label>
-                <select
-                  value={newPaymentMethod}
-                  onChange={(e) => setNewPaymentMethod(e.target.value as 'cash' | 'qris' | 'transfer')}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                >
-                  <option value="cash">Tunai</option>
-                  <option value="qris">QRIS</option>
-                  <option value="transfer">Transfer</option>
-                </select>
+                <label className="text-xs font-bold text-slate-600 mb-1.5 block">Apakah barang ini dijadikan Doorprize Undian?</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsDoorprize(true)}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      isDoorprize
+                        ? 'bg-[#E70013] border-[#E70013] text-white shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <Gift className="w-4 h-4" />
+                    <span>Ya (Doorprize)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsDoorprize(false)}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      !isDoorprize
+                        ? 'bg-slate-800 border-slate-800 text-white shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Tidak (Operasional)</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
+                  {isDoorprize
+                    ? '🎁 Item akan otomatis terdaftar sebagai kategori & stok hadiah di panggung Undian.'
+                    : '📦 Item dicatat sebagai pengadaan belanja barang biasa (tidak masuk list undian).'}
+                </p>
               </div>
 
               <div>
@@ -462,7 +497,7 @@ export const PembelianList = () => {
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-24 resize-none text-slate-900"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-20 resize-none text-slate-900"
                   placeholder="Catatan tambahan..."
                 />
               </div>

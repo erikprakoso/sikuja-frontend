@@ -155,6 +155,51 @@ export async function savePrizes(prizes: Prize[]) {
   notifyListeners();
 }
 
+export async function syncPurchaseToPrizeCategory(itemName: string, qty: number) {
+  if (typeof window === 'undefined' || !itemName.trim() || qty <= 0) return;
+  const normalizedName = itemName.trim();
+  const currentPrizes = getStoredPrizes();
+  
+  const existingIndex = currentPrizes.findIndex(
+    (p) => p.name.toLowerCase().trim() === normalizedName.toLowerCase()
+  );
+
+  let updatedPrizes: Prize[];
+
+  if (existingIndex >= 0) {
+    updatedPrizes = currentPrizes.map((p, idx) => {
+      if (idx === existingIndex) {
+        return {
+          ...p,
+          stock: p.stock + qty,
+        };
+      }
+      return p;
+    });
+  } else {
+    const newPrize: Prize = {
+      id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      name: normalizedName,
+      stock: qty,
+      drawn_count: 0,
+      order_num: currentPrizes.length + 1,
+    };
+    updatedPrizes = [...currentPrizes, newPrize];
+  }
+
+  await savePrizes(updatedPrizes);
+
+  try {
+    await fetch('/api/prizes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prizes: updatedPrizes }),
+    });
+  } catch (err) {
+    console.error('Failed to sync prize to server:', err);
+  }
+}
+
 export async function deletePrizeFromStore(prizeId: string) {
   if (typeof window === 'undefined') return;
   const prizes = getStoredPrizes().filter((p) => p.id !== prizeId);

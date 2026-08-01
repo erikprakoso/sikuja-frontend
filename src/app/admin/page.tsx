@@ -28,11 +28,6 @@ export default function AdminDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // New Prize Form Modal state
-  const [showAddPrize, setShowAddPrize] = useState(false);
-  const [newPrizeName, setNewPrizeName] = useState('');
-  const [newPrizeStock, setNewPrizeStock] = useState<number | string>(1);
-
   const loadData = () => {
     setVouchers(getStoredVouchers());
     setTransactions(getStoredTransactions());
@@ -71,26 +66,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleAddPrize = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPrizeName.trim()) return;
 
-    const newPrize: Prize = {
-      id: 'p_' + Date.now(),
-      name: newPrizeName.trim(),
-      stock: Number(newPrizeStock) || 1,
-      drawn_count: 0,
-      order_num: prizes.length + 1,
-    };
-
-    const updated = [...prizes, newPrize];
-    setPrizes(updated);
-    savePrizes(updated);
-    await persistPrizesToServer(updated);
-    setNewPrizeName('');
-    setNewPrizeStock(1);
-    setShowAddPrize(false);
-  };
 
   const handleDeletePrize = async (prizeId: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus kategori hadiah ini?')) {
@@ -151,13 +127,6 @@ export default function AdminDashboardPage() {
       {/* Prize Management Section */}
       <PrizeManagement
         prizes={prizes}
-        showAddPrize={showAddPrize}
-        newPrizeName={newPrizeName}
-        newPrizeStock={newPrizeStock}
-        setShowAddPrize={setShowAddPrize}
-        setNewPrizeName={setNewPrizeName}
-        setNewPrizeStock={setNewPrizeStock}
-        onAddPrize={handleAddPrize}
         onDeletePrize={handleDeletePrize}
       />
 

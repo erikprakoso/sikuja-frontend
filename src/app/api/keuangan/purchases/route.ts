@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { supplier_name, item_name, qty, price_per_unit, payment_method, note } = body;
+    const { item_name, qty, price_per_unit, is_doorprize, note } = body;
 
-    if (!supplier_name || !item_name || !qty || !price_per_unit) {
-      return NextResponse.json({ error: 'Data pembelian wajib diisi lengkap' }, { status: 400 });
+    if (!item_name || !qty || !price_per_unit) {
+      return NextResponse.json({ error: 'Nama item, jumlah, dan harga per unit wajib diisi' }, { status: 400 });
     }
 
     if (typeof qty !== 'number' || qty <= 0) {
@@ -57,17 +57,16 @@ export async function POST(request: NextRequest) {
     }
 
     const total_price = qty * price_per_unit;
-    const now = new Date().toISOString();
+    const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
 
     const purchase = {
       id: 'purch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      supplier_name: supplier_name.trim(),
       item_name: item_name.trim(),
       qty: Math.floor(qty),
       price_per_unit: price_per_unit,
       total_price: total_price,
       purchase_date: new Date().toISOString().slice(0, 10),
-      payment_method: payment_method || 'cash',
+      is_doorprize: isDoorprize,
       note: note?.trim() || null,
       created_by: auth.name,
     };
@@ -82,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Pembelian doorprize berhasil dicatat.',
+      message: 'Pembelian berhasil dicatat.',
       purchase: newPurchase,
     });
   } catch (err: unknown) {
@@ -105,10 +104,10 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, supplier_name, item_name, qty, price_per_unit, payment_method, note } = body;
+    const { id, item_name, qty, price_per_unit, is_doorprize, note } = body;
 
-    if (!id || !supplier_name || !item_name || !qty || !price_per_unit) {
-      return NextResponse.json({ error: 'Data pembelian wajib diisi lengkap' }, { status: 400 });
+    if (!id || !item_name || !qty || !price_per_unit) {
+      return NextResponse.json({ error: 'ID, nama item, jumlah, dan harga per unit wajib diisi' }, { status: 400 });
     }
 
     if (typeof qty !== 'number' || qty <= 0) {
@@ -120,14 +119,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const total_price = qty * price_per_unit;
+    const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
+
     const purchase = {
-      supplier_name: supplier_name.trim(),
       item_name: item_name.trim(),
       qty: Math.floor(qty),
       price_per_unit: price_per_unit,
       total_price: total_price,
       purchase_date: new Date().toISOString().slice(0, 10),
-      payment_method: payment_method || 'cash',
+      is_doorprize: isDoorprize,
       note: note?.trim() || null,
       created_by: auth.name,
     };
