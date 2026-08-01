@@ -87,22 +87,24 @@ export function verifyPinHash(pin: string, salt: string, hash: string): boolean 
 
 /**
  * Login: verifikasi PIN terhadap tabel `users` di database.
- * Fallback ke PIN_CONFIG (PIN lama) HANYA selama DB belum dikonfigurasi
- * atau tabel `users` masih kosong — agar admin bisa login pertama kali.
+ * Fallback ke PIN_CONFIG (PIN lama) HANYA di luar production (dev lokal),
+ * agar bisa menguji tanpa database. Di production TIDAK ada fallback —
+ * login wajib lewat PIN unik yang terdaftar (fail-closed, tanpa celah).
  */
 export async function verifyPinServer(pin: string): Promise<UserSession | null> {
-  const fallback = (): UserSession | null => {
+  if (process.env.NODE_ENV !== 'production') {
     const match = PIN_CONFIG[pin];
-    if (!match) return null;
-    return {
-      userId: null,
-      role: match.role,
-      name: match.name,
-      authenticatedAt: new Date().toISOString(),
-    };
-  };
+    if (match) {
+      return {
+        userId: null,
+        role: match.role,
+        name: match.name,
+        authenticatedAt: new Date().toISOString(),
+      };
+    }
+  }
 
-  if (!isServerSupabaseConfigured()) return fallback();
+  if (!isServerSupabaseConfigured()) return null; // fail-closed
 
   const { data: users, error } = await serverSupabase
     .from('users')
@@ -110,9 +112,7 @@ export async function verifyPinServer(pin: string): Promise<UserSession | null> 
 
   if (error) throw error;
 
-  if (!users || users.length === 0) return fallback();
-
-  for (const u of users) {
+  for (const u of users || []) {
     if (u.active !== true) continue;
     if (verifyPinHash(pin, u.pin_salt, u.pin_hash)) {
       return {
@@ -127,17 +127,14 @@ export async function verifyPinServer(pin: string): Promise<UserSession | null> 
 }
 
 /**
- * Fallback (PIN lama 4 digit) aktif hanya selama DB belum dikonfigurasi
- * atau tabel `users` masih kosong.
+ * Fallback (PIN lama 4 digit) aktif HANYA di luar production (dev lokal).
+ * Di production selalu false → tidak ada PIN bawaan, tidak ada celah.
  */
 export async function isFallbackActive(): Promise<boolean> {
-  if (!isServerSupabaseConfigured()) return true;
-  const { data, error } = await serverSupabase.from('users').select('id').limit(1);
-  if (error) return false; // DB tidak bisa diakses → fail-closed (nonaktifkan fallback)
-  return !data || data.length === 0;
+  return process.env.NODE_ENV !== 'production';
 }
 
-/** Panjang PIN yang harus diketuk: 4 saat bootstrap, 6 setelah ada user di DB. */
+/** Panjang PIN yang harus diketuk: 4 saat dev lokal, 6 di production. */
 export async function getActivePinLength(): Promise<number> {
   return (await isFallbackActive()) ? 4 : 6;
 }
