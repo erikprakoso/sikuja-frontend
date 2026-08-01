@@ -8,6 +8,7 @@ import { Voucher, DrawResult, UserSession } from '@/types';
 import { WifiOff, RefreshCw, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
 
 import { HomeHeroBanner } from '@/components/home/HomeHeroBanner';
+import { HomeBuyCoupons } from '@/components/home/HomeBuyCoupons';
 import { HomeStatCards } from '@/components/home/HomeStatCards';
 import { HomeModuleCards } from '@/components/home/HomeModuleCards';
 import { HomeRecentWinners } from '@/components/home/HomeRecentWinners';
@@ -139,6 +140,9 @@ export default function HomePage() {
 
       {/* Hero Banner Section */}
       <HomeHeroBanner />
+
+      {/* Cara Beli Kupon (publik, untuk peserta jalan sehat) */}
+      {!session && <HomeBuyCoupons />}
 
       {/* Login CTA for anonymous visitors */}
       {!session && (
