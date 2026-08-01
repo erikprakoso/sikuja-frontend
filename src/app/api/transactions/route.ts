@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
-import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
+import { serverSupabase, isServerSupabaseConfigured, isServiceRoleConfigured } from '@/lib/supabase-server';
 import { createPurchaseTransaction, format5DigitCode } from '@/lib/services/voucher';
 import { generate5DigitCode, generateTransactionToken } from '@/lib/services/voucher';
 import { Transaction, Voucher } from '@/types';
@@ -10,6 +10,13 @@ export async function POST(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['penjual', 'admin']);
     if (auth instanceof NextResponse) return auth;
+
+    if (isServerSupabaseConfigured() && !isServiceRoleConfigured()) {
+      return NextResponse.json(
+        { error: 'Server belum dikonfigurasi: tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
 
     const body = await request.json();
     const qtyFisik = Number(body.qtyFisik) || 0;

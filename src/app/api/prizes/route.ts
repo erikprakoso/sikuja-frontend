@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
+import { serverSupabase, isServerSupabaseConfigured, isServiceRoleConfigured } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/server-auth';
 import { Prize } from '@/types';
 
@@ -8,6 +8,13 @@ export async function POST(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['admin']);
     if (auth instanceof NextResponse) return auth;
+
+    if (isServerSupabaseConfigured() && !isServiceRoleConfigured()) {
+      return NextResponse.json(
+        { error: 'Server belum dikonfigurasi: tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
 
     const body = await request.json();
     const prizes: Prize[] = Array.isArray(body.prizes) ? body.prizes : [];
@@ -39,6 +46,13 @@ export async function DELETE(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['admin']);
     if (auth instanceof NextResponse) return auth;
+
+    if (isServerSupabaseConfigured() && !isServiceRoleConfigured()) {
+      return NextResponse.json(
+        { error: 'Server belum dikonfigurasi: tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
     const prizeId = searchParams.get('prizeId');

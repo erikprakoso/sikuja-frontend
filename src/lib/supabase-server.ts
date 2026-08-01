@@ -13,6 +13,12 @@ export const isServerSupabaseConfigured = (): boolean => {
   return Boolean(supabaseUrl && supabaseUrl.startsWith('https://'));
 };
 
+// Service role key WAJIB untuk operasi tulis server. Tanpa ini, server tidak
+// boleh memakai anon key karena anon sudah dikunci read-only di RLS.
+export const isServiceRoleConfigured = (): boolean => {
+  return Boolean(serviceRoleKey);
+};
+
 export const serverSupabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   serviceRoleKey || anonKey || 'placeholder'
