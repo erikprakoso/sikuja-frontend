@@ -14,7 +14,6 @@ import { Voucher, Transaction, Prize, DrawResult } from '@/types';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
-import { PrizeManagement } from '@/components/admin/PrizeManagement';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 
 export default function AdminDashboardPage() {
@@ -72,9 +71,6 @@ export default function AdminDashboardPage() {
         totalCheckin={totalCheckin}
         drawResults={drawResults}
       />
-
-      {/* Prize Management Section (Read-only monitoring) */}
-      <PrizeManagement prizes={prizes} />
 
       {/* Vouchers Master Table */}
       <VoucherMasterTable
