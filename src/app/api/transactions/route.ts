@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { randomUUID } from 'crypto';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { createPurchaseTransaction, format5DigitCode } from '@/lib/services/voucher';
 import { generate5DigitCode, generateTransactionToken } from '@/lib/services/voucher';
 import { Transaction, Voucher } from '@/types';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request, ['penjual', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const qtyFisik = Number(body.qtyFisik) || 0;
     const qtyNonFisik = Number(body.qtyNonFisik) || 0;
@@ -19,9 +24,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kuantitas voucher harus lebih besar dari 0' }, { status: 400 });
     }
 
-    if (isSupabaseConfigured()) {
+    if (isServerSupabaseConfigured()) {
       // Fetch all existing voucher codes from Supabase to prevent duplicates
-      const { data: existingCodesData } = await supabase.from('vouchers').select('code');
+      const { data: existingCodesData } = await serverSupabase.from('vouchers').select('code');
       const usedCodes = new Set((existingCodesData || []).map((v) => v.code));
 
       // Validate custom codes
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
         validatedCustomCodes.push(formatted);
       }
 
-      const txId = 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+      const txId = 'tx_' + randomUUID();
       const token = generateTransactionToken();
 
       // Allocate custom codes first, then fill remaining with random codes
@@ -94,10 +99,10 @@ export async function POST(request: NextRequest) {
       };
 
       // Save transaction & vouchers to Supabase
-      const { error: txErr } = await supabase.from('transactions').insert([transaction]);
+      const { error: txErr } = await serverSupabase.from('transactions').insert([transaction]);
       if (txErr) throw txErr;
 
-      const { error: vErr } = await supabase.from('vouchers').insert(newVouchers);
+      const { error: vErr } = await serverSupabase.from('vouchers').insert(newVouchers);
       if (vErr) throw vErr;
 
       return NextResponse.json({

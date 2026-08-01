@@ -42,12 +42,20 @@ export function generate5DigitCode(usedCodes: Set<string>): string {
   throw new Error('Pool kode voucher penuh (100.000 kode).');
 }
 
-// Generate random URL safe token for E-voucher link
+// Generate random URL safe token for E-voucher link (CSPRNG-backed)
 export function generateTransactionToken(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
   let token = 'tx_';
-  for (let i = 0; i < 16; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < bytes.length; i++) {
+    token += chars.charAt(bytes[i] % chars.length);
   }
   return token;
 }
@@ -68,7 +76,10 @@ export function createPurchaseTransaction(
   const usedCodes = new Set(allVouchers.map((v) => v.code));
 
   const totalLembar = qtyFisik + qtyNonFisik;
-  const txId = 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
+  const txId =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? 'tx_' + crypto.randomUUID()
+      : 'tx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6);
   const token = generateTransactionToken();
 
   // Validate custom codes first

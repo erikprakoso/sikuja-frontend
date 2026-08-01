@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { claimStagePrize } from '@/lib/services/voucher';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request, ['verifikator', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const code = (body.code || '').trim();
-    const pin = body.pin || '4444';
 
     if (!code) {
       return NextResponse.json({ error: 'Kode voucher wajib diisi' }, { status: 400 });
     }
 
-    if (isSupabaseConfigured()) {
-      const { data: target, error: findErr } = await supabase
+    if (isServerSupabaseConfigured()) {
+      const { data: target, error: findErr } = await serverSupabase
         .from('vouchers')
         .select('*')
         .eq('code', code)
@@ -32,15 +35,15 @@ export async function POST(request: NextRequest) {
       const now = new Date().toISOString();
 
       // Update voucher status to 'diklaim'
-      await supabase
+      await serverSupabase
         .from('vouchers')
         .update({ status: 'diklaim', claimed_at: now })
         .eq('code', code);
 
       // Update draw_result record
-      await supabase
+      await serverSupabase
         .from('draw_results')
-        .update({ claimed: true, claimed_at: now, verifier_pin: pin })
+        .update({ claimed: true, claimed_at: now, verifier_pin: auth.name })
         .eq('voucher_code', code);
 
       return NextResponse.json({
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
         message: `Berhasil! Voucher ${code} resmi diklaim & ditandai sudah diambil (sobek digital).`,
       });
     } else {
-      const res = claimStagePrize(code, pin);
+      const res = claimStagePrize(code, auth.name);
       if (!res.success) {
         return NextResponse.json({ error: res.message }, { status: 400 });
       }

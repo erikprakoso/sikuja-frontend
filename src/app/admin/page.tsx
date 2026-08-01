@@ -59,7 +59,19 @@ export default function AdminDashboardPage() {
   const totalCheckin = vouchers.filter((v) => v.status !== 'terbit').length;
   const totalDana = transactions.reduce((acc, t) => acc + t.total_harga, 0);
 
-  const handleAddPrize = (e: React.FormEvent) => {
+  const persistPrizesToServer = async (updated: Prize[]) => {
+    try {
+      await fetch('/api/prizes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prizes: updated }),
+      });
+    } catch (err) {
+      console.error('Gagal menyimpan hadiah ke server:', err);
+    }
+  };
+
+  const handleAddPrize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrizeName.trim()) return;
 
@@ -72,8 +84,9 @@ export default function AdminDashboardPage() {
     };
 
     const updated = [...prizes, newPrize];
-    savePrizes(updated);
     setPrizes(updated);
+    savePrizes(updated);
+    await persistPrizesToServer(updated);
     setNewPrizeName('');
     setNewPrizeStock(1);
     setShowAddPrize(false);
@@ -84,6 +97,11 @@ export default function AdminDashboardPage() {
       const updated = prizes.filter((p) => p.id !== prizeId);
       setPrizes(updated);
       await deletePrizeFromStore(prizeId);
+      try {
+        await fetch(`/api/prizes?prizeId=${encodeURIComponent(prizeId)}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Gagal menghapus hadiah dari server:', err);
+      }
     }
   };
 

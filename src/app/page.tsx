@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { getStoredVouchers, getStoredDrawResults, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
-import { getCurrentSession } from '@/lib/services/auth';
+import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Voucher, DrawResult, UserSession } from '@/types';
 import { WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 
@@ -46,6 +46,8 @@ export default function HomePage() {
   }, [loadData]);
 
   useEffect(() => {
+    refreshSession().then(() => loadData());
+
     const syncTimer = window.setTimeout(() => {
       runSync();
     }, 0);

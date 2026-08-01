@@ -13,9 +13,10 @@ export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleKeyPress = (num: string) => {
-    if (pin.length < 4) {
+    if (pin.length < 4 && !isSubmitting) {
       const nextPin = pin + num;
       setPin(nextPin);
       setError('');
@@ -26,17 +27,22 @@ export default function LoginPage() {
   };
 
   const handleDelete = () => {
+    if (isSubmitting) return;
     setPin((prev) => prev.slice(0, -1));
     setError('');
   };
 
   const handleClear = () => {
+    if (isSubmitting) return;
     setPin('');
     setError('');
   };
 
-  const submitPin = (pinToSubmit: string) => {
-    const res = verifyPin(pinToSubmit);
+  const submitPin = async (pinToSubmit: string) => {
+    setIsSubmitting(true);
+    const res = await verifyPin(pinToSubmit);
+    setIsSubmitting(false);
+
     if (res.success && res.session) {
       // Redirect based on role
       switch (res.session.role) {

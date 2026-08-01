@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { getCurrentSession, logoutSession } from '@/lib/services/auth';
+import { getCurrentSession, logoutSession, refreshSession } from '@/lib/services/auth';
 import { soundManager } from '@/lib/services/audio';
 import { UserSession } from '@/types';
 import {
@@ -24,18 +24,21 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setSession] = useState<UserSession | null>(null);
+  const [session, setSession] = useState<UserSession | null>(() => getCurrentSession());
   const [isMuted, setIsMuted] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean>(
+    () => typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
 
   useEffect(() => {
-    setSession(getCurrentSession());
+    refreshSession().then((s) => {
+      if (s) setSession(s);
+    });
 
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     if (typeof window !== 'undefined') {
-      setIsOnline(navigator.onLine);
       window.addEventListener('online', handleOnline);
       window.addEventListener('offline', handleOffline);
     }
@@ -52,8 +55,8 @@ export default function Navbar() {
     soundManager.setMuted(next);
   };
 
-  const handleLogout = () => {
-    logoutSession();
+  const handleLogout = async () => {
+    await logoutSession();
     setSession(null);
     router.push('/');
   };

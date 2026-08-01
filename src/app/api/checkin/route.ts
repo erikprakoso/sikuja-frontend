@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
+import { requireAuth } from '@/lib/server-auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request, ['pos', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     let codeOrToken = (body.codeOrToken || body.code || '').trim();
 
@@ -15,10 +19,10 @@ export async function POST(request: NextRequest) {
       codeOrToken = codeOrToken.split('/v/')[1].split('?')[0].split('#')[0];
     }
 
-    if (isSupabaseConfigured()) {
+    if (isServerSupabaseConfigured()) {
       // Safe transaction lookup by token or id text string
       let tx = null;
-      const { data: txByToken } = await supabase
+      const { data: txByToken } = await serverSupabase
         .from('transactions')
         .select('*')
         .eq('token', codeOrToken)
@@ -27,7 +31,7 @@ export async function POST(request: NextRequest) {
       if (txByToken) {
         tx = txByToken;
       } else {
-        const { data: txById } = await supabase
+        const { data: txById } = await serverSupabase
           .from('transactions')
           .select('*')
           .eq('id', codeOrToken)
@@ -39,7 +43,7 @@ export async function POST(request: NextRequest) {
         const now = new Date().toISOString();
         
         // Fetch all vouchers for this transaction to check status
-        const { data: allVouchers } = await supabase
+        const { data: allVouchers } = await serverSupabase
           .from('vouchers')
           .select('*')
           .eq('transaction_id', tx.id);
@@ -56,7 +60,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Batch check-in all vouchers under this transaction
-        const { data: updatedVouchers, error: uErr } = await supabase
+        const { data: updatedVouchers, error: uErr } = await serverSupabase
           .from('vouchers')
           .update({ status: 'checkin', checkin_at: now })
           .eq('transaction_id', tx.id)
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Single voucher check-in by 5-digit code
-      const { data: targetVoucher, error: findErr } = await supabase
+      const { data: targetVoucher, error: findErr } = await serverSupabase
         .from('vouchers')
         .select('*')
         .eq('code', codeOrToken)
@@ -93,7 +97,7 @@ export async function POST(request: NextRequest) {
       }
 
       const now = new Date().toISOString();
-      const { data: updated, error: updateErr } = await supabase
+      const { data: updated, error: updateErr } = await serverSupabase
         .from('vouchers')
         .update({ status: 'checkin', checkin_at: now })
         .eq('code', codeOrToken)

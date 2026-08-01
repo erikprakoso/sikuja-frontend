@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomInt } from 'crypto';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { drawWinnerForPrize } from '@/lib/services/voucher';
+import { requireAuth } from '@/lib/server-auth';
 
 /**
  * Cryptographically Secure Random Index Generator
@@ -17,6 +18,9 @@ function secureRandomIndex(max: number): number {
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request, ['mc', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const prizeId = body.prizeId;
 
@@ -24,9 +28,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID Hadiah wajib diisi' }, { status: 400 });
     }
 
-    if (isSupabaseConfigured()) {
+    if (isServerSupabaseConfigured()) {
       // 1. Fetch Prize details
-      const { data: prize, error: prizeErr } = await supabase
+      const { data: prize, error: prizeErr } = await serverSupabase
         .from('prizes')
         .select('*')
         .eq('id', prizeId)
@@ -41,7 +45,7 @@ export async function POST(request: NextRequest) {
       }
 
       // 2. Fetch eligible vouchers (status == 'checkin')
-      const { data: eligibleVouchers, error: vErr } = await supabase
+      const { data: eligibleVouchers, error: vErr } = await serverSupabase
         .from('vouchers')
         .select('*')
         .eq('status', 'checkin');

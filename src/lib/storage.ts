@@ -80,14 +80,6 @@ export async function saveTransactions(txs: Transaction[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(txs));
   notifyListeners();
-
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase.from('transactions').upsert(txs);
-    } catch (err) {
-      console.error('Supabase saveTransactions error:', err);
-    }
-  }
 }
 
 export function getStoredVouchers(): Voucher[] {
@@ -138,14 +130,6 @@ export async function saveVouchers(vouchers: Voucher[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.VOUCHERS, JSON.stringify(vouchers));
   notifyListeners();
-
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase.from('vouchers').upsert(vouchers);
-    } catch (err) {
-      console.error('Supabase saveVouchers error:', err);
-    }
-  }
 }
 
 export function getStoredPrizes(): Prize[] {
@@ -169,14 +153,6 @@ export async function savePrizes(prizes: Prize[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
   notifyListeners();
-
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase.from('prizes').upsert(prizes);
-    } catch (err) {
-      console.error('Supabase savePrizes error:', err);
-    }
-  }
 }
 
 export async function deletePrizeFromStore(prizeId: string) {
@@ -184,14 +160,6 @@ export async function deletePrizeFromStore(prizeId: string) {
   const prizes = getStoredPrizes().filter((p) => p.id !== prizeId);
   localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
   notifyListeners();
-
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase.from('prizes').delete().eq('id', prizeId);
-    } catch (err) {
-      console.error('Supabase deletePrize error:', err);
-    }
-  }
 }
 
 export function getStoredDrawResults(): DrawResult[] {
@@ -208,14 +176,6 @@ export async function saveDrawResults(results: DrawResult[]) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.DRAW_RESULTS, JSON.stringify(results));
   notifyListeners();
-
-  if (isSupabaseConfigured()) {
-    try {
-      await supabase.from('draw_results').upsert(results);
-    } catch (err) {
-      console.error('Supabase saveDrawResults error:', err);
-    }
-  }
 }
 
 // Offline Queue Management for POS Check-in

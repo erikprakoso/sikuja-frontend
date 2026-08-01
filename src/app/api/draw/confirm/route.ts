@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
+import { requireAuth } from '@/lib/server-auth';
 
 /**
  * POST /api/draw/confirm — Confirm the drawn candidate as the actual winner.
@@ -9,6 +10,9 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = requireAuth(request, ['mc', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
     const body = await request.json();
     const { code, prizeId } = body;
 
@@ -16,12 +20,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Kode voucher dan ID hadiah wajib diisi' }, { status: 400 });
     }
 
-    if (!isSupabaseConfigured()) {
+    if (!isServerSupabaseConfigured()) {
       return NextResponse.json({ error: 'Supabase belum dikonfigurasi' }, { status: 500 });
     }
 
     // 1. Verify the voucher still has status 'checkin' (hasn't been confirmed by another process)
-    const { data: voucher, error: vErr } = await supabase
+    const { data: voucher, error: vErr } = await serverSupabase
       .from('vouchers')
       .select('*')
       .eq('code', code)
@@ -38,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Fetch prize & verify stock
-    const { data: prize, error: pErr } = await supabase
+    const { data: prize, error: pErr } = await serverSupabase
       .from('prizes')
       .select('*')
       .eq('id', prizeId)
@@ -49,7 +53,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Atomic increment with optimistic lock — prevents over-draw
-    const { data: updatedPrize, error: incErr } = await supabase
+    const { data: updatedPrize, error: incErr } = await serverSupabase
       .from('prizes')
       .update({ drawn_count: prize.drawn_count + 1 })
       .eq('id', prize.id)
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Mark voucher as winner
     const now = new Date().toISOString();
-    await supabase
+    await serverSupabase
       .from('vouchers')
       .update({
         status: 'menang',
@@ -86,7 +90,7 @@ export async function POST(request: NextRequest) {
       claimed: false,
     };
 
-    await supabase.from('draw_results').insert([drawResult]);
+    await serverSupabase.from('draw_results').insert([drawResult]);
 
     return NextResponse.json({
       success: true,

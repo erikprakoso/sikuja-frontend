@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { getStoredTransactions, getStoredVouchers } from '@/lib/storage';
 
 export async function GET(
@@ -14,10 +14,10 @@ export async function GET(
       return NextResponse.json({ error: 'Token tidak valid' }, { status: 400 });
     }
 
-    if (isSupabaseConfigured()) {
+    if (isServerSupabaseConfigured()) {
       // 1. Fetch primary transaction by token or id
       let tx = null;
-      const { data: txByToken } = await supabase
+      const { data: txByToken } = await serverSupabase
         .from('transactions')
         .select('*')
         .eq('token', token)
@@ -26,7 +26,7 @@ export async function GET(
       if (txByToken) {
         tx = txByToken;
       } else {
-        const { data: txById } = await supabase
+        const { data: txById } = await serverSupabase
           .from('transactions')
           .select('*')
           .eq('id', token)
@@ -41,13 +41,13 @@ export async function GET(
       // 2. Aggregate all transactions of the same customer if phone/name exists
       let allCustomerTxs = [tx];
       if (tx.customer_phone && tx.customer_phone.trim()) {
-        const { data: phoneTxs } = await supabase
+        const { data: phoneTxs } = await serverSupabase
           .from('transactions')
           .select('*')
           .eq('customer_phone', tx.customer_phone.trim());
         if (phoneTxs && phoneTxs.length > 0) allCustomerTxs = phoneTxs;
       } else if (tx.customer_name && tx.customer_name.trim()) {
-        const { data: nameTxs } = await supabase
+        const { data: nameTxs } = await serverSupabase
           .from('transactions')
           .select('*')
           .eq('customer_name', tx.customer_name.trim());
@@ -57,7 +57,7 @@ export async function GET(
       const txIds = allCustomerTxs.map((t) => t.id);
 
       // 3. Fetch vouchers for all transactions of this customer
-      const { data: vouchers, error: vError } = await supabase
+      const { data: vouchers, error: vError } = await serverSupabase
         .from('vouchers')
         .select('*')
         .in('transaction_id', txIds)
