@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Download, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 interface Purchase {
@@ -196,10 +196,6 @@ export const PembelianList = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 font-semibold text-xs hover:border-slate-300 transition-colors flex items-center gap-1.5 cursor-pointer">
-            <Download className="w-4 h-4" />
-            Ekspor CSV
-          </button>
           <button
             onClick={handleOpenNewPurchase}
             className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer"
