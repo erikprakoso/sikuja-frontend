@@ -148,7 +148,16 @@ export async function POST(request: NextRequest) {
       }, { status: 409 });
     }
 
-    // 7. Catat hasil undian. Unique constraint voucher_code mencegah duplikat.
+    // 7. Ambil nama pembeli dari transaction untuk tampilan panggung.
+    const { data: customer, error: custErr } = await serverSupabase
+      .from('transactions')
+      .select('customer_name')
+      .eq('id', voucher.transaction_id)
+      .maybeSingle();
+
+    if (custErr) throw custErr;
+
+    // 8. Catat hasil undian. Unique constraint voucher_code mencegah duplikat.
     const drawResult = {
       id: 'res_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       voucher_code: code,
@@ -156,6 +165,7 @@ export async function POST(request: NextRequest) {
       prize_name: prize.name,
       drawn_at: now,
       claimed: false,
+      customer_name: customer?.customer_name || null,
       ...(auth.userId ? { created_by: auth.userId } : {}),
     };
 

@@ -1,10 +1,11 @@
-import React from 'react';
-import { Search, CheckSquare, CheckCircle2, AlertCircle } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Search, CheckSquare, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 interface VerifikasiFormProps {
   code: string;
   setCode: (val: string) => void;
   resultMsg: { success: boolean; message: string } | null;
+  isVerifying: boolean;
   onVerify: (e: React.FormEvent) => void;
 }
 
@@ -12,8 +13,22 @@ export const VerifikasiForm: React.FC<VerifikasiFormProps> = ({
   code,
   setCode,
   resultMsg,
+  isVerifying,
   onVerify,
 }) => {
+  const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (resultMsg) {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = setTimeout(() => {
+        setCode('');
+      }, 4000);
+    }
+    return () => {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    };
+  }, [resultMsg, setCode]);
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
       <form onSubmit={onVerify} className="space-y-4">
@@ -35,11 +50,20 @@ export const VerifikasiForm: React.FC<VerifikasiFormProps> = ({
 
           <button
             type="submit"
-            disabled={!code.trim()}
-            className="px-8 py-3.5 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 border border-[#E70013]"
+            disabled={!code.trim() || isVerifying}
+            className="px-8 py-3.5 rounded-2xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 border border-[#E70013] disabled:cursor-not-allowed"
           >
-            <CheckSquare className="w-5 h-5" />
-            Verifikasi Klaim
+            {isVerifying ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Memproses...
+              </>
+            ) : (
+              <>
+                <CheckSquare className="w-5 h-5" />
+                Verifikasi Klaim
+              </>
+            )}
           </button>
         </div>
       </form>

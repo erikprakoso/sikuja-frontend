@@ -343,7 +343,7 @@ export function claimPrize(voucherCode: string, verifierName: string = 'Petugas 
   v.status = 'diklaim';
   result.claimed = true;
   result.claimed_at = new Date().toISOString();
-  result.verifier_pin = verifierName;
+  result.verifier_name = verifierName;
 
   saveVouchers(vouchers);
   saveDrawResults(drawResults);

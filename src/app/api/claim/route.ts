@@ -41,17 +41,37 @@ export async function POST(request: NextRequest) {
 
       const now = new Date().toISOString();
 
-      // Update voucher status to 'diklaim'
-      await serverSupabase
+      // Update voucher status to 'diklaim' secara ATOMIK (hanya jika masih 'menang').
+      // Mencegah race condition: dua verifikator klaim kode sama bersamaan.
+      const { data: updatedVoucher, error: voucherErr } = await serverSupabase
         .from('vouchers')
         .update({ status: 'diklaim', claimed_at: now })
-        .eq('code', code);
+        .eq('code', code)
+        .eq('status', 'menang')
+        .select()
+        .maybeSingle();
+
+      if (voucherErr) throw voucherErr;
+      if (!updatedVoucher) {
+        return NextResponse.json({
+          error: `Kode ${code} sudah diklaim oleh verifikator lain atau status sudah berubah.`,
+        }, { status: 409 });
+      }
 
       // Update draw_result record
-      await serverSupabase
+      const { error: drawErr } = await serverSupabase
         .from('draw_results')
-        .update({ claimed: true, claimed_at: now, verifier_pin: auth.name })
+        .update({ claimed: true, claimed_at: now, verifier_name: auth.name })
         .eq('voucher_code', code);
+
+      if (drawErr) {
+        // Rollback voucher ke 'menang' jika gagal update draw_results
+        await serverSupabase
+          .from('vouchers')
+          .update({ status: 'menang', claimed_at: null })
+          .eq('code', code);
+        throw drawErr;
+      }
 
       return NextResponse.json({
         success: true,

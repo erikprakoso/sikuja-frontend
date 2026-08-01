@@ -47,7 +47,8 @@ export interface DrawResult {
   drawn_at: string;
   claimed: boolean;
   claimed_at?: string;
-  verifier_pin?: string;
+  verifier_name?: string;
+  customer_name?: string;
 }
 
 export interface PosCheckin {
