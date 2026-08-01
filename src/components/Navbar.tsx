@@ -22,7 +22,9 @@ const NAV_ITEMS = [
 
 const ADMIN_SUBMENU = [
   { href: '/admin', label: 'Admin Panitia', roles: ['admin'] },
-  { href: '/admin/keuangan', label: 'Keuangan', roles: ['admin'] },
+  { href: '/admin/keuangan/donasi', label: 'Donasi', roles: ['admin'] },
+  { href: '/admin/keuangan/pembelian', label: 'Pembelian', roles: ['admin'] },
+  { href: '/admin/keuangan/pengeluaran', label: 'Pengeluaran', roles: ['admin'] },
   { href: '/admin/users', label: 'Petugas', roles: ['admin'] },
 ];
 
