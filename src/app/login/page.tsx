@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { verifyPin } from '@/lib/services/auth';
 
@@ -9,20 +9,36 @@ import { PinDotsIndicator } from '@/components/login/PinDotsIndicator';
 import { PinKeypad } from '@/components/login/PinKeypad';
 import { PinCheatSheet } from '@/components/login/PinCheatSheet';
 
-const PIN_LENGTH = 6;
-
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState('');
+  const [pinLength, setPinLength] = useState(6);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Tanya server: 4 digit (bootstrap, tabel users kosong) atau 6 digit (normal).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/auth/config');
+        const data = await res.json();
+        if (!cancelled && data?.pinLength) setPinLength(data.pinLength);
+      } catch {
+        // Offline: default 6 digit.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleKeyPress = (num: string) => {
-    if (pin.length < PIN_LENGTH && !isSubmitting) {
+    if (pin.length < pinLength && !isSubmitting) {
       const nextPin = pin + num;
       setPin(nextPin);
       setError('');
-      if (nextPin.length === PIN_LENGTH) {
+      if (nextPin.length === pinLength) {
         submitPin(nextPin);
       }
     }
@@ -79,7 +95,7 @@ export default function LoginPage() {
 
       {/* PIN Dots & Keypad Box */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-        <PinDotsIndicator pinLength={pin.length} maxLength={PIN_LENGTH} error={error} />
+        <PinDotsIndicator pinLength={pin.length} maxLength={pinLength} error={error} />
         <PinKeypad
           onKeyPress={handleKeyPress}
           onClear={handleClear}

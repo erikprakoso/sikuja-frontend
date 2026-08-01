@@ -126,6 +126,22 @@ export async function verifyPinServer(pin: string): Promise<UserSession | null> 
   return null;
 }
 
+/**
+ * Fallback (PIN lama 4 digit) aktif hanya selama DB belum dikonfigurasi
+ * atau tabel `users` masih kosong.
+ */
+export async function isFallbackActive(): Promise<boolean> {
+  if (!isServerSupabaseConfigured()) return true;
+  const { data, error } = await serverSupabase.from('users').select('id').limit(1);
+  if (error) return false; // DB tidak bisa diakses → fail-closed (nonaktifkan fallback)
+  return !data || data.length === 0;
+}
+
+/** Panjang PIN yang harus diketuk: 4 saat bootstrap, 6 setelah ada user di DB. */
+export async function getActivePinLength(): Promise<number> {
+  return (await isFallbackActive()) ? 4 : 6;
+}
+
 export function getSessionFromRequest(request: NextRequest): UserSession | null {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return null;
