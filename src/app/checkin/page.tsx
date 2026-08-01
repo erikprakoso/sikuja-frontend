@@ -228,6 +228,18 @@ export default function CheckinPosPage() {
     );
   };
 
+  // Auto-sync berkala: tarik data terbaru dari server dan dorong antrean offline
+  // yang menunggu, agar cache lokal setiap HP petugas selalu segar.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void syncFromSupabase().then(() => refreshStats());
+      if (getOfflineQueue().length > 0) {
+        void handleSyncOffline();
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <RequireAuth roles={['pos', 'admin']}>
     <div className="max-w-2xl mx-auto space-y-6 py-4">

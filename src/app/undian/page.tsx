@@ -60,6 +60,16 @@ export default function LayarUndianPage() {
     };
   }, []);
 
+  // Auto-refresh berkala: tarik data terbaru dari server tiap 30 dtk agar
+  // pool peserta (voucher status 'checkin') dan stok hadiah selalu segar
+  // tanpa perlu reload manual, terutama saat layar undian dibiarkan terbuka.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void syncFromSupabase().then(() => refreshLocalData());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const triggerConfetti = () => {
     // Left side flare confetti burst
     confetti({
