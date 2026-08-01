@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { getStoredVouchers, getStoredDrawResults, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Voucher, DrawResult, UserSession } from '@/types';
-import { WifiOff, RefreshCw, CheckCircle2, Lock, ArrowRight } from 'lucide-react';
+import { WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 import { HomeHeroBanner } from '@/components/home/HomeHeroBanner';
 import { HomeBuyCoupons } from '@/components/home/HomeBuyCoupons';
@@ -143,26 +142,6 @@ export default function HomePage() {
 
       {/* Cara Beli Kupon (publik, untuk peserta jalan sehat) */}
       {!session && <HomeBuyCoupons />}
-
-      {/* Login CTA for anonymous visitors */}
-      {!session && (
-        <section className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-3 shadow-sm animate-fade-in">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-[#E70013] text-white flex items-center justify-center shadow-xs">
-            <Lock className="w-6 h-6" />
-          </div>
-          <h2 className="text-lg font-black text-slate-900">Akses Panitia</h2>
-          <p className="text-sm text-slate-600 max-w-md mx-auto">
-            Login dengan PIN petugas Anda untuk melihat dashboard operasional, penjualan, check-in, dan pengundian.
-          </p>
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#E70013] hover:bg-[#E70013]/90 shadow-xs transition-all cursor-pointer active:scale-95"
-          >
-            Login Petugas
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </section>
-      )}
 
       {/* Live Stat Summary Section (hanya untuk panitia yang login) */}
       {session && (

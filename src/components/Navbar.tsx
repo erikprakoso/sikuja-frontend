@@ -144,8 +144,8 @@ export default function Navbar() {
             {/* Divider */}
             <div className="w-px h-4 bg-slate-200 mx-0.5" />
 
-            {/* User Session / Login */}
-            {session ? (
+            {/* User Session (login tidak ditampilkan ke publik) */}
+            {session && (
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60">
                   <UserIcon className="w-3 h-3 text-slate-500" />
@@ -159,13 +159,6 @@ export default function Navbar() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
-              <Link
-                href="/login"
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-[#E70013] hover:bg-[#E70013]/90 transition-all shadow-xs cursor-pointer active:scale-95 border border-[#E70013]"
-              >
-                Masuk
-              </Link>
             )}
           </div>
         </div>
