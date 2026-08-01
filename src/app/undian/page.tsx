@@ -7,6 +7,7 @@ import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
 import { Trophy, AlertCircle, Sparkles } from 'lucide-react';
 
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
 import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
@@ -186,6 +187,7 @@ export default function LayarUndianPage() {
   const currentPrize = prizes.find((p) => p.id === selectedPrizeId);
 
   return (
+    <RequireAuth roles={['mc', 'admin']}>
     <div className="space-y-8 py-4 max-w-6xl mx-auto">
       {/* Top Controls Bar */}
       <UndianHeader
@@ -250,5 +252,6 @@ export default function LayarUndianPage() {
         />
       </div>
     </div>
+    </RequireAuth>
   );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { verifyPin } from '@/lib/services/auth';
+import { verifyPin, refreshSession } from '@/lib/services/auth';
 
 import { LoginHeader } from '@/components/login/LoginHeader';
 import { PinDotsIndicator } from '@/components/login/PinDotsIndicator';
@@ -10,12 +10,38 @@ import { PinKeypad } from '@/components/login/PinKeypad';
 import { PinCheatSheet } from '@/components/login/PinCheatSheet';
 import { Loader2 } from 'lucide-react';
 
+// Baca & sanitasi param ?next= agar hanya path internal (mis. /penjualan).
+function getSafeNext(): string | null {
+  if (typeof window === 'undefined') return null;
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (next && next.startsWith('/') && !next.startsWith('//')) return next;
+  return null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [pin, setPin] = useState('');
   const [pinLength, setPinLength] = useState(6);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Sudah login? Langsung lempar ke tujuan (standar industri: tidak boleh buka /login lagi).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const session = await refreshSession();
+        if (!cancelled && session) {
+          router.replace(getSafeNext() ?? '/');
+        }
+      } catch {
+        // Offline: biarkan halaman login tampil.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   // Tanya server: 4 digit (bootstrap, tabel users kosong) atau 6 digit (normal).
   useEffect(() => {
@@ -63,6 +89,13 @@ export default function LoginPage() {
     setIsSubmitting(false);
 
     if (res.success && res.session) {
+      // Balik ke halaman yang dituju (guard akan memastikan role cocok), atau dashboard sesuai role.
+      const next = getSafeNext();
+      if (next) {
+        router.replace(next);
+        return;
+      }
+
       // Redirect based on role
       switch (res.session.role) {
         case 'penjual':

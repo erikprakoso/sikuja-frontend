@@ -6,6 +6,7 @@ import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher'
 import { getStoredVouchers, getOfflineQueue, clearOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
 
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { CheckinHeader } from '@/components/checkin/CheckinHeader';
 import { OfflineQueueBanner } from '@/components/checkin/OfflineQueueBanner';
 import { CheckinScanner } from '@/components/checkin/CheckinScanner';
@@ -182,6 +183,7 @@ export default function CheckinPosPage() {
   };
 
   return (
+    <RequireAuth roles={['pos', 'admin']}>
     <div className="max-w-2xl mx-auto space-y-6 py-4">
       {/* Header Banner */}
       <CheckinHeader
@@ -211,5 +213,6 @@ export default function CheckinPosPage() {
       {/* POS Operator Tips */}
       <CheckinOperatorTips />
     </div>
+    </RequireAuth>
   );
 }

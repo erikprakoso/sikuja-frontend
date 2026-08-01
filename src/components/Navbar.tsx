@@ -32,10 +32,13 @@ export default function Navbar() {
   );
 
   // Akses login tersembunyi: ketuk logo 5x cepat → /login.
+  // Hanya untuk yang BELUM login; panitia yang sudah login pakai menu navigasi / logout.
   const [brandTaps, setBrandTaps] = useState(0);
   const brandTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleBrandClick = (e: React.MouseEvent) => {
+    if (session) return;
+
     const next = brandTaps + 1;
     setBrandTaps(next);
     if (brandTapTimer.current) clearTimeout(brandTapTimer.current);

@@ -13,6 +13,7 @@ import {
 } from '@/lib/storage';
 import { Voucher, Transaction, Prize, DrawResult } from '@/types';
 
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { PrizeManagement } from '@/components/admin/PrizeManagement';
@@ -134,6 +135,7 @@ export default function AdminDashboardPage() {
   });
 
   return (
+    <RequireAuth roles={['admin']}>
     <div className="space-y-8 py-4 max-w-6xl mx-auto">
       {/* Header Title & Export Buttons */}
       <AdminHeader />
@@ -170,5 +172,6 @@ export default function AdminDashboardPage() {
         setStatusFilter={setStatusFilter}
       />
     </div>
+    </RequireAuth>
   );
 }

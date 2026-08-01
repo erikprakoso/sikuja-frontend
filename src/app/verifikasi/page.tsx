@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { getStoredDrawResults, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { DrawResult, Voucher } from '@/types';
 
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { VerifikasiHeader } from '@/components/verifikasi/VerifikasiHeader';
 import { VerifikasiForm } from '@/components/verifikasi/VerifikasiForm';
 import { UnclaimedWinnersList } from '@/components/verifikasi/UnclaimedWinnersList';
@@ -74,6 +75,7 @@ export default function VerifikasiPanggungPage() {
   const unclaimedWinners = drawResults.filter((r) => !r.claimed);
 
   return (
+    <RequireAuth roles={['verifikator', 'admin']}>
     <div className="max-w-3xl mx-auto space-y-6 py-4">
       {/* Header Banner */}
       <VerifikasiHeader />
@@ -92,5 +94,6 @@ export default function VerifikasiPanggungPage() {
         onQuickClaim={handleQuickClaim}
       />
     </div>
+    </RequireAuth>
   );
 }

@@ -7,6 +7,7 @@ import { getAppBaseUrl } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
 import { ShoppingBag } from 'lucide-react';
 
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { TransactionForm } from '@/components/penjualan/TransactionForm';
 import { TransactionResult } from '@/components/penjualan/TransactionResult';
 import { ThermalReceiptModal } from '@/components/penjualan/ThermalReceiptModal';
@@ -100,6 +101,7 @@ export default function PenjualanPage() {
   };
 
   return (
+    <RequireAuth roles={['penjual', 'admin']}>
     <div className="max-w-4xl mx-auto py-4">
       {/* Screen Interactive UI (Hidden during print) */}
       <div className="no-print space-y-8">
@@ -157,5 +159,6 @@ export default function PenjualanPage() {
         />
       )}
     </div>
+    </RequireAuth>
   );
 }
