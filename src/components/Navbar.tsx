@@ -135,40 +135,40 @@ export default function Navbar() {
             </nav>
           )}
 
-          {/* Right Controls */}
-          <div className="flex items-center gap-2">
-            {/* Online Status Badge */}
-            <span
-              title={isOnline ? 'Terhubung ke server' : 'Mode Offline Aktif'}
-              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full border border-slate-200/60"
-            >
-              {isOnline ? (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Online
-                </>
-              ) : (
-                <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                  Offline
-                </>
-              )}
-            </span>
+          {/* Right Controls (Online/Audio/Sesi — hanya untuk panitia yang login) */}
+          {session && (
+            <div className="flex items-center gap-2">
+              {/* Online Status Badge */}
+              <span
+                title={isOnline ? 'Terhubung ke server' : 'Mode Offline Aktif'}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-500 bg-slate-100 rounded-full border border-slate-200/60"
+              >
+                {isOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Online
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    Offline
+                  </>
+                )}
+              </span>
 
-            {/* Sound Toggle */}
-            <button
-              onClick={toggleSound}
-              title={isMuted ? 'Aktifkan Suara' : 'Mute Suara'}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              {isMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-slate-600" />}
-            </button>
+              {/* Sound Toggle */}
+              <button
+                onClick={toggleSound}
+                title={isMuted ? 'Aktifkan Suara' : 'Mute Suara'}
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                {isMuted ? <VolumeX className="w-4 h-4 text-slate-400" /> : <Volume2 className="w-4 h-4 text-slate-600" />}
+              </button>
 
-            {/* Divider */}
-            <div className="w-px h-4 bg-slate-200 mx-0.5" />
+              {/* Divider */}
+              <div className="w-px h-4 bg-slate-200 mx-0.5" />
 
-            {/* User Session (login tidak ditampilkan ke publik) */}
-            {session && (
+              {/* User Session */}
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60">
                   <UserIcon className="w-3 h-3 text-slate-500" />
@@ -182,8 +182,8 @@ export default function Navbar() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Mobile Clean Nav Bar */}
