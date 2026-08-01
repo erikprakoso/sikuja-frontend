@@ -172,8 +172,8 @@ export async function POST(request: NextRequest) {
       winnerVoucher: { ...voucher, status: 'menang', won_at: now, prize_name: prize.name },
     });
   } catch (err: unknown) {
-    const error = err as Error;
-    console.error('API /draw/confirm error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('API /draw/confirm error:', errorMsg);
+    return NextResponse.json({ error: errorMsg || 'Internal Server Error' }, { status: 500 });
   }
 }

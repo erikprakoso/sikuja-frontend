@@ -120,7 +120,9 @@ export default function LayarUndianPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Gagal memproses pengundian.');
+        const rawErr = data.error || 'Gagal memproses pengundian.';
+        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
+        setErrorMsg(errStr);
         setIsRolling(false);
         return;
       }
@@ -155,9 +157,10 @@ export default function LayarUndianPage() {
         setDisplayDigits(candidate.code);
         setCandidateVoucher(candidate);
       }, 3200);
-    } catch (err) {
-      console.error('Draw error:', err);
-      setErrorMsg('Gagal terhubung ke server pengundian.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Draw error message:', msg);
+      setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
       setIsRolling(false);
     }
   };
@@ -176,7 +179,9 @@ export default function LayarUndianPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setErrorMsg(data.error || 'Gagal mengonfirmasi pemenang.');
+        const rawErr = data.error || 'Gagal mengonfirmasi pemenang.';
+        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
+        setErrorMsg(errStr);
         setIsConfirming(false);
         return;
       }
@@ -192,9 +197,10 @@ export default function LayarUndianPage() {
       // to the next available prize category if current one is exhausted.
       await syncFromSupabase();
       refreshLocalData();
-    } catch (err) {
-      console.error('Confirm error:', err);
-      setErrorMsg('Gagal terhubung ke server untuk mengonfirmasi.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Confirm error message:', msg);
+      setErrorMsg(msg || 'Gagal terhubung ke server untuk mengonfirmasi.');
       setIsConfirming(false);
     }
   };
