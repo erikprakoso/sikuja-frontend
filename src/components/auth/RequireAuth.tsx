@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Loader2 } from 'lucide-react';
 
@@ -10,16 +10,16 @@ interface RequireAuthProps {
   children: React.ReactNode;
 }
 
+type GuardState = 'checking' | 'denied' | 'ok';
+
 /**
  * Client-side route guard.
- * - Belum login → redirect diam-diam ke home (TIDAK ke /login, agar halaman login
- *   hanya "ditemukan" lewat ketuk logo 5x di navbar).
- * - Sudah login tapi role tidak diizinkan → redirect ke home.
+ * - Belum login / role tidak diizinkan → tampil 404 (seolah halaman tidak ada),
+ *   agar halaman login hanya "ditemukan" lewat ketuk logo 5x di navbar.
  * - Menampilkan spinner sambil memvalidasi sesi ke server (tanpa flash konten).
  */
 export function RequireAuth({ roles, children }: RequireAuthProps) {
-  const router = useRouter();
-  const [ready, setReady] = useState(false);
+  const [state, setState] = useState<GuardState>('checking');
   const rolesKey = roles ? roles.join(',') : '';
 
   useEffect(() => {
@@ -35,25 +35,22 @@ export function RequireAuth({ roles, children }: RequireAuthProps) {
       }
       if (cancelled) return;
 
-      if (!session) {
-        router.replace('/');
+      if (!session || (rolesKey && !rolesKey.split(',').includes(session.role))) {
+        setState('denied');
         return;
       }
 
-      if (rolesKey && !rolesKey.split(',').includes(session.role)) {
-        router.replace('/');
-        return;
-      }
-
-      setReady(true);
+      setState('ok');
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [router, rolesKey]);
+  }, [rolesKey]);
 
-  if (!ready) {
+  if (state === 'denied') notFound();
+
+  if (state !== 'ok') {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-[#E70013]" />
