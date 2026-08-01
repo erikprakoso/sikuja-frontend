@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Download, Search, Loader2, X } from 'lucide-react';
+import { Plus, Download, Search, Loader2, X, Edit, Trash2 } from 'lucide-react';
+
+interface Expense {
+  id: string;
+  category: string;
+  item_name: string;
+  qty: number;
+  price_per_unit: number;
+  total_price: number;
+  expense_date: string;
+  payment_method: 'cash' | 'qris' | 'transfer';
+  note: string | null;
+}
 
 export const PengeluaranList = () => {
-  interface Expense {
-    id: string;
-    category: string;
-    item_name: string;
-    qty: number;
-    price_per_unit: number;
-    total_price: number;
-    expense_date: string;
-    payment_method: 'cash' | 'qris' | 'transfer';
-    note: string | null;
-  }
-  
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [newCategory, setNewCategory] = useState('');
   const [newItem, setNewItem] = useState('');
   const [newQty, setNewQty] = useState<string>('');
@@ -59,36 +60,101 @@ export const PengeluaranList = () => {
     fetchExpenses();
   }, []);
 
-  const handleAddExpense = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCategory || !newItem.trim() || !newQty || !newPrice) return;
-    
+  const handleOpenNewExpense = () => {
+    setEditingExpense(null);
+    setNewCategory('');
+    setNewItem('');
+    setNewQty('');
+    setNewPrice('');
+    setNewPaymentMethod('cash');
+    setNewNote('');
+    setIsAdding(true);
+  };
+
+  const handleEditExpense = (e: Expense) => {
+    setEditingExpense(e);
+    setNewCategory(e.category);
+    setNewItem(e.item_name);
+    setNewQty(e.qty.toString());
+    setNewPrice(e.price_per_unit.toString());
+    setNewPaymentMethod(e.payment_method);
+    setNewNote(e.note || '');
+    setIsAdding(true);
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?')) return;
+
     setIsLoading(true);
     try {
-      const res = await fetch('/api/keuangan/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category: newCategory,
-          item_name: newItem,
-          qty: Number(newQty),
-          price_per_unit: Number(newPrice),
-          payment_method: newPaymentMethod,
-          note: newNote.trim() || null,
-        }),
-      });
+      const res = await fetch(`/api/keuangan/expenses?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
-      
+
       if (res.ok && data.success) {
-        setExpenses((prev) => [data.expense, ...prev]);
+        setExpenses((prev) => prev.filter((e) => e.id !== id));
+      } else {
+        alert(data.error || 'Gagal menghapus pengeluaran');
+      }
+    } catch (err) {
+      alert('Gagal terhubung ke server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategory || !newItem.trim() || !newQty || !newPrice) return;
+
+    setIsLoading(true);
+    try {
+      const isEdit = !!editingExpense;
+      const res = isEdit
+        ? await fetch('/api/keuangan/expenses', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: editingExpense.id,
+              category: newCategory,
+              item_name: newItem.trim(),
+              qty: Number(newQty),
+              price_per_unit: Number(newPrice),
+              payment_method: newPaymentMethod,
+              note: newNote.trim() || null,
+            }),
+          })
+        : await fetch('/api/keuangan/expenses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              category: newCategory,
+              item_name: newItem.trim(),
+              qty: Number(newQty),
+              price_per_unit: Number(newPrice),
+              payment_method: newPaymentMethod,
+              note: newNote.trim() || null,
+            }),
+          });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        if (isEdit) {
+          setExpenses((prev) =>
+            prev.map((item) => (item.id === data.expense.id ? data.expense : item))
+          );
+        } else {
+          setExpenses((prev) => [data.expense, ...prev]);
+        }
         setNewCategory('');
         setNewItem('');
         setNewQty('');
         setNewPrice('');
         setNewNote('');
+        setEditingExpense(null);
         setIsAdding(false);
       } else {
-        alert(data.error || 'Gagal menambahkan pengeluaran');
+        alert(data.error || 'Gagal menyimpan pengeluaran');
       }
     } catch (err) {
       alert('Gagal terhubung ke server');
@@ -111,7 +177,7 @@ export const PengeluaranList = () => {
             Ekspor CSV
           </button>
           <button
-            onClick={() => setIsAdding(true)}
+            onClick={handleOpenNewExpense}
             className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-4 h-4" />
@@ -129,7 +195,7 @@ export const PengeluaranList = () => {
               placeholder="Cari item atau kategori..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
           {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
@@ -146,12 +212,13 @@ export const PengeluaranList = () => {
                 <th className="p-4 font-bold text-slate-700 text-right">Harga Total</th>
                 <th className="p-4 font-bold text-slate-700">Tgl Beli</th>
                 <th className="p-4 font-bold text-slate-700">Bayar</th>
+                <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredExpenses.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={8} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pengeluaran biaya.</p>
                     <p className="text-xs mt-2">Klik "Pengeluaran Baru" untuk menambahkan biaya.</p>
                   </td>
@@ -174,6 +241,24 @@ export const PengeluaranList = () => {
                         {e.payment_method}
                       </span>
                     </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleEditExpense(e)}
+                          className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title="Edit Pengeluaran"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExpense(e.id)}
+                          className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Hapus Pengeluaran"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -182,7 +267,7 @@ export const PengeluaranList = () => {
               <tr>
                 <td colSpan={4} className="p-4 font-bold text-slate-700 text-right">Total Pengeluaran:</td>
                 <td className="p-4 text-2xl font-black text-amber-700 text-right">{formatRupiah(totalExpenses)}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tfoot>
           </table>
@@ -193,20 +278,28 @@ export const PengeluaranList = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-black text-slate-900">Catat Pengeluaran Biaya</h3>
-              <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="text-lg font-black text-slate-900">
+                {editingExpense ? 'Edit Pengeluaran Biaya' : 'Catat Pengeluaran Biaya'}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingExpense(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <form onSubmit={handleAddExpense} className="space-y-4">
+
+            <form onSubmit={handleSaveExpense} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Kategori</label>
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                 >
                   <option value="">Pilih kategori...</option>
                   {categories.map((cat) => (
@@ -214,7 +307,7 @@ export const PengeluaranList = () => {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Item</label>
                 <input
@@ -222,11 +315,11 @@ export const PengeluaranList = () => {
                   value={newItem}
                   onChange={(e) => setNewItem(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                   placeholder="Contoh: Snack & Minuman"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah</label>
@@ -236,7 +329,7 @@ export const PengeluaranList = () => {
                     value={newQty}
                     onChange={(e) => setNewQty(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                     placeholder="Contoh: 50"
                   />
                 </div>
@@ -248,39 +341,42 @@ export const PengeluaranList = () => {
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                     placeholder="Contoh: 15000"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Metode Bayar</label>
                 <select
                   value={newPaymentMethod}
-                  onChange={(e) => setNewPaymentMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  onChange={(e) => setNewPaymentMethod(e.target.value as 'cash' | 'qris' | 'transfer')}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                 >
                   <option value="cash">Tunai</option>
                   <option value="qris">QRIS</option>
                   <option value="transfer">Transfer</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan (opsional)</label>
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-20 resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-20 resize-none text-slate-900"
                   placeholder="Catatan tambahan..."
                 />
               </div>
-              
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsAdding(false)}
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingExpense(null);
+                  }}
                   className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
                 >
                   Batal
@@ -291,7 +387,7 @@ export const PengeluaranList = () => {
                   className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 flex items-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Simpan Pengeluaran
+                  {editingExpense ? 'Simpan Perubahan' : 'Simpan Pengeluaran'}
                 </button>
               </div>
             </form>
