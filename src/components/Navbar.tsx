@@ -18,7 +18,10 @@ const NAV_ITEMS = [
   { href: '/checkin', label: 'Pos Check-In', roles: ['pos', 'admin'] },
   { href: '/undian', label: 'Layar Undian', roles: ['mc', 'admin'] },
   { href: '/verifikasi', label: 'Verifikasi', roles: ['verifikator', 'admin'] },
-  { href: '/admin', label: 'Admin', roles: ['admin'] },
+];
+
+const ADMIN_SUBMENU = [
+  { href: '/admin', label: 'Admin Panitia', roles: ['admin'] },
   { href: '/admin/keuangan', label: 'Keuangan', roles: ['admin'] },
   { href: '/admin/users', label: 'Petugas', roles: ['admin'] },
 ];
@@ -125,30 +128,60 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Clean Navigation */}
-          {visibleNavItems.length > 0 && (
-            <nav className="hidden md:flex items-center gap-1">
-              {visibleNavItems.map((item) => {
-                const isActive = pathname.startsWith(item.href);
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-3.5 py-1.5 text-sm font-semibold transition-all relative ${
-                      isActive
-                        ? 'text-slate-900 font-bold'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg'
-                    }`}
-                  >
-                    {item.label}
-                    {isActive && (
-                      <span className="absolute bottom-0 left-3.5 right-3.5 h-0.5 bg-[#E70013] rounded-full animate-fade-in" />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          )}
+           {/* Desktop Clean Navigation */}
+           {visibleNavItems.length > 0 && (
+             <nav className="hidden md:flex items-center gap-1">
+               {visibleNavItems.map((item) => {
+                 const isActive = pathname.startsWith(item.href);
+                 return (
+                   <Link
+                     key={item.href}
+                     href={item.href}
+                     className={`px-3.5 py-1.5 text-sm font-semibold transition-all relative ${
+                       isActive
+                         ? 'text-slate-900 font-bold'
+                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg'
+                     }`}
+                   >
+                     {item.label}
+                     {isActive && (
+                       <span className="absolute bottom-0 left-3.5 right-3.5 h-0.5 bg-[#E70013] rounded-full animate-fade-in" />
+                     )}
+                   </Link>
+                 );
+               })}
+               
+               {/* Admin Submenu Dropdown */}
+               {session?.role === 'admin' && (
+                 <div className="relative group">
+                   <button className="px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg flex items-center gap-1 transition-all">
+                     Admin
+                     <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                     </svg>
+                   </button>
+                   <div className="absolute left-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                     {ADMIN_SUBMENU.filter(i => i.roles.includes(session.role)).map((sub) => {
+                       const subActive = pathname === sub.href;
+                       return (
+                         <Link
+                           key={sub.href}
+                           href={sub.href}
+                           className={`block px-4 py-2.5 text-sm font-semibold transition-colors ${
+                             subActive
+                               ? 'text-[#E70013] bg-[#E70013]/5'
+                               : 'text-slate-600 hover:bg-slate-50'
+                           }`}
+                         >
+                           {sub.label}
+                         </Link>
+                       );
+                     })}
+                   </div>
+                 </div>
+               )}
+             </nav>
+           )}
 
           {/* Right Controls (Online/Audio/Sesi — hanya untuk panitia yang login) */}
           {session && (
@@ -223,6 +256,19 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            {/* Mobile Admin Menu Button */}
+            {session?.role === 'admin' && (
+              <button
+                className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 relative"
+                title="Menu Admin"
+              >
+                <span className="absolute top-0 right-0 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E70013] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E70013]"></span>
+                </span>
+                Admin
+              </button>
+            )}
           </div>
         )}
       </div>
