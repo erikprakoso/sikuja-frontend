@@ -5,7 +5,7 @@ import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import Link from 'next/link';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { AdminHeader } from '@/components/admin/AdminHeader';
+import { KeuanganHeader } from '@/components/admin/KeuanganHeader';
 import { BendaharaStatCards } from '@/components/admin/BendaharaStatCards';
 import { DonasiList } from '@/components/admin/DonasiList';
 import { PembelianList } from '@/components/admin/PembelianList';
@@ -23,7 +23,7 @@ export default function KeuanganDashboardPage() {
   return (
     <RequireAuth roles={['admin']}>
     <div className="space-y-8 py-4 max-w-7xl mx-auto">
-      <AdminHeader />
+      <KeuanganHeader />
 
       {isLoaded ? (
         <>
