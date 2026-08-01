@@ -21,7 +21,7 @@ const NAV_ITEMS = [
 ];
 
 const ADMIN_SUBMENU = [
-  { href: '/admin', label: 'Admin Panitia', roles: ['admin'] },
+  { href: '/admin', label: 'Monitoring Kupon', roles: ['admin'] },
   { href: '/admin/keuangan/donasi', label: 'Pemasukan & Sponsor', roles: ['admin'] },
   { href: '/admin/keuangan/pembelian', label: 'Pengeluaran & Belanja', roles: ['admin'] },
   { href: '/admin/users', label: 'Petugas', roles: ['admin'] },
