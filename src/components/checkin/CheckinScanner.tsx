@@ -8,6 +8,7 @@ interface CheckinScannerProps {
   inputCode: string;
   setInputCode: (val: string) => void;
   resultMessage: { success: boolean; text: string } | null;
+  resultKey?: number;
   onStartCamera: () => void;
   onStopCamera: () => void;
   onSubmitCode: (code: string) => void;
@@ -20,6 +21,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
   inputCode,
   setInputCode,
   resultMessage,
+  resultKey = 0,
   onStartCamera,
   onStopCamera,
   onSubmitCode,
@@ -102,6 +104,9 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       {/* Result Alert Box */}
       {!isProcessing && resultMessage && (
         <div
+          key={resultKey}
+          role="status"
+          aria-live="polite"
           className={`p-4 rounded-2xl border text-sm font-bold flex items-start gap-3 animate-fade-in ${
             resultMessage.success
               ? 'bg-emerald-900 text-white border-emerald-900 shadow-md'

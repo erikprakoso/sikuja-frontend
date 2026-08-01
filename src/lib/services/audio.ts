@@ -58,7 +58,7 @@ class SoundManager {
     this.stopDrumroll();
     this.initCtx();
 
-    let speed = 70;
+    const speed = 70;
     const triggerSnare = () => {
       if (this.isMuted || !this.ctx) return;
       try {
@@ -138,6 +138,70 @@ class SoundManager {
         osc.start(now + n.time);
         osc.stop(now + n.time + n.duration);
       });
+    } catch {
+      // Ignore audio errors
+    }
+  }
+
+  // Short double "ding-ding" for successful scan confirmation
+  public playSuccess() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const notes = [
+        { freq: 880, time: 0, duration: 0.12 },
+        { freq: 1318.51, time: 0.1, duration: 0.18 },
+      ];
+
+      notes.forEach((n) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.freq, now + n.time);
+
+        gain.gain.setValueAtTime(0, now + n.time);
+        gain.gain.linearRampToValueAtTime(0.2, now + n.time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + n.time + n.duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + n.time);
+        osc.stop(now + n.time + n.duration);
+      });
+    } catch {
+      // Ignore audio errors
+    }
+  }
+
+  // Low buzz for rejected / failed scan
+  public playError() {
+    if (this.isMuted) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.linearRampToValueAtTime(150, now + 0.35);
+
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.35);
     } catch {
       // Ignore audio errors
     }
