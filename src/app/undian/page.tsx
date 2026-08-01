@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
-import { Trophy, AlertCircle, Sparkles } from 'lucide-react';
+import { Trophy, AlertCircle } from 'lucide-react';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
@@ -26,8 +26,10 @@ export default function LayarUndianPage() {
   const [candidateVoucher, setCandidateVoucher] = useState<Voucher | null>(null);
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
 
   const rollIntervalRef = useRef<number | null>(null);
+  const rollTimeoutRef = useRef<number | null>(null);
 
   // Reads local data only — no network call, no infinite loop
   const refreshLocalData = () => {
@@ -70,6 +72,16 @@ export default function LayarUndianPage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Bersih-bersih saat keluar halaman: hentikan roll & suara drumroll agar
+  // tidak ada interval/timeout yang berjalan di belakang layar.
+  useEffect(() => {
+    return () => {
+      if (rollIntervalRef.current !== null) clearInterval(rollIntervalRef.current);
+      if (rollTimeoutRef.current !== null) clearTimeout(rollTimeoutRef.current);
+      soundManager.stopDrumroll();
+    };
+  }, []);
+
   const triggerConfetti = () => {
     // Left side flare confetti burst
     confetti({
@@ -89,7 +101,7 @@ export default function LayarUndianPage() {
     });
   };
 
-  const handleStartDraw = async () => {
+  const handleStartDraw = async (excludeCode?: string) => {
     if (isRolling || !selectedPrizeId) return;
     setIsRolling(true);
     setErrorMsg('');
@@ -100,7 +112,10 @@ export default function LayarUndianPage() {
       const res = await fetch('/api/draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prizeId: selectedPrizeId }),
+        body: JSON.stringify({
+          prizeId: selectedPrizeId,
+          ...(excludeCode ? { excludeCode } : {}),
+        }),
       });
       const data = await res.json();
 
@@ -111,6 +126,9 @@ export default function LayarUndianPage() {
       }
 
       const candidate: Voucher = data.candidate;
+      if (typeof data.audit?.pool_size === 'number') {
+        setLastPoolSize(data.audit.pool_size);
+      }
 
       soundManager.startDrumroll();
 
@@ -122,11 +140,12 @@ export default function LayarUndianPage() {
         soundManager.playTick();
       }, 85);
 
-      setTimeout(() => {
+      rollTimeoutRef.current = window.setTimeout(() => {
         if (rollIntervalRef.current !== null) {
           clearInterval(rollIntervalRef.current);
           rollIntervalRef.current = null;
         }
+        rollTimeoutRef.current = null;
 
         soundManager.stopDrumroll();
         soundManager.playVictoryFanfare();
@@ -181,9 +200,11 @@ export default function LayarUndianPage() {
   };
 
   const handleForfeitAndRedraw = () => {
+    if (!candidateVoucher) return;
+    const forfeitedCode = candidateVoucher.code;
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
-    handleStartDraw();
+    handleStartDraw(forfeitedCode);
   };
 
   const toggleFullscreen = () => {
@@ -202,6 +223,7 @@ export default function LayarUndianPage() {
       {/* Top Controls Bar */}
       <UndianHeader
         eligibleCount={eligibleCount}
+        poolSize={lastPoolSize}
         onToggleFullscreen={toggleFullscreen}
       />
 

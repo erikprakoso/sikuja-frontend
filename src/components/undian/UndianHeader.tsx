@@ -3,11 +3,13 @@ import { Trophy, Users, Maximize } from 'lucide-react';
 
 interface UndianHeaderProps {
   eligibleCount: number;
+  poolSize?: number | null;
   onToggleFullscreen: () => void;
 }
 
 export const UndianHeader: React.FC<UndianHeaderProps> = ({
   eligibleCount,
+  poolSize,
   onToggleFullscreen,
 }) => {
   return (
@@ -35,6 +37,37 @@ export const UndianHeader: React.FC<UndianHeaderProps> = ({
             <p className="text-xl font-black text-slate-900 font-mono mt-0.5 flex items-center gap-1.5">
               <Users className="w-4 h-4 text-[#E70013]" />
               {eligibleCount} <span className="text-xs font-bold text-slate-500">Kupon</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Pool size of the last draw — transparency: exactly this many
+            vouchers were in the drawing bucket. Differs from eligibleCount
+            only right after a forfeit-and-redraw (the forfeited person's
+            vouchers are excluded from the re-draw). */}
+        <div
+          className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center sm:text-right shadow-xs flex items-center gap-3"
+          title={
+            poolSize !== null && poolSize !== undefined
+              ? `Pool undian terakhir: ${poolSize} kupon dipilih secara acak terenkripsi.`
+              : 'Pool undian akan tampil saat pertama kali menarik kupon.'
+          }
+        >
+          <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          </span>
+          <div>
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Pool Undian Terakhir</span>
+            <p className="text-xl font-black text-slate-900 font-mono mt-0.5 flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-emerald-600" />
+              {poolSize !== null && poolSize !== undefined ? (
+                <>
+                  {poolSize} <span className="text-xs font-bold text-slate-500">Kupon</span>
+                </>
+              ) : (
+                <span className="text-xs font-bold text-slate-400">—</span>
+              )}
             </p>
           </div>
         </div>

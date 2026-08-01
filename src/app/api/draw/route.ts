@@ -13,8 +13,13 @@ function secureRandomIndex(max: number): number {
 }
 
 /**
- * POST /api/draw — Pick a random eligible code (does NOT change status yet).
- * The MC must then confirm or skip (gugur) via /api/draw/confirm.
+ * POST /api/draw — Pick a random eligible code and RECORD it as pending.
+ * Status voucher TIDAK diubah; MC harus konfirmasi/gugur via /api/draw/confirm
+ * (yang wajib mengacu ke kandidat yang tercatat di sini).
+ *
+ * Body: { prizeId: string, excludeCode?: string }
+ * excludeCode dipakai saat "Gugurkan & Undi Ulang": menandai kandidat lama
+ * sebagai forfeited dan mengecualikan SEMUA kupon milik pembeli yang sama.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -30,6 +35,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const prizeId = body.prizeId;
+    const excludeCode = typeof body.excludeCode === 'string' ? body.excludeCode.trim() : '';
 
     if (!prizeId) {
       return NextResponse.json({ error: 'ID Hadiah wajib diisi' }, { status: 400 });
@@ -63,18 +69,61 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // 3. Cryptographically Secure Random Pick (CSPRNG)
-      // Status voucher TIDAK diubah — hanya pick acak
-      const randomIndex = secureRandomIndex(eligibleVouchers.length);
-      const candidate = eligibleVouchers[randomIndex];
+      // 3. Undian ulang setelah gugur: kecualikan SEMUA kupon milik pembeli yang
+      //    baru gugur (satu transaksi = satu pembeli), agar orang yang sama
+      //    tidak langsung terpilih lagi pada undian berikutnya.
+      let pool = eligibleVouchers;
+      if (excludeCode) {
+        const { data: forfeitedVoucher } = await serverSupabase
+          .from('vouchers')
+          .select('transaction_id')
+          .eq('code', excludeCode)
+          .maybeSingle();
+
+        if (forfeitedVoucher) {
+          // Tandai kandidat lama yang digugurkan supaya tidak bisa dikonfirmasi lagi.
+          await serverSupabase
+            .from('pending_draws')
+            .update({ status: 'forfeited' })
+            .eq('prize_id', prize.id)
+            .eq('voucher_code', excludeCode)
+            .eq('status', 'pending');
+
+          pool = eligibleVouchers.filter((v) => v.transaction_id !== forfeitedVoucher.transaction_id);
+        }
+      }
+
+      if (pool.length === 0) {
+        return NextResponse.json(
+          { error: 'Tidak ada kupon sah tersisa untuk diundi ulang.' },
+          { status: 400 }
+        );
+      }
+
+      // 4. Cryptographically Secure Random Pick (CSPRNG) — status voucher TIDAK diubah.
+      const randomIndex = secureRandomIndex(pool.length);
+      const candidate = pool[randomIndex];
+
+      // 5. Catat kandidat di pending_draws. Konfirmasi wajib mengacu ke baris ini
+      //    sehingga hanya kode yang benar-benar tampil di layar yang bisa menang.
+      const { error: pendingErr } = await serverSupabase.from('pending_draws').insert([
+        {
+          prize_id: prize.id,
+          voucher_code: candidate.code,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          ...(auth.userId ? { created_by: auth.userId } : {}),
+        },
+      ]);
+      if (pendingErr) throw pendingErr;
 
       return NextResponse.json({
         success: true,
-        candidate, // Still status 'checkin' — not yet a winner
+        candidate,
         prize,
         audit: {
           method: 'crypto.randomInt (CSPRNG)',
-          pool_size: eligibleVouchers.length,
+          pool_size: pool.length,
           selected_index: randomIndex,
           picked_at: new Date().toISOString(),
         },
