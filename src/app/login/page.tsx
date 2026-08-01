@@ -91,7 +91,7 @@ export default function LoginPage() {
   return (
     <div className="max-w-md mx-auto py-8 sm:py-12 space-y-6">
       {/* Header Title */}
-      <LoginHeader />
+      <LoginHeader pinLength={pinLength} />
 
       {/* PIN Dots & Keypad Box */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
