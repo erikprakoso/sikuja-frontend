@@ -39,10 +39,6 @@ export const PembelianList = () => {
     return () => window.removeEventListener(SIKUJA_EVENT_NAME, () => setIsSyncing(false));
   }, []);
 
-  useEffect(() => {
-    setPurchases([]);
-  }, []);
-
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
   };

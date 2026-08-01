@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { KeuanganHeader } from '@/components/admin/KeuanganHeader';
+import { PengeluaranHeader } from '@/components/admin/PengeluaranHeader';
 import { PengeluaranList } from '@/components/admin/PengeluaranList';
 
 export default function PengeluaranPage() {
@@ -19,7 +19,7 @@ export default function PengeluaranPage() {
   return (
     <RequireAuth roles={['admin']}>
     <div className="space-y-8 py-4 max-w-7xl mx-auto">
-      <KeuanganHeader />
+      <PengeluaranHeader />
 
       {isLoaded ? (
         <PengeluaranList />
