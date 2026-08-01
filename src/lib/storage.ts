@@ -200,6 +200,49 @@ export async function syncPurchaseToPrizeCategory(itemName: string, qty: number)
   }
 }
 
+export async function removePurchaseFromPrizeCategory(itemName: string, qty: number) {
+  if (typeof window === 'undefined' || !itemName.trim() || qty <= 0) return;
+  const normalizedName = itemName.trim();
+  const currentPrizes = getStoredPrizes();
+
+  const existingIndex = currentPrizes.findIndex(
+    (p) => p.name.toLowerCase().trim() === normalizedName.toLowerCase()
+  );
+
+  if (existingIndex < 0) return;
+
+  const targetPrize = currentPrizes[existingIndex];
+  const newStock = Math.max(0, targetPrize.stock - qty);
+
+  let updatedPrizes: Prize[];
+
+  if (newStock <= 0) {
+    updatedPrizes = currentPrizes.filter((_, idx) => idx !== existingIndex);
+  } else {
+    updatedPrizes = currentPrizes.map((p, idx) => {
+      if (idx === existingIndex) {
+        return {
+          ...p,
+          stock: newStock,
+        };
+      }
+      return p;
+    });
+  }
+
+  await savePrizes(updatedPrizes);
+
+  try {
+    await fetch('/api/prizes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prizes: updatedPrizes }),
+    });
+  } catch (err) {
+    console.error('Failed to sync prize deletion to server:', err);
+  }
+}
+
 export async function deletePrizeFromStore(prizeId: string) {
   if (typeof window === 'undefined') return;
   const prizes = getStoredPrizes().filter((p) => p.id !== prizeId);

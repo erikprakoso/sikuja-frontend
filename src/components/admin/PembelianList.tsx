@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory } from '@/lib/storage';
+import { SIKUJA_EVENT_NAME, syncPurchaseToPrizeCategory, removePurchaseFromPrizeCategory } from '@/lib/storage';
 import { Purchase } from '@/types';
 
 export const PembelianList = () => {
@@ -88,7 +88,9 @@ export const PembelianList = () => {
   };
 
   const handleDeletePurchase = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus data pembelian ini?')) return;
+    if (!confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?')) return;
+
+    const target = purchases.find((p) => p.id === id);
 
     setIsLoading(true);
     try {
@@ -97,8 +99,11 @@ export const PembelianList = () => {
 
       if (res.ok && data.success) {
         setPurchases((prev) => prev.filter((p) => p.id !== id));
+        if (target && target.is_doorprize !== false) {
+          await removePurchaseFromPrizeCategory(target.item_name, target.qty);
+        }
       } else {
-        alert(data.error || 'Gagal menghapus pembelian');
+        alert(data.error || 'Gagal menghapus pengeluaran');
       }
     } catch (err) {
       alert('Gagal terhubung ke server');
@@ -160,6 +165,9 @@ export const PembelianList = () => {
 
       if (res.ok && data.success) {
         if (isEdit) {
+          if (editingPurchase && editingPurchase.is_doorprize !== false) {
+            await removePurchaseFromPrizeCategory(editingPurchase.item_name, editingPurchase.qty);
+          }
           setPurchases((prev) =>
             prev.map((p) => (p.id === data.purchase.id ? data.purchase : p))
           );
