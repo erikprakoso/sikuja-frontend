@@ -58,7 +58,6 @@ export default function AdminDashboardPage() {
   const totalFisik = vouchers.filter((v) => v.type === 'fisik').length;
   const totalNonFisik = vouchers.filter((v) => v.type === 'non-fisik').length;
   const totalCheckin = vouchers.filter((v) => v.status !== 'terbit').length;
-  const totalDana = transactions.reduce((acc, t) => acc + t.total_harga, 0);
 
   const persistPrizesToServer = async (updated: Prize[]) => {
     try {
@@ -147,7 +146,6 @@ export default function AdminDashboardPage() {
         totalNonFisik={totalNonFisik}
         totalCheckin={totalCheckin}
         drawResults={drawResults}
-        totalDana={totalDana}
       />
 
       {/* Prize Management Section */}

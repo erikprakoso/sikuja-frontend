@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: '/undian', label: 'Layar Undian', roles: ['mc', 'admin'] },
   { href: '/verifikasi', label: 'Verifikasi', roles: ['verifikator', 'admin'] },
   { href: '/admin', label: 'Admin', roles: ['admin'] },
+  { href: '/admin/keuangan', label: 'Keuangan', roles: ['admin'] },
   { href: '/admin/users', label: 'Petugas', roles: ['admin'] },
 ];
 
