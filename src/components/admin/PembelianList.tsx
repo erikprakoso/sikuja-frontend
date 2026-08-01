@@ -1,21 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Download, Search, Loader2, X } from 'lucide-react';
+import { Plus, Download, Search, Loader2, X, Edit, Trash2 } from 'lucide-react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
+interface Purchase {
+  id: string;
+  supplier_name: string;
+  item_name: string;
+  qty: number;
+  price_per_unit: number;
+  total_price: number;
+  purchase_date: string;
+  payment_method: 'cash' | 'qris' | 'transfer';
+  note?: string | null;
+}
+
 export const PembelianList = () => {
-  interface Purchase {
-    id: string;
-    supplier_name: string;
-    item_name: string;
-    qty: number;
-    price_per_unit: number;
-    total_price: number;
-    purchase_date: string;
-    payment_method: 'cash' | 'qris' | 'transfer';
-  }
-  
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isAdding, setIsAdding] = useState(false);
+  const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [newSupplier, setNewSupplier] = useState('');
   const [newItem, setNewItem] = useState('');
   const [newQty, setNewQty] = useState<string>('');
@@ -60,36 +62,101 @@ export const PembelianList = () => {
     return () => window.removeEventListener(SIKUJA_EVENT_NAME, fetchPurchases);
   }, []);
 
-  const handleAddPurchase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newSupplier.trim() || !newItem.trim() || !newQty || !newPrice) return;
-    
+  const handleOpenNewPurchase = () => {
+    setEditingPurchase(null);
+    setNewSupplier('');
+    setNewItem('');
+    setNewQty('');
+    setNewPrice('');
+    setNewPaymentMethod('cash');
+    setNewNote('');
+    setIsAdding(true);
+  };
+
+  const handleEditPurchase = (p: Purchase) => {
+    setEditingPurchase(p);
+    setNewSupplier(p.supplier_name);
+    setNewItem(p.item_name);
+    setNewQty(p.qty.toString());
+    setNewPrice(p.price_per_unit.toString());
+    setNewPaymentMethod(p.payment_method);
+    setNewNote(p.note || '');
+    setIsAdding(true);
+  };
+
+  const handleDeletePurchase = async (id: string) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data pembelian ini?')) return;
+
     setIsLoading(true);
     try {
-      const res = await fetch('/api/keuangan/purchases', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          supplier_name: newSupplier,
-          item_name: newItem,
-          qty: Number(newQty),
-          price_per_unit: Number(newPrice),
-          payment_method: newPaymentMethod,
-          note: newNote,
-        }),
-      });
+      const res = await fetch(`/api/keuangan/purchases?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
-      
+
       if (res.ok && data.success) {
-        setPurchases((prev) => [data.purchase, ...prev]);
+        setPurchases((prev) => prev.filter((p) => p.id !== id));
+      } else {
+        alert(data.error || 'Gagal menghapus pembelian');
+      }
+    } catch (err) {
+      alert('Gagal terhubung ke server');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSavePurchase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSupplier.trim() || !newItem.trim() || !newQty || !newPrice) return;
+
+    setIsLoading(true);
+    try {
+      const isEdit = !!editingPurchase;
+      const res = isEdit
+        ? await fetch('/api/keuangan/purchases', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: editingPurchase.id,
+              supplier_name: newSupplier.trim(),
+              item_name: newItem.trim(),
+              qty: Number(newQty),
+              price_per_unit: Number(newPrice),
+              payment_method: newPaymentMethod,
+              note: newNote.trim() || null,
+            }),
+          })
+        : await fetch('/api/keuangan/purchases', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              supplier_name: newSupplier.trim(),
+              item_name: newItem.trim(),
+              qty: Number(newQty),
+              price_per_unit: Number(newPrice),
+              payment_method: newPaymentMethod,
+              note: newNote.trim() || null,
+            }),
+          });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        if (isEdit) {
+          setPurchases((prev) =>
+            prev.map((p) => (p.id === data.purchase.id ? data.purchase : p))
+          );
+        } else {
+          setPurchases((prev) => [data.purchase, ...prev]);
+        }
         setNewSupplier('');
         setNewItem('');
         setNewQty('');
         setNewPrice('');
         setNewNote('');
+        setEditingPurchase(null);
         setIsAdding(false);
       } else {
-        alert(data.error || 'Gagal menambahkan pembelian');
+        alert(data.error || 'Gagal menyimpan pembelian');
       }
     } catch (err) {
       alert('Gagal terhubung ke server');
@@ -112,7 +179,7 @@ export const PembelianList = () => {
             Ekspor CSV
           </button>
           <button
-            onClick={() => setIsAdding(true)}
+            onClick={handleOpenNewPurchase}
             className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold text-xs shadow-md hover:bg-[#E70013]/90 transition-all flex items-center gap-1.5 active:scale-95"
           >
             <Plus className="w-4 h-4" />
@@ -130,10 +197,10 @@ export const PembelianList = () => {
               placeholder="Cari supplier atau item..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
-          {isSyncing && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+          {(isSyncing || isLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
         </div>
 
         <div className="overflow-x-auto">
@@ -147,14 +214,15 @@ export const PembelianList = () => {
                 <th className="p-4 font-bold text-slate-700 text-right">Harga Total</th>
                 <th className="p-4 font-bold text-slate-700">Tgl Beli</th>
                 <th className="p-4 font-bold text-slate-700">Bayar</th>
+                <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredPurchases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={8} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pembelian doorprize.</p>
-                    <p className="text-xs mt-2">Form pembelian dan API belum diimplementasi.</p>
+                    <p className="text-xs mt-2">Klik "Pembelian Baru" untuk menambahkan data.</p>
                   </td>
                 </tr>
               ) : (
@@ -171,6 +239,24 @@ export const PembelianList = () => {
                         {p.payment_method}
                       </span>
                     </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => handleEditPurchase(p)}
+                          className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                          title="Edit Pembelian"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeletePurchase(p.id)}
+                          className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Hapus Pembelian"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -179,7 +265,7 @@ export const PembelianList = () => {
               <tr>
                 <td colSpan={4} className="p-4 font-bold text-slate-700 text-right">Total Belanja:</td>
                 <td className="p-4 text-2xl font-black text-blue-700 text-right">{formatRupiah(totalSpent)}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tfoot>
           </table>
@@ -190,13 +276,21 @@ export const PembelianList = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-black text-slate-900">Tambah Pembelian Doorprize</h3>
-              <button onClick={() => setIsAdding(false)} className="text-slate-400 hover:text-slate-600">
+              <h3 className="text-lg font-black text-slate-900">
+                {editingPurchase ? 'Edit Pembelian Doorprize' : 'Tambah Pembelian Doorprize'}
+              </h3>
+              <button
+                onClick={() => {
+                  setIsAdding(false);
+                  setEditingPurchase(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <form onSubmit={handleAddPurchase} className="space-y-4">
+
+            <form onSubmit={handleSavePurchase} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Supplier</label>
                 <input
@@ -204,11 +298,11 @@ export const PembelianList = () => {
                   value={newSupplier}
                   onChange={(e) => setNewSupplier(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                   placeholder="Nama supplier..."
                 />
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Item</label>
                 <input
@@ -216,11 +310,11 @@ export const PembelianList = () => {
                   value={newItem}
                   onChange={(e) => setNewItem(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                   placeholder="Nama item..."
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah</label>
@@ -230,7 +324,7 @@ export const PembelianList = () => {
                     value={newQty}
                     onChange={(e) => setNewQty(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                     placeholder="Contoh: 2"
                   />
                 </div>
@@ -242,39 +336,42 @@ export const PembelianList = () => {
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                     placeholder="Contoh: 1750000"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Metode Bayar</label>
                 <select
                   value={newPaymentMethod}
-                  onChange={(e) => setNewPaymentMethod(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none"
+                  onChange={(e) => setNewPaymentMethod(e.target.value as 'cash' | 'qris' | 'transfer')}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
                 >
                   <option value="cash">Tunai</option>
                   <option value="qris">QRIS</option>
                   <option value="transfer">Transfer</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan (opsional)</label>
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-24 resize-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-24 resize-none text-slate-900"
                   placeholder="Catatan tambahan..."
                 />
               </div>
-              
+
               <div className="flex items-center justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsAdding(false)}
+                  onClick={() => {
+                    setIsAdding(false);
+                    setEditingPurchase(null);
+                  }}
                   className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
                 >
                   Batal
@@ -285,7 +382,7 @@ export const PembelianList = () => {
                   className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 flex items-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  Simpan Pembelian
+                  {editingPurchase ? 'Simpan Perubahan' : 'Simpan Pembelian'}
                 </button>
               </div>
             </form>
