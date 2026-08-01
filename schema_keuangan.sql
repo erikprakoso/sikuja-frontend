@@ -9,13 +9,15 @@ CREATE TABLE IF NOT EXISTS public.donations (
   donor_name TEXT NOT NULL,
   donor_phone TEXT,
   amount INT NOT NULL CHECK (amount >= 0),
-  type TEXT NOT NULL DEFAULT 'tunai' CHECK (type IN ('tunai', 'non-tunai')),
-  source TEXT NOT NULL DEFAULT 'umum',
   note TEXT,
   received_by TEXT,
   received_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Perintah ALTER jika tabel public.donations sudah terlanjur dibuat sebelumnya:
+ALTER TABLE public.donations DROP COLUMN IF EXISTS type;
+ALTER TABLE public.donations DROP COLUMN IF EXISTS source;
 
 CREATE INDEX IF NOT EXISTS idx_donations_received_at ON public.donations(received_at DESC);
 

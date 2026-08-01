@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { donor_name, donor_phone, amount, type, source, note } = body;
+    const { donor_name, donor_phone, amount, note } = body;
 
     if (!donor_name || !amount) {
       return NextResponse.json({ error: 'Nama donatur dan jumlah wajib diisi' }, { status: 400 });
@@ -58,8 +58,6 @@ export async function POST(request: NextRequest) {
       donor_name: donor_name.trim(),
       donor_phone: donor_phone?.trim() || null,
       amount: Math.floor(amount),
-      type: type || 'tunai',
-      source: source || 'umum',
       note: note?.trim() || null,
       received_by: auth.name,
       received_at: now,
@@ -98,7 +96,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, donor_name, donor_phone, amount, type, source, note } = body;
+    const { id, donor_name, donor_phone, amount, note } = body;
 
     if (!id || !donor_name || !amount) {
       return NextResponse.json({ error: 'ID, nama donatur, dan jumlah wajib diisi' }, { status: 400 });
@@ -108,13 +106,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Jumlah donasi harus angka positif' }, { status: 400 });
     }
 
-    const now = new Date().toISOString();
     const donation = {
       donor_name: donor_name.trim(),
       donor_phone: donor_phone?.trim() || null,
       amount: Math.floor(amount),
-      type: type || 'tunai',
-      source: source || 'umum',
       note: note?.trim() || null,
       received_by: auth.name,
     };

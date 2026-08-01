@@ -6,8 +6,8 @@ interface Donation {
   donor_name: string;
   donor_phone: string | null;
   amount: number;
-  type: 'tunai' | 'non-tunai';
-  source: string;
+  type?: 'tunai' | 'non-tunai';
+  source?: string;
   status: 'diterima';
   received_at: string;
   note: string | null;
@@ -17,12 +17,12 @@ export const DonasiList = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
+  
   const [newDonorName, setNewDonorName] = useState('');
   const [newDonorPhone, setNewDonorPhone] = useState('');
-  const [newAmount, setNewAmount] = useState<string>('');
-  const [newType, setNewType] = useState<'tunai' | 'non-tunai'>('tunai');
-  const [newSource, setNewSource] = useState('');
+  const [newAmount, setNewAmount] = useState<string>(''); // Raw numeric string
   const [newNote, setNewNote] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -36,8 +36,7 @@ export const DonasiList = () => {
     return donations.filter(
       (d: Donation) =>
         d.donor_name.toLowerCase().includes(q) ||
-        d.amount.toString().includes(q) ||
-        (d.source && d.source.toLowerCase().includes(q))
+        d.amount.toString().includes(q)
     );
   }, [donations, searchQuery]);
 
@@ -45,7 +44,6 @@ export const DonasiList = () => {
     return donations.reduce((acc, d) => acc + d.amount, 0);
   }, [donations]);
 
-  // Reset to first page when search query or page size changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, pageSize]);
@@ -82,8 +80,6 @@ export const DonasiList = () => {
     setNewDonorName('');
     setNewDonorPhone('');
     setNewAmount('');
-    setNewType('tunai');
-    setNewSource('');
     setNewNote('');
     setIsAdding(true);
   };
@@ -93,8 +89,6 @@ export const DonasiList = () => {
     setNewDonorName(d.donor_name);
     setNewDonorPhone(d.donor_phone || '');
     setNewAmount(d.amount.toString());
-    setNewType(d.type);
-    setNewSource(d.source);
     setNewNote(d.note || '');
     setIsAdding(true);
   };
@@ -119,6 +113,18 @@ export const DonasiList = () => {
     }
   };
 
+  const handleAmountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    setNewAmount(digitsOnly);
+  };
+
+  const formattedDisplayAmount = useMemo(() => {
+    if (!newAmount) return '';
+    const num = parseInt(newAmount, 10);
+    if (isNaN(num)) return '';
+    return new Intl.NumberFormat('id-ID').format(num);
+  }, [newAmount]);
+
   const handleSaveDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDonorName.trim() || !newAmount) return;
@@ -126,31 +132,26 @@ export const DonasiList = () => {
     setIsLoading(true);
     try {
       const isEdit = !!editingDonation;
+      const payload = {
+        donor_name: newDonorName.trim(),
+        donor_phone: newDonorPhone.trim() || null,
+        amount: Number(newAmount),
+        note: newNote.trim() || null,
+      };
+
       const res = isEdit
         ? await fetch('/api/keuangan/donasi', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               id: editingDonation.id,
-              donor_name: newDonorName.trim(),
-              donor_phone: newDonorPhone.trim() || null,
-              amount: Number(newAmount),
-              type: newType,
-              source: newSource.trim() || 'umum',
-              note: newNote.trim() || null,
+              ...payload,
             }),
           })
         : await fetch('/api/keuangan/donasi', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              donor_name: newDonorName.trim(),
-              donor_phone: newDonorPhone.trim() || null,
-              amount: Number(newAmount),
-              type: newType,
-              source: newSource.trim() || 'umum',
-              note: newNote.trim() || null,
-            }),
+            body: JSON.stringify(payload),
           });
 
       const data = await res.json();
@@ -166,7 +167,6 @@ export const DonasiList = () => {
         setNewDonorName('');
         setNewDonorPhone('');
         setNewAmount('');
-        setNewSource('');
         setNewNote('');
         setEditingDonation(null);
         setIsAdding(false);
@@ -228,7 +228,7 @@ export const DonasiList = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari donatur, sumber, atau nominal..."
+              placeholder="Cari nama donatur atau nominal..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
@@ -256,9 +256,7 @@ export const DonasiList = () => {
             <thead className="bg-slate-50">
               <tr>
                 <th className="p-4 font-bold text-slate-700">Nama Donatur</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Jumlah</th>
-                <th className="p-4 font-bold text-slate-700">Tipe</th>
-                <th className="p-4 font-bold text-slate-700">Sumber</th>
+                <th className="p-4 font-bold text-slate-700 text-right">Jumlah Donasi</th>
                 <th className="p-4 font-bold text-slate-700">Tanggal</th>
                 <th className="p-4 font-bold text-slate-700">Status</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
@@ -267,7 +265,7 @@ export const DonasiList = () => {
             <tbody className="divide-y divide-slate-100">
               {paginatedDonations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={5} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data donasi masuk.</p>
                     <p className="text-xs mt-2">Klik "Donasi Baru" untuk menambahkan donasi.</p>
                   </td>
@@ -282,8 +280,6 @@ export const DonasiList = () => {
                       )}
                     </td>
                     <td className="p-4 text-emerald-700 font-bold text-right">{formatRupiah(d.amount)}</td>
-                    <td className="p-4 text-slate-600 capitalize">{d.type}</td>
-                    <td className="p-4 text-slate-600">{d.source}</td>
                     <td className="p-4 text-slate-500">{new Date(d.received_at).toLocaleDateString('id-ID')}</td>
                     <td className="p-4">
                       <span className="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold">Diterima</span>
@@ -375,8 +371,8 @@ export const DonasiList = () => {
       {/* Form Modal */}
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900">
                 {editingDonation ? 'Edit Donasi' : 'Catat Donasi Masuk'}
               </h3>
@@ -399,8 +395,8 @@ export const DonasiList = () => {
                   value={newDonorName}
                   onChange={(e) => setNewDonorName(e.target.value)}
                   required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  placeholder="Nama lengkap..."
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
+                  placeholder="Nama lengkap donatur..."
                 />
               </div>
 
@@ -410,44 +406,22 @@ export const DonasiList = () => {
                   type="text"
                   value={newDonorPhone}
                   onChange={(e) => setNewDonorPhone(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
                   placeholder="08123456789"
                 />
               </div>
 
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah Donasi (Rp)</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={newAmount}
-                  onChange={(e) => setNewAmount(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  placeholder="Contoh: 500000"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">Tipe</label>
-                  <select
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value as 'tunai' | 'non-tunai')}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  >
-                    <option value="tunai">Tunai</option>
-                    <option value="non-tunai">Non-Tunai</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">Sumber</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
                   <input
                     type="text"
-                    value={newSource}
-                    onChange={(e) => setNewSource(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                    placeholder="Contoh: Umum / Corporate"
+                    value={formattedDisplayAmount}
+                    onChange={handleAmountInputChange}
+                    required
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
+                    placeholder="500.000"
                   />
                 </div>
               </div>
