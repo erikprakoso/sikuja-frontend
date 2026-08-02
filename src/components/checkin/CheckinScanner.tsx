@@ -73,7 +73,7 @@ export const CheckinScanner: React.FC<CheckinScannerProps> = ({
       >
         <input
           type="text"
-          placeholder="Masukkan 5-digit kode kupon / token..."
+          placeholder="Kode 5-digit / token (tx_) / link E-Voucher — bisa beberapa kode sekaligus"
           value={inputCode}
           onChange={(e) => setInputCode(e.target.value)}
           disabled={isProcessing}

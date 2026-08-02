@@ -72,6 +72,18 @@ export default function CheckinPosPage() {
     const raw = scannedText.trim();
     if (!raw) return;
 
+    // Dukung paste beberapa kode 5-digit sekaligus (pisah spasi/koma/baris baru)
+    // untuk kupon fisik tanpa QR. Satu entri tunggal = jalur lama (kode / token / URL).
+    const tokens = raw.split(/[\s,;]+/).filter(Boolean);
+    if (tokens.length > 1) {
+      await processMultipleCodes(tokens);
+      return;
+    }
+
+    await processSingleEntry(raw);
+  };
+
+  const processSingleEntry = async (raw: string) => {
     setIsProcessing(true);
     setResultMessage(null);
 
@@ -128,6 +140,64 @@ export default function CheckinPosPage() {
       // Pastikan UI & kamera selalu kembali siap walau ada error tak terduga.
       setIsProcessing(false);
     }
+  };
+
+  const processMultipleCodes = async (tokens: string[]) => {
+    setIsProcessing(true);
+    setResultMessage(null);
+
+    let ok = 0;
+    let already = 0;
+    let failed = 0;
+    const failedCodes: string[] = [];
+
+    for (const rawCode of tokens) {
+      const code = rawCode.trim();
+      try {
+        const res = await fetch('/api/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ codeOrToken: code }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          if (data.count === 0) already += 1;
+          else ok += 1;
+        } else {
+          failed += 1;
+          failedCodes.push(code);
+        }
+      } catch (err) {
+        console.warn('API /checkin unreachable for multi-code, offline fallback...', err);
+        const singleRes = checkInVoucher(code);
+        if (singleRes.success) ok += 1;
+        else {
+          failed += 1;
+          failedCodes.push(code);
+        }
+      }
+    }
+
+    setInputCode('');
+    refreshStats();
+    setResultKey((k) => k + 1);
+    setResultMessage({
+      success: failed === 0,
+      text:
+        `Berhasil verifikasi ${ok} kupon` +
+        (already > 0 ? `, ${already} sudah terverifikasi sebelumnya` : '') +
+        (failed > 0 ? `, ${failed} gagal: ${failedCodes.join(', ')}` : '') +
+        '.',
+    });
+
+    if (failed === 0) {
+      playSuccessFeedback();
+      scheduleAutoClearSuccess();
+    } else {
+      playErrorFeedback();
+    }
+
+    setIsProcessing(false);
   };
 
   const startCamera = async () => {

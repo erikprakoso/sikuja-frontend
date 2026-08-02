@@ -10,6 +10,8 @@ export const CheckinOperatorTips: React.FC = () => {
       </span>
       <ul className="list-disc list-inside space-y-1 text-[11px] font-medium text-slate-600 leading-relaxed">
         <li>Pemindaian 1 QR Code E-Voucher secara otomatis mengonfirmasi seluruh kupon dalam transaksi tersebut.</li>
+        <li>Tanpa QR? Masukkan <b>token transaksi</b> (<span className="font-mono">tx_...</span> di struk / link E-Voucher) untuk verifikasi seluruh kupon milik pembeli sekaligus.</li>
+        <li>Kupon fisik tanpa QR? Ketik/paste beberapa kode 5-digit sekaligus (pisah spasi, koma, atau baris baru) — terverifikasi dalam sekali proses.</li>
         <li>Sistem mendukung verifikasi bersamaan oleh beberapa petugas tanpa risiko duplikasi data.</li>
         <li>Seluruh data terekam secara real-time. Hanya kupon yang telah terverifikasi yang masuk ke dalam sistem undian.</li>
       </ul>
