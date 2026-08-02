@@ -33,7 +33,13 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
   const baseUrl = getAppBaseUrl();
   const etokenUrl = `${baseUrl}/v/${transaction.token}`;
   const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
+  const digitalVouchers = vouchers.filter((v) => v.type !== 'fisik');
   const totalLembar = transaction.qty_fisik + transaction.qty_non_fisik;
+
+  const cardCount =
+    (transaction.qty_non_fisik > 0 ? 1 : 0) +
+    (physicalVouchers.length > 0 ? 1 : 0) +
+    (digitalVouchers.length > 0 ? 1 : 0);
 
   return (
     <div className="bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6 animate-fade-in">
@@ -52,7 +58,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
       </div>
 
       {/* Main Content Layout */}
-      <div className={`grid gap-5 ${transaction.qty_non_fisik > 0 && transaction.qty_fisik > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-5 ${cardCount > 1 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
         {/* E-Voucher QR Section */}
         {transaction.qty_non_fisik > 0 && (
           <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-center space-y-3.5 flex flex-col items-center justify-center">
@@ -106,6 +112,33 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto pr-1">
               {physicalVouchers.map((v, idx) => (
+                <div
+                  key={v.code}
+                  className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center shadow-2xs"
+                >
+                  <span className="text-[10px] text-slate-500 font-mono font-bold block">#Kupon {idx + 1}</span>
+                  <span className="text-xl font-black text-slate-900 font-mono tracking-wider block mt-0.5">
+                    {v.code}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Digital E-Voucher Codes List Section (sama seperti fisik) */}
+        {digitalVouchers.length > 0 && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold">
+                <Ticket className="w-3.5 h-3.5" />
+                Daftar Kupon Digital ({digitalVouchers.length} Lembar)
+              </div>
+              <span className="text-[11px] text-slate-500 font-medium">Kode juga di kartu E-Voucher</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto pr-1">
+              {digitalVouchers.map((v, idx) => (
                 <div
                   key={v.code}
                   className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center shadow-2xs"

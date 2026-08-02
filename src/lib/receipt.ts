@@ -140,6 +140,21 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
     rows.push({ type: 'dashed' });
   }
 
+  // ── Kode kupon E-Voucher digital (cetak sama seperti fisik) ──
+  const digitalVouchers = vouchers.filter((v) => v.type !== 'fisik');
+  if (digitalVouchers.length > 0) {
+    rows.push({
+      type: 'text',
+      align: 'center',
+      bold: true,
+      text: `KODE KUPON E-VOUCHER (${digitalVouchers.length} LBR)`,
+    });
+    digitalVouchers.forEach((v, idx) => {
+      rows.push({ type: 'line', variant: 'coupon', left: `#${idx + 1}`, right: v.code });
+    });
+    rows.push({ type: 'dashed' });
+  }
+
   // ── Footer syarat ──
   rows.push({ type: 'text', align: 'center', text: '* Kupon hanya berlaku pada acara' });
   rows.push({ type: 'text', align: 'center', text: 'Jalan Sehat 2026. Simpan struk ini.' });
