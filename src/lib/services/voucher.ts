@@ -196,6 +196,7 @@ export function checkInVoucher(code: string, scannerId: string = 'pos-device-1')
 }
 
 // 3. Batch Check-in via 1 Transaction QR Code (Check-in ALL vouchers of 1 transaction or customer)
+//    Input bisa: token / tx id / 1 kode 5-digit (→ transaksi terkait) / no. HP / nama pemilik.
 export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string = 'pos-device-1'): {
   success: boolean;
   message: string;
@@ -204,7 +205,34 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
   const transactions = getStoredTransactions();
   const vouchers = getStoredVouchers();
 
-  const tx = transactions.find((t) => t.token === tokenOrTxId || t.id === tokenOrTxId);
+  const input = tokenOrTxId.trim();
+
+  // Resolve input menjadi satu transaksi (semua mode lookup).
+  let tx = transactions.find((t) => t.token === input || t.id === input);
+
+  if (!tx) {
+    const code = format5DigitCode(input);
+    if (code) {
+      const v = vouchers.find((x) => x.code === code);
+      if (v) tx = transactions.find((t) => t.id === v.transaction_id);
+    }
+  }
+
+  if (!tx) {
+    const digits = input.replace(/\D/g, '');
+    if (digits.length >= 8) {
+      tx =
+        transactions.find((t) => t.customer_phone === input) ||
+        transactions.find((t) => t.customer_phone && t.customer_phone.replace(/\D/g, '') === digits);
+    }
+  }
+
+  if (!tx) {
+    tx = transactions.find(
+      (t) => t.customer_name && t.customer_name.trim().toLowerCase() === input.toLowerCase()
+    );
+  }
+
   if (!tx) {
     return {
       success: false,
