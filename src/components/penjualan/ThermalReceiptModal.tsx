@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
-import { getAppBaseUrl } from '@/lib/storage';
 import {
   isBluetoothSupported,
   connectPrinter,
@@ -10,6 +8,7 @@ import {
   getPrinterLastConnectedName,
   printThermalReceipt,
 } from '@/lib/printer';
+import { ReceiptView } from '@/components/penjualan/ReceiptView';
 import { Printer, X, Bluetooth, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 
 interface ThermalReceiptModalProps {
@@ -25,8 +24,6 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   vouchers,
   onClose,
 }) => {
-  const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
-  const [txQrUrl, setTxQrUrl] = useState<string>('');
   const [printerStatus, setPrinterStatus] = useState<PrinterStatus>(() =>
     typeof window !== 'undefined' && isBluetoothSupported() ? 'idle' : 'unsupported'
   );
@@ -35,18 +32,6 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   );
   const [printerError, setPrinterError] = useState<string>('');
   const [printMsg, setPrintMsg] = useState<string>('');
-
-  const fullUrl = `${getAppBaseUrl()}/v/${transaction.token}`;
-
-  useEffect(() => {
-    QRCode.toDataURL(fullUrl, {
-      width: 160,
-      margin: 1,
-      color: { dark: '#000000', light: '#ffffff' },
-    })
-      .then((url) => setTxQrUrl(url))
-      .catch((err) => console.error('Tx QR gen error', err));
-  }, [fullUrl]);
 
   useEffect(() => {
     if (printerStatus === 'unsupported') return;
@@ -91,7 +76,7 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     }
     try {
       setPrintMsg('Mencetak struk...');
-      await printThermalReceipt(transaction, vouchers, fullUrl);
+      await printThermalReceipt(transaction, vouchers);
       setPrintMsg('Struk berhasil dicetak ke printer thermal ✓');
       setTimeout(() => setPrintMsg(''), 4000);
     } catch (err) {
@@ -151,54 +136,8 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
         </div>
 
         {/* Simulated 58mm Thermal Paper Card */}
-        <div className="bg-slate-50 text-slate-900 font-mono text-xs p-4 rounded-xl shadow-inner border border-slate-300 max-h-96 overflow-y-auto w-[260px] mx-auto space-y-3 leading-tight">
-          <div className="text-center pb-2 border-b border-slate-300 border-dashed space-y-1">
-            <p className="font-black text-sm uppercase text-slate-900">PANITIA JALAN SEHAT 🇮🇩</p>
-            <p className="text-[10px] font-bold text-slate-700">SIKUJA 2026</p>
-            {transaction.customer_name && (
-              <p className="text-[10px] font-black text-slate-900">
-                Pemilik: {transaction.customer_name} {transaction.customer_phone ? `(${transaction.customer_phone})` : ''}
-              </p>
-            )}
-            <p className="text-[9px] text-slate-500 font-semibold">
-              Tx: {transaction.id.slice(-8)} • {new Date(transaction.created_at).toLocaleTimeString('id-ID')}
-            </p>
-          </div>
-
-          {/* QR Code Section */}
-          <div className="text-center py-1 border-b border-slate-300 border-dashed space-y-1">
-            <p className="text-[9px] font-bold uppercase text-slate-700">QR CODE E-VOUCHER</p>
-            {txQrUrl && (
-              <img
-                src={txQrUrl}
-                alt="QR Code E-Voucher"
-                className="w-24 h-24 mx-auto border border-slate-300 bg-white p-1 my-1 rounded"
-              />
-            )}
-            <p className="text-[8px] text-slate-500 font-semibold">Pindaikan QR Code untuk Check-in</p>
-          </div>
-
-          {/* Physical Vouchers List */}
-          {physicalVouchers.length > 0 && (
-            <div className="space-y-1.5 my-2">
-              <p className="text-[9px] font-bold text-center uppercase text-slate-700">
-                KODE KUPON FISIK ({physicalVouchers.length} LBR):
-              </p>
-              {physicalVouchers.map((v, idx) => (
-                <div key={v.code} className="flex justify-between items-center px-2 py-1 bg-white rounded border border-slate-300 font-mono text-xs">
-                  <span className="text-[9px] text-slate-600 font-semibold">#Kupon {idx + 1}</span>
-                  <span className="font-black text-sm text-slate-900 tracking-widest">{v.code}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="text-center pt-2 border-t border-slate-300 border-dashed text-[9px] space-y-1">
-            <p className="font-black text-slate-900">
-              Total: {transaction.qty_fisik + transaction.qty_non_fisik} Lbr • Rp {transaction.total_harga.toLocaleString('id-ID')}
-            </p>
-            <p className="text-slate-600 font-medium">Terima Kasih atas Partisipasi Anda</p>
-          </div>
+        <div className="bg-slate-50 text-slate-900 font-mono text-xs p-4 rounded-xl shadow-inner border border-slate-300 max-h-96 overflow-y-auto w-[260px] mx-auto leading-tight">
+          <ReceiptView transaction={transaction} vouchers={vouchers} />
         </div>
 
         {/* Printer Connection Status */}

@@ -1,4 +1,5 @@
 import { Transaction, Voucher } from '@/types';
+import { buildReceiptModel, RECEIPT_LINE_WIDTH } from '@/lib/receipt';
 
 const SPP_SERVICE = '49535343-fe7d-4ae5-8fa9-9fafd205e455';
 const SPP_WRITE_CHAR = '49535343-8841-43f4-a8d4-ecbe34729bb3';
@@ -13,8 +14,6 @@ const SERVICES: BluetoothServiceUUID[] = [
 
 const PRINTER_ID_KEY = 'sikuja_printer_id';
 const PRINTER_NAME_KEY = 'sikuja_printer_name';
-
-const LINE_WIDTH = 32;
 
 let writeChar: BluetoothRemoteGATTCharacteristic | null = null;
 let disconnectHandler: (() => void) | null = null;
@@ -67,7 +66,7 @@ const ESC = {
   BOLD_ON: [0x1b, 0x45, 0x01],
   BOLD_OFF: [0x1b, 0x45, 0x00],
   SIZE_NORMAL: [0x1d, 0x21, 0x00],
-  SIZE_DOUBLE: [0x1d, 0x21, 0x11],
+  SIZE_DOUBLE_H: [0x1d, 0x21, 0x10],
   LF: [0x0a],
   FEED: (n: number) => [0x1b, 0x64, n],
   CUT: [0x1d, 0x56, 0x00],
@@ -81,15 +80,24 @@ function emitLine(
   const { align = 'left', bold = false, double = false } = opts;
   out.push(...(align === 'center' ? ESC.CENTER : ESC.LEFT));
   if (bold) out.push(...ESC.BOLD_ON);
-  if (double) out.push(...ESC.SIZE_DOUBLE);
+  if (double) out.push(...ESC.SIZE_DOUBLE_H);
 
-  const width = double ? Math.floor(LINE_WIDTH / 2) : LINE_WIDTH;
-  const padded = toEscPosChars(content).slice(0, width).padEnd(width, ' ');
+  const padded = toEscPosChars(content).slice(0, RECEIPT_LINE_WIDTH).padEnd(RECEIPT_LINE_WIDTH, ' ');
   out.push(...encode(padded));
 
   if (double) out.push(...ESC.SIZE_NORMAL);
   if (bold) out.push(...ESC.BOLD_OFF);
   out.push(...ESC.LF);
+}
+
+function emitLineRow(
+  out: number[],
+  left: string,
+  right: string,
+  opts: { bold?: boolean; double?: boolean } = {}
+): void {
+  const pad = Math.max(1, RECEIPT_LINE_WIDTH - left.length - right.length);
+  emitLine(out, left + ' '.repeat(pad) + right, { align: 'left', bold: opts.bold, double: opts.double });
 }
 
 function emitQr(out: number[], qrText: string): void {
@@ -105,50 +113,32 @@ function emitQr(out: number[], qrText: string): void {
 
 export function buildReceiptBytes(
   transaction: Transaction,
-  vouchers: Voucher[],
-  qrText: string
+  vouchers: Voucher[]
 ): Uint8Array<ArrayBuffer> {
-  const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
-  const totalLembar = transaction.qty_fisik + transaction.qty_non_fisik;
-  const time = new Date(transaction.created_at).toLocaleTimeString('id-ID');
+  const model = buildReceiptModel(transaction, vouchers);
 
   const out: number[] = [];
   out.push(...ESC.INIT);
 
-  emitLine(out, 'PANITIA JALAN SEHAT', { align: 'center', bold: true, double: true });
-  emitLine(out, 'SIKUJA 2026', { align: 'center', bold: true });
-  out.push(...ESC.LF);
-
-  if (transaction.customer_name) {
-    emitLine(out, `Pemilik: ${transaction.customer_name}`, { align: 'center' });
+  for (const row of model) {
+    switch (row.type) {
+      case 'spacer':
+        out.push(...ESC.LF);
+        break;
+      case 'dashed':
+        emitLine(out, '-'.repeat(RECEIPT_LINE_WIDTH), { align: 'center' });
+        break;
+      case 'text':
+        emitLine(out, row.text, { align: row.align, bold: row.bold, double: row.double });
+        break;
+      case 'line':
+        emitLineRow(out, row.left, row.right ?? '', { bold: row.bold, double: row.double });
+        break;
+      case 'qr':
+        emitQr(out, row.text);
+        break;
+    }
   }
-  if (transaction.customer_phone) {
-    emitLine(out, transaction.customer_phone, { align: 'center' });
-  }
-  emitLine(out, `Tx: ${transaction.id.slice(-8)} - ${time}`, { align: 'center' });
-  emitLine(out, '-'.repeat(LINE_WIDTH), { align: 'center' });
-
-  emitLine(out, 'QR CODE E-VOUCHER', { align: 'center', bold: true });
-  emitQr(out, qrText);
-  emitLine(out, 'Pindaikan QR Code untuk', { align: 'center' });
-  emitLine(out, 'Check-in', { align: 'center' });
-  out.push(...ESC.LF);
-
-  if (physicalVouchers.length > 0) {
-    emitLine(out, `KODE KUPON FISIK (${physicalVouchers.length} LBR)`, { align: 'center', bold: true });
-    physicalVouchers.forEach((v, idx) => {
-      const lineStr = `#Kupon ${idx + 1}  ${v.code}`;
-      emitLine(out, lineStr, { align: 'center' });
-    });
-    out.push(...ESC.LF);
-  }
-
-  emitLine(out, `Total: ${totalLembar} Lbr - Rp ${transaction.total_harga.toLocaleString('id-ID')}`, {
-    align: 'center',
-    bold: true,
-    double: true,
-  });
-  emitLine(out, 'Terima Kasih atas Partisipasi Anda', { align: 'center' });
 
   out.push(...ESC.FEED(4));
   out.push(...ESC.CUT);
@@ -271,10 +261,9 @@ async function writeChunked(data: Uint8Array<ArrayBuffer>): Promise<void> {
 
 export async function printThermalReceipt(
   transaction: Transaction,
-  vouchers: Voucher[],
-  qrText: string
+  vouchers: Voucher[]
 ): Promise<void> {
   if (!isPrinterConnected()) throw new Error('Printer belum terhubung.');
-  const data = buildReceiptBytes(transaction, vouchers, qrText);
+  const data = buildReceiptBytes(transaction, vouchers);
   await writeChunked(data);
 }
