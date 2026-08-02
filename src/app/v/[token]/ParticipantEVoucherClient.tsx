@@ -75,8 +75,17 @@ export default function ParticipantEVoucherClient({
       if (document.visibilityState === 'visible') {
         loadData();
       }
-    }, 30000);
-    return () => clearInterval(intervalId);
+    }, 5000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [loadData]);
 
   useEffect(() => {
