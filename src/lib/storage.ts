@@ -142,7 +142,7 @@ export function savePurchases(purchases: Purchase[]) {
 export function computePrizesFromPurchases(purchases: Purchase[], drawResults: DrawResult[] = []): Prize[] {
   const doorprizePurchases = purchases.filter((p) => p.is_doorprize !== false);
 
-  const map = new Map<string, { name: string; stock: number; firstId: string }>();
+  const map = new Map<string, { name: string; stock: number; firstId: string; price: number }>();
 
   for (const p of doorprizePurchases) {
     const trimmedName = p.item_name.trim();
@@ -155,6 +155,7 @@ export function computePrizesFromPurchases(purchases: Purchase[], drawResults: D
         name: trimmedName,
         stock: p.qty,
         firstId: p.id,
+        price: p.price_per_unit,
       });
     }
   }
@@ -176,6 +177,7 @@ export function computePrizesFromPurchases(purchases: Purchase[], drawResults: D
       stock: item.stock,
       drawn_count: drawn,
       order_num: orderNum++,
+      price_per_unit: item.price,
     });
   }
 

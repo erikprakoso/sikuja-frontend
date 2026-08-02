@@ -16,6 +16,9 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
   onSelectPrize,
 }) => {
   const availablePrizes = prizes.filter((p) => p.drawn_count < p.stock);
+  const sortedPrizes = [...prizes].sort(
+    (a, b) => (a.price_per_unit ?? Number.MAX_SAFE_INTEGER) - (b.price_per_unit ?? Number.MAX_SAFE_INTEGER)
+  );
 
   if (prizes.length === 0) {
     return (
@@ -33,7 +36,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {prizes.map((p) => {
+        {sortedPrizes.map((p) => {
           const isAvailable = p.drawn_count < p.stock;
           const isSelected = isAvailable && p.id === selectedPrizeId;
 

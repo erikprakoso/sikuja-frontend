@@ -61,6 +61,7 @@ export interface Prize {
   drawn_count: number;
   order_num: number;
   icon?: string;
+  price_per_unit?: number;
 }
 
 export interface DrawResult {
