@@ -46,9 +46,15 @@ export const PengeluaranList = () => {
 
   const categories = ['Snack', 'Sarpras', 'Transport', 'Akomodasi', 'Dekorasi', 'Lain-lain', 'Umum'];
 
-  useEffect(() => {
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
-  }, [searchQuery, pageSize]);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
   const totalCount = filteredExpenses.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -112,7 +118,7 @@ export const PengeluaranList = () => {
       } else {
         alert(data.error || 'Gagal menghapus pengeluaran');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -173,7 +179,7 @@ export const PengeluaranList = () => {
       } else {
         alert(data.error || 'Gagal menyimpan pengeluaran');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -230,7 +236,7 @@ export const PengeluaranList = () => {
               type="text"
               placeholder="Cari item atau kategori..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
@@ -239,7 +245,7 @@ export const PengeluaranList = () => {
             <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
             <select
               value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
             >
               <option value={10}>10 per hlm</option>
@@ -270,7 +276,7 @@ export const PengeluaranList = () => {
                 <tr>
                   <td colSpan={8} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pengeluaran biaya.</p>
-                    <p className="text-xs mt-2">Klik "Pengeluaran Baru" untuk menambahkan biaya.</p>
+                    <p className="text-xs mt-2">Klik &quot;Pengeluaran Baru&quot; untuk menambahkan biaya.</p>
                   </td>
                 </tr>
               ) : (
@@ -337,15 +343,12 @@ export const PengeluaranList = () => {
 
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1;
-                  if (totalPages > 5) {
-                    if (safeCurrentPage > 3) {
-                      pageNum = safeCurrentPage - 2 + i;
-                    }
-                    if (pageNum > totalPages) {
-                      pageNum = totalPages - (4 - i);
-                    }
-                  }
+                  const visibleCount = Math.min(5, totalPages);
+                  const windowStart = Math.max(
+                    1,
+                    Math.min(safeCurrentPage - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
+                  );
+                  const pageNum = windowStart + i;
                   return (
                     <button
                       key={pageNum}

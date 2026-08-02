@@ -14,6 +14,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const aggregate = searchParams.get('aggregate') === 'true';
+
+    if (aggregate) {
+      const { data: amounts, error } = await serverSupabase
+        .from('donations')
+        .select('amount');
+
+      if (error) throw error;
+
+      const total = (amounts ?? []).reduce((acc, d) => acc + (d.amount ?? 0), 0);
+      return NextResponse.json({
+        aggregate: { total, count: (amounts ?? []).length },
+      });
+    }
+
     const { data: donations, error } = await serverSupabase
       .from('donations')
       .select('*')

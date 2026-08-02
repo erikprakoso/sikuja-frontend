@@ -14,6 +14,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const aggregate = searchParams.get('aggregate') === 'true';
+
+    if (aggregate) {
+      const { data: prices, error } = await serverSupabase
+        .from('purchases')
+        .select('total_price, funding_source');
+
+      if (error) throw error;
+
+      const rows = prices ?? [];
+      const total = rows.reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+      const spentDonasi = rows
+        .filter((p) => p.funding_source !== 'penjualan_kupon')
+        .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+      const spentKupon = rows
+        .filter((p) => p.funding_source === 'penjualan_kupon')
+        .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+
+      return NextResponse.json({
+        aggregate: {
+          total,
+          spent_donasi: spentDonasi,
+          spent_kupon: spentKupon,
+          count: rows.length,
+        },
+      });
+    }
+
     const { data: purchases, error } = await serverSupabase
       .from('purchases')
       .select('*')

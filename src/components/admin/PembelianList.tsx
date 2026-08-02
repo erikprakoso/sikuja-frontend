@@ -20,7 +20,6 @@ export const PembelianList = () => {
     return computePrizesFromPurchases(purchases, drawResults);
   }, [purchases, drawResults]);
 
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -52,9 +51,15 @@ export const PembelianList = () => {
     );
   }, [purchases, searchQuery]);
 
-  useEffect(() => {
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
-  }, [searchQuery, pageSize]);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
   const totalCount = filteredPurchases.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -67,21 +72,6 @@ export const PembelianList = () => {
 
   const [totalDonations, setTotalDonations] = useState(0);
   const [voucherSales, setVoucherSales] = useState(0);
-
-  const fetchOverallStats = async () => {
-    try {
-      const donRes = await fetch('/api/keuangan/donasi');
-      const donData = await donRes.json();
-      if (donRes.ok && donData.donations) {
-        const sum = donData.donations.reduce((acc: number, d: any) => acc + d.amount, 0);
-        setTotalDonations(sum);
-      }
-      const vouchers = getStoredVouchers();
-      setVoucherSales(vouchers.length * 5000);
-    } catch (err) {
-      console.error('Fetch overall stats error:', err);
-    }
-  };
 
   useEffect(() => {
     const fetchPurchases = async () => {
@@ -98,18 +88,30 @@ export const PembelianList = () => {
         setIsLoading(false);
       }
     };
+    const fetchOverallStats = async () => {
+      try {
+        const donRes = await fetch('/api/keuangan/donasi?aggregate=true');
+        const donData = await donRes.json();
+        if (donRes.ok && donData.aggregate) {
+          setTotalDonations(donData.aggregate.total ?? 0);
+        }
+        const vouchers = getStoredVouchers();
+        setVoucherSales(vouchers.length * 5000);
+      } catch (err) {
+        console.error('Fetch overall stats error:', err);
+      }
+    };
     const loadDrawResults = () => {
       setDrawResults(getStoredDrawResults());
     };
-    fetchPurchases();
-    fetchOverallStats();
-    loadDrawResults();
-
-    window.addEventListener(SIKUJA_EVENT_NAME, () => {
+    const refresh = () => {
       fetchPurchases();
       fetchOverallStats();
       loadDrawResults();
-    });
+    };
+    refresh();
+
+    window.addEventListener(SIKUJA_EVENT_NAME, refresh);
   }, []);
 
   const sisaDonasi = totalDonations - totalSpentDonations;
@@ -179,7 +181,7 @@ export const PembelianList = () => {
       } else {
         alert(data.error || 'Gagal menghapus pengeluaran');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -264,7 +266,7 @@ export const PembelianList = () => {
       } else {
         alert(data.error || 'Gagal menyimpan pembelian');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -407,7 +409,7 @@ export const PembelianList = () => {
               type="text"
               placeholder="Cari nama item barang..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
@@ -416,14 +418,14 @@ export const PembelianList = () => {
             <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
             <select
               value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
             >
               <option value={10}>10 per hlm</option>
               <option value={25}>25 per hlm</option>
               <option value={50}>50 per hlm</option>
             </select>
-            {(isSyncing || isLoading) && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
           </div>
         </div>
 
@@ -447,7 +449,7 @@ export const PembelianList = () => {
                 <tr>
                   <td colSpan={8} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pengeluaran & belanja.</p>
-                    <p className="text-xs mt-2">Klik "Pengeluaran Baru" untuk menambahkan data.</p>
+                    <p className="text-xs mt-2">Klik &quot;Pengeluaran Baru&quot; untuk menambahkan data.</p>
                   </td>
                 </tr>
               ) : (
@@ -528,15 +530,12 @@ export const PembelianList = () => {
 
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1;
-                  if (totalPages > 5) {
-                    if (safeCurrentPage > 3) {
-                      pageNum = safeCurrentPage - 2 + i;
-                    }
-                    if (pageNum > totalPages) {
-                      pageNum = totalPages - (4 - i);
-                    }
-                  }
+                  const visibleCount = Math.min(5, totalPages);
+                  const windowStart = Math.max(
+                    1,
+                    Math.min(safeCurrentPage - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
+                  );
+                  const pageNum = windowStart + i;
                   return (
                     <button
                       key={pageNum}

@@ -213,18 +213,15 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             </button>
 
             {/* Page Buttons */}
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum = i + 1;
-                if (totalPages > 5) {
-                  if (safeCurrentPage > 3) {
-                    pageNum = safeCurrentPage - 2 + i;
-                  }
-                  if (pageNum > totalPages) {
-                    pageNum = totalPages - (4 - i);
-                  }
-                }
-                return (
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const visibleCount = Math.min(5, totalPages);
+                  const windowStart = Math.max(
+                    1,
+                    Math.min(safeCurrentPage - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
+                  );
+                  const pageNum = windowStart + i;
+                  return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}

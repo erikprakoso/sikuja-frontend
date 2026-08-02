@@ -7,9 +7,6 @@ interface Donation {
   donor_name: string;
   donor_phone: string | null;
   amount: number;
-  type?: 'tunai' | 'non-tunai';
-  source?: string;
-  status: 'diterima';
   received_at: string;
   note: string | null;
 }
@@ -45,9 +42,15 @@ export const DonasiList = () => {
     return donations.reduce((acc, d) => acc + d.amount, 0);
   }, [donations]);
 
-  useEffect(() => {
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
-  }, [searchQuery, pageSize]);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
   const totalCount = filteredDonations.length;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
@@ -59,21 +62,6 @@ export const DonasiList = () => {
   }, [filteredDonations, startIndex, endIndex]);
 
   const [totalSpentDonations, setTotalSpentDonations] = useState(0);
-
-  const fetchOverallStats = async () => {
-    try {
-      const purRes = await fetch('/api/keuangan/purchases');
-      const purData = await purRes.json();
-      if (purRes.ok && purData.purchases) {
-        const spentFromDonasi = purData.purchases
-          .filter((p: any) => p.funding_source !== 'penjualan_kupon')
-          .reduce((acc: number, p: any) => acc + p.total_price, 0);
-        setTotalSpentDonations(spentFromDonasi);
-      }
-    } catch (err) {
-      console.error('Fetch overall stats error:', err);
-    }
-  };
 
   useEffect(() => {
     const fetchDonations = async () => {
@@ -90,13 +78,26 @@ export const DonasiList = () => {
         setIsLoading(false);
       }
     };
-    fetchDonations();
-    fetchOverallStats();
 
-    window.addEventListener(SIKUJA_EVENT_NAME, () => {
+    const fetchOverallStats = async () => {
+      try {
+        const purRes = await fetch('/api/keuangan/purchases?aggregate=true');
+        const purData = await purRes.json();
+        if (purRes.ok && purData.aggregate) {
+          setTotalSpentDonations(purData.aggregate.spent_donasi ?? 0);
+        }
+      } catch (err) {
+        console.error('Fetch overall stats error:', err);
+      }
+    };
+
+    const refresh = () => {
       fetchDonations();
       fetchOverallStats();
-    });
+    };
+    refresh();
+
+    window.addEventListener(SIKUJA_EVENT_NAME, refresh);
   }, []);
 
   const sisaDonasi = totalDonations - totalSpentDonations;
@@ -132,7 +133,7 @@ export const DonasiList = () => {
       } else {
         alert(data.error || 'Gagal menghapus donasi');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -199,7 +200,7 @@ export const DonasiList = () => {
       } else {
         alert(data.error || 'Gagal menyimpan donasi');
       }
-    } catch (err) {
+    } catch {
       alert('Gagal terhubung ke server');
     } finally {
       setIsLoading(false);
@@ -279,7 +280,7 @@ export const DonasiList = () => {
               type="text"
               placeholder="Cari nama donatur atau nominal..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
             />
           </div>
@@ -288,7 +289,7 @@ export const DonasiList = () => {
             <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
             <select
               value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
             >
               <option value={10}>10 per hlm</option>
@@ -316,7 +317,7 @@ export const DonasiList = () => {
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pemasukan donasi.</p>
-                    <p className="text-xs mt-2">Klik "Pemasukan Baru" untuk menambahkan data donatur.</p>
+                    <p className="text-xs mt-2">Klik &quot;Pemasukan Baru&quot; untuk menambahkan data donatur.</p>
                   </td>
                 </tr>
               ) : (
@@ -385,15 +386,12 @@ export const DonasiList = () => {
 
               <div className="flex items-center gap-1">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum = i + 1;
-                  if (totalPages > 5) {
-                    if (safeCurrentPage > 3) {
-                      pageNum = safeCurrentPage - 2 + i;
-                    }
-                    if (pageNum > totalPages) {
-                      pageNum = totalPages - (4 - i);
-                    }
-                  }
+                  const visibleCount = Math.min(5, totalPages);
+                  const windowStart = Math.max(
+                    1,
+                    Math.min(safeCurrentPage - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
+                  );
+                  const pageNum = windowStart + i;
                   return (
                     <button
                       key={pageNum}
