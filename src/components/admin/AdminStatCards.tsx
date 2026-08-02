@@ -8,7 +8,7 @@ interface AdminStatCardsProps {
   totalNonFisik: number;
   totalCheckin: number;
   drawResults: DrawResult[];
-  hargaPerKupon?: number;
+  totalOmzet: number;
 }
 
 export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
@@ -17,11 +17,10 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
   totalNonFisik,
   totalCheckin,
   drawResults,
-  hargaPerKupon = 5000,
+  totalOmzet,
 }) => {
   const participationRate = totalSales > 0 ? ((totalCheckin / totalSales) * 100).toFixed(0) : '0';
   const totalClaimed = drawResults.filter((r) => r.claimed).length;
-  const totalOmzet = totalSales * hargaPerKupon;
 
   const formatRupiah = (amount: number) => {
     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
@@ -57,7 +56,7 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
           {formatRupiah(totalOmzet)}
         </p>
         <span className="text-[11px] font-semibold text-slate-500 block mt-1">
-          Omzet ({totalSales} × Rp{hargaPerKupon.toLocaleString('id-ID')})
+          Omzet riil dari {totalSales} kupon terjual
         </span>
       </div>
 

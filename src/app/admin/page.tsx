@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react';
 import {
   getStoredVouchers,
   getStoredTransactions,
-  getStoredPrizes,
   getStoredDrawResults,
   syncFromSupabase,
   SIKUJA_EVENT_NAME,
 } from '@/lib/storage';
-import { Voucher, Transaction, Prize, DrawResult } from '@/types';
+import { Voucher, Transaction, DrawResult } from '@/types';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -19,7 +18,6 @@ import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 export default function AdminDashboardPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [prizes, setPrizes] = useState<Prize[]>([]);
   const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
   
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -28,7 +26,6 @@ export default function AdminDashboardPage() {
   const loadData = () => {
     setVouchers(getStoredVouchers());
     setTransactions(getStoredTransactions());
-    setPrizes(getStoredPrizes());
     setDrawResults(getStoredDrawResults());
   };
 
@@ -50,12 +47,7 @@ export default function AdminDashboardPage() {
   const totalFisik = vouchers.filter((v) => v.type === 'fisik').length;
   const totalNonFisik = vouchers.filter((v) => v.type === 'non-fisik').length;
   const totalCheckin = vouchers.filter((v) => v.status !== 'terbit').length;
-
-  const filteredVouchers = vouchers.filter((v) => {
-    const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
-    const matchesQuery = !searchQuery.trim() || v.code.includes(searchQuery.trim());
-    return matchesStatus && matchesQuery;
-  });
+  const totalOmzet = transactions.reduce((acc, tx) => acc + (tx.total_harga || 0), 0);
 
   return (
     <RequireAuth roles={['admin']}>
@@ -70,6 +62,7 @@ export default function AdminDashboardPage() {
         totalNonFisik={totalNonFisik}
         totalCheckin={totalCheckin}
         drawResults={drawResults}
+        totalOmzet={totalOmzet}
       />
 
       {/* Vouchers Master Table */}

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Voucher, Transaction } from '@/types';
-import { Ticket, Search, ChevronLeft, ChevronRight, User, Phone } from 'lucide-react';
+import { Ticket, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface VoucherMasterTableProps {
   vouchers: Voucher[];
@@ -21,6 +21,21 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (filter: string) => {
+    setStatusFilter(filter);
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
 
   const txMap = useMemo(() => {
     const map = new Map<string, Transaction>();
@@ -50,10 +65,6 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
     });
   }, [vouchers, txMap, statusFilter, searchQuery]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, pageSize]);
-
   const totalVouchers = filteredVouchers.length;
   const totalPages = Math.max(1, Math.ceil(totalVouchers / pageSize));
 
@@ -78,7 +89,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               type="text"
               placeholder="Cari kode, nama, atau no. HP..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
             />
             <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
@@ -87,7 +98,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           {/* Status Filter */}
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => handleStatusFilterChange(e.target.value)}
             className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value="all">Semua Status</option>
@@ -100,7 +111,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           {/* Page Size Select */}
           <select
             value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
             <option value={10}>10 / hlm</option>
