@@ -2,6 +2,53 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/server-auth';
 
+async function getFundingBalances(excludeId?: string) {
+  const [{ data: donations }, { data: purchases }, { data: transactions }] = await Promise.all([
+    serverSupabase.from('donations').select('amount'),
+    serverSupabase.from('purchases').select('id, total_price, funding_source'),
+    serverSupabase.from('transactions').select('total_harga'),
+  ]);
+
+  const rows = (purchases ?? []).filter((p) => p.id !== excludeId);
+
+  const totalDonasi = (donations ?? []).reduce((acc, d) => acc + (d.amount ?? 0), 0);
+  const spentDonasi = rows
+    .filter((p) => p.funding_source !== 'penjualan_kupon')
+    .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+  const spentKupon = rows
+    .filter((p) => p.funding_source === 'penjualan_kupon')
+    .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+  const voucherSales = (transactions ?? []).reduce((acc, t) => acc + (t.total_harga ?? 0), 0);
+
+  return { totalDonasi, spentDonasi, spentKupon, voucherSales };
+}
+
+function assertSufficientBalance(
+  fundingSource: string,
+  totalPrice: number,
+  balances: { totalDonasi: number; spentDonasi: number; spentKupon: number; voucherSales: number }
+): NextResponse | null {
+  const available =
+    fundingSource === 'penjualan_kupon'
+      ? balances.voucherSales - balances.spentKupon
+      : balances.totalDonasi - balances.spentDonasi;
+
+  if (totalPrice > available) {
+    const sourceLabel = fundingSource === 'penjualan_kupon' ? 'Hasil Penjualan Kupon' : 'Donasi & Sponsor';
+    return NextResponse.json(
+      {
+        error:
+          `Saldo kas ${sourceLabel} tidak mencukupi.\n` +
+          `Sisa Saldo Tersedia: Rp${Math.max(0, available).toLocaleString('id-ID')}\n` +
+          `Total Belanja: Rp${totalPrice.toLocaleString('id-ID')}`,
+      },
+      { status: 400 }
+    );
+  }
+
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['admin']);
@@ -89,6 +136,10 @@ export async function POST(request: NextRequest) {
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
     const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
 
+    const balances = await getFundingBalances();
+    const insufficient = assertSufficientBalance(fundingSource, total_price, balances);
+    if (insufficient) return insufficient;
+
     const purchase = {
       id: 'purch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       item_name: item_name.trim(),
@@ -152,6 +203,10 @@ export async function PUT(request: NextRequest) {
     const total_price = qty * price_per_unit;
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
     const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
+
+    const balances = await getFundingBalances(id);
+    const insufficient = assertSufficientBalance(fundingSource, total_price, balances);
+    if (insufficient) return insufficient;
 
     const purchase = {
       item_name: item_name.trim(),

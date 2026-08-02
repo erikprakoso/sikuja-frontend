@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck, AlertCircle } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, getStoredVouchers, getStoredDrawResults, computePrizesFromPurchases } from '@/lib/storage';
+import { SIKUJA_EVENT_NAME, getStoredTransactions, getStoredDrawResults, computePrizesFromPurchases } from '@/lib/storage';
 import { Purchase, DrawResult } from '@/types';
 
 export const PembelianList = () => {
@@ -95,8 +95,8 @@ export const PembelianList = () => {
         if (donRes.ok && donData.aggregate) {
           setTotalDonations(donData.aggregate.total ?? 0);
         }
-        const vouchers = getStoredVouchers();
-        setVoucherSales(vouchers.length * 5000);
+        const transactions = getStoredTransactions();
+        setVoucherSales(transactions.reduce((acc, tx) => acc + (tx.total_harga || 0), 0));
       } catch (err) {
         console.error('Fetch overall stats error:', err);
       }
