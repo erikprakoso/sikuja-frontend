@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet, ShoppingBag } from 'lucide-react';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet, ShoppingBag, ArrowUpDown } from 'lucide-react';
 import { SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { Donation } from '@/types';
 
@@ -19,6 +19,10 @@ export const DonasiList = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+
+  // Sort states
+  const [sortKey, setSortKey] = useState<'date' | 'amount'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const filteredDonations = useMemo(() => {
     if (!searchQuery.trim()) return donations;
@@ -50,9 +54,27 @@ export const DonasiList = () => {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalCount);
+  const sortedDonations = useMemo(() => {
+    const list = [...filteredDonations];
+    const dir = sortDir === 'desc' ? -1 : 1;
+    list.sort((a, b) => {
+      if (sortKey === 'amount') {
+        return (a.amount - b.amount) * dir;
+      }
+      return (new Date(a.received_at).getTime() - new Date(b.received_at).getTime()) * dir;
+    });
+    return list;
+  }, [filteredDonations, sortKey, sortDir]);
   const paginatedDonations = useMemo(() => {
-    return filteredDonations.slice(startIndex, endIndex);
-  }, [filteredDonations, startIndex, endIndex]);
+    return sortedDonations.slice(startIndex, endIndex);
+  }, [sortedDonations, startIndex, endIndex]);
+
+  const handleSortChange = (value: string) => {
+    const [key, dir] = value.split('-') as ['date' | 'amount', 'asc' | 'desc'];
+    setSortKey(key);
+    setSortDir(dir);
+    setCurrentPage(1);
+  };
 
   const [totalSpentDonations, setTotalSpentDonations] = useState(0);
 
@@ -283,7 +305,18 @@ export const DonasiList = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Urutkan:</span>
+            <select
+              value={`${sortKey}-${sortDir}`}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value="date-desc">Tanggal Terbaru</option>
+              <option value="date-asc">Tanggal Terlama</option>
+              <option value="amount-desc">Nominal Terbesar</option>
+              <option value="amount-asc">Nominal Terkecil</option>
+            </select>
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Tampilkan:</span>
             <select
               value={pageSize}
               onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -303,8 +336,24 @@ export const DonasiList = () => {
             <thead className="bg-slate-50">
               <tr>
                 <th className="p-4 font-bold text-slate-700">Donatur / Sponsor</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Nominal (Rp)</th>
-                <th className="p-4 font-bold text-slate-700">Tanggal Diterima</th>
+                <th
+                  onClick={() => handleSortChange(sortKey === 'amount' && sortDir === 'desc' ? 'amount-asc' : 'amount-desc')}
+                  className="p-4 font-bold text-slate-700 text-right cursor-pointer hover:text-[#E70013] transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Nominal (Rp)
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'amount' ? 'text-[#E70013]' : 'text-slate-400'}`} />
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSortChange(sortKey === 'date' && sortDir === 'desc' ? 'date-asc' : 'date-desc')}
+                  className="p-4 font-bold text-slate-700 cursor-pointer hover:text-[#E70013] transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Tanggal Diterima
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'date' ? 'text-[#E70013]' : 'text-slate-400'}`} />
+                  </span>
+                </th>
                 <th className="p-4 font-bold text-slate-700">Catatan</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>

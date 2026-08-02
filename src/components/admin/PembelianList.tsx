@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck, AlertCircle } from 'lucide-react';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck, AlertCircle, ArrowUpDown } from 'lucide-react';
 import { SIKUJA_EVENT_NAME, getStoredTransactions, getStoredDrawResults, computePrizesFromPurchases, syncFromSupabase } from '@/lib/storage';
 import { Purchase, DrawResult } from '@/types';
 
@@ -26,6 +26,10 @@ export const PembelianList = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+
+  // Sort states
+  const [sortKey, setSortKey] = useState<'date' | 'total' | 'unit'>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const purchaseTotals = useMemo(() => {
     let total = 0;
@@ -66,9 +70,30 @@ export const PembelianList = () => {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalCount);
+  const sortedPurchases = useMemo(() => {
+    const list = [...filteredPurchases];
+    const dir = sortDir === 'desc' ? -1 : 1;
+    list.sort((a, b) => {
+      if (sortKey === 'total') {
+        return (a.total_price - b.total_price) * dir;
+      }
+      if (sortKey === 'unit') {
+        return (a.price_per_unit - b.price_per_unit) * dir;
+      }
+      return (new Date(a.purchase_date).getTime() - new Date(b.purchase_date).getTime()) * dir;
+    });
+    return list;
+  }, [filteredPurchases, sortKey, sortDir]);
   const paginatedPurchases = useMemo(() => {
-    return filteredPurchases.slice(startIndex, endIndex);
-  }, [filteredPurchases, startIndex, endIndex]);
+    return sortedPurchases.slice(startIndex, endIndex);
+  }, [sortedPurchases, startIndex, endIndex]);
+
+  const handleSortChange = (value: string) => {
+    const [key, dir] = value.split('-') as ['date' | 'total' | 'unit', 'asc' | 'desc'];
+    setSortKey(key);
+    setSortDir(dir);
+    setCurrentPage(1);
+  };
 
   const [totalDonations, setTotalDonations] = useState(0);
   const [voucherSales, setVoucherSales] = useState(0);
@@ -418,7 +443,20 @@ export const PembelianList = () => {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Urutkan:</span>
+            <select
+              value={`${sortKey}-${sortDir}`}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value="date-desc">Tanggal Terbaru</option>
+              <option value="date-asc">Tanggal Terlama</option>
+              <option value="total-desc">Harga Total Terbesar</option>
+              <option value="total-asc">Harga Total Terkecil</option>
+              <option value="unit-desc">Harga Satuan Terbesar</option>
+              <option value="unit-asc">Harga Satuan Terkecil</option>
+            </select>
+            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Tampilkan:</span>
             <select
               value={pageSize}
               onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -441,9 +479,33 @@ export const PembelianList = () => {
                 <th className="p-4 font-bold text-slate-700">Sumber Dana</th>
                 <th className="p-4 font-bold text-slate-700">Tipe Barang</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Jumlah</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Harga Satuan</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Harga Total</th>
-                <th className="p-4 font-bold text-slate-700">Tgl Beli</th>
+                <th
+                  onClick={() => handleSortChange(sortKey === 'unit' && sortDir === 'desc' ? 'unit-asc' : 'unit-desc')}
+                  className="p-4 font-bold text-slate-700 text-right cursor-pointer hover:text-[#E70013] transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Harga Satuan
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'unit' ? 'text-[#E70013]' : 'text-slate-400'}`} />
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSortChange(sortKey === 'total' && sortDir === 'desc' ? 'total-asc' : 'total-desc')}
+                  className="p-4 font-bold text-slate-700 text-right cursor-pointer hover:text-[#E70013] transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Harga Total
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'total' ? 'text-[#E70013]' : 'text-slate-400'}`} />
+                  </span>
+                </th>
+                <th
+                  onClick={() => handleSortChange(sortKey === 'date' && sortDir === 'desc' ? 'date-asc' : 'date-desc')}
+                  className="p-4 font-bold text-slate-700 cursor-pointer hover:text-[#E70013] transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    Tgl Beli
+                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'date' ? 'text-[#E70013]' : 'text-slate-400'}`} />
+                  </span>
+                </th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>
             </thead>
