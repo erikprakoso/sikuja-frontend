@@ -1,6 +1,6 @@
 import React from 'react';
 import { Prize } from '@/types';
-import { Star, CheckCircle } from 'lucide-react';
+import { Star, CheckCircle, XCircle } from 'lucide-react';
 
 interface PrizeSelectorGridProps {
   prizes: Prize[];
@@ -17,7 +17,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
 }) => {
   const availablePrizes = prizes.filter((p) => p.drawn_count < p.stock);
 
-  if (availablePrizes.length === 0) {
+  if (prizes.length === 0) {
     return (
       <div className="p-4 rounded-2xl bg-[#E70013] text-white text-center font-black flex items-center justify-center gap-2 border-2 border-[#E70013]">
         <CheckCircle className="w-5 h-5 text-white" />
@@ -33,8 +33,33 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {availablePrizes.map((p) => {
-          const isSelected = p.id === selectedPrizeId;
+        {prizes.map((p) => {
+          const isAvailable = p.drawn_count < p.stock;
+          const isSelected = isAvailable && p.id === selectedPrizeId;
+
+          if (!isAvailable) {
+            return (
+              <div
+                key={p.id}
+                className="p-3 rounded-2xl text-left border-2 border-slate-200 bg-slate-100 text-slate-400 relative overflow-hidden"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-[10px] uppercase font-black text-slate-400">
+                    Kategori #{p.order_num}
+                  </span>
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-500">
+                    {p.drawn_count}/{p.stock}
+                  </span>
+                </div>
+                <p className="text-xs font-black truncate mt-1">{p.name}</p>
+                <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">
+                  <XCircle className="w-3 h-3" />
+                  Stok Habis
+                </span>
+              </div>
+            );
+          }
+
           return (
             <button
               key={p.id}
