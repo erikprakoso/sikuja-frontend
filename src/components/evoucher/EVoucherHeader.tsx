@@ -31,6 +31,14 @@ export const EVoucherHeader: React.FC<EVoucherHeaderProps> = ({
 
   return (
     <div className="relative overflow-hidden bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-4 shadow-sm">
+      <div className="flex justify-center">
+        <img
+          src="/logo-ri.png"
+          alt="Logo Jalan Sehat 2026"
+          className="h-20 w-20 object-contain drop-shadow-sm"
+        />
+      </div>
+
       <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#E70013] text-white text-xs font-bold uppercase tracking-wider">
         <Sparkles className="w-3.5 h-3.5 text-white" />
         Kartu E-Voucher Resmi 🇮🇩

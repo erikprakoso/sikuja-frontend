@@ -33,6 +33,13 @@ export const ReceiptView: React.FC<ReceiptViewProps> = ({ transaction, vouchers 
 
   return (
     <div className="font-mono text-xs leading-snug space-y-2">
+      <div className="flex justify-center">
+        <img
+          src="/logo-ri.png"
+          alt="Logo Jalan Sehat 2026"
+          className="w-12 h-12 object-contain"
+        />
+      </div>
       {model.map((row, idx) => {
         switch (row.type) {
           case 'spacer':

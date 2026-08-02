@@ -15,6 +15,11 @@ const SERVICES: BluetoothServiceUUID[] = [
 const PRINTER_ID_KEY = 'sikuja_printer_id';
 const PRINTER_NAME_KEY = 'sikuja_printer_name';
 
+const LOGO_URL = '/logo-ri.png';
+const LOGO_WIDTH_DOTS = 128;
+const LOGO_MAX_HEIGHT_DOTS = 64;
+const LOGO_THRESHOLD = 128;
+
 let writeChar: BluetoothRemoteGATTCharacteristic | null = null;
 let disconnectHandler: (() => void) | null = null;
 
@@ -111,14 +116,93 @@ function emitQr(out: number[], qrText: string): void {
   out.push(...ESC.LF);
 }
 
-export function buildReceiptBytes(
+/**
+ * Muat logo /logo-ri.png, ubah jadi bitmap hitam-putih 1-bit, lalu susun
+ * byte perintah raster ESC/POS `GS v 0` agar logo ikut tercetak di struk
+ * thermal. Mengembalikan null jika logo gagal dimuat (struk tetap dicetak).
+ */
+async function loadRasterLogoBytes(): Promise<number[] | null> {
+  try {
+    const img = new Image();
+    img.src = LOGO_URL;
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+    });
+
+    const scale = Math.min(
+      LOGO_WIDTH_DOTS / img.naturalWidth,
+      LOGO_MAX_HEIGHT_DOTS / img.naturalHeight,
+      1
+    );
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    // Latar putih dulu (logo PNG bisa transparan), lalu gambar logo.
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const data = ctx.getImageData(0, 0, w, h).data;
+    const xBytes = Math.ceil(w / 8);
+    const pixels: number[] = [];
+
+    for (let y = 0; y < h; y++) {
+      let byte = 0;
+      let bit = 0;
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+        // Piksel transparan dianggap putih; sisanya di-threshold luminance.
+        const on = a < LOGO_THRESHOLD ? false : 0.299 * r + 0.587 * g + 0.114 * b < LOGO_THRESHOLD;
+        if (on) byte |= 0x80 >> bit;
+        bit++;
+        if (bit === 8) {
+          pixels.push(byte);
+          byte = 0;
+          bit = 0;
+        }
+      }
+      if (bit > 0) pixels.push(byte);
+    }
+
+    return [
+      0x1d, 0x76, 0x30, 0x00, // GS v 0 (raster bit image, normal)
+      xBytes & 0xff,
+      (xBytes >> 8) & 0xff,
+      h & 0xff,
+      (h >> 8) & 0xff,
+      ...pixels,
+    ];
+  } catch {
+    return null;
+  }
+}
+
+export async function buildReceiptBytes(
   transaction: Transaction,
   vouchers: Voucher[]
-): Uint8Array<ArrayBuffer> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const model = buildReceiptModel(transaction, vouchers);
 
   const out: number[] = [];
   out.push(...ESC.INIT);
+
+  // Logo di atas struk (hanya bila berhasil dimuat).
+  const logo = await loadRasterLogoBytes();
+  if (logo) {
+    out.push(...logo);
+    out.push(...ESC.LF);
+  }
 
   for (const row of model) {
     switch (row.type) {
@@ -264,6 +348,6 @@ export async function printThermalReceipt(
   vouchers: Voucher[]
 ): Promise<void> {
   if (!isPrinterConnected()) throw new Error('Printer belum terhubung.');
-  const data = buildReceiptBytes(transaction, vouchers);
+  const data = await buildReceiptBytes(transaction, vouchers);
   await writeChunked(data);
 }
