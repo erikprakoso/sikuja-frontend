@@ -17,6 +17,7 @@ export interface ReceiptLineRow {
   right?: string;
   bold?: boolean;
   double?: boolean;
+  variant?: 'meta' | 'item' | 'total' | 'coupon';
 }
 
 export interface ReceiptDashedRow {
@@ -71,12 +72,13 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
   // ── Meta transaksi ──
   rows.push({
     type: 'line',
+    variant: 'meta',
     left: 'No. Struk',
     right: `SIK-${transaction.id.slice(-8).toUpperCase()}`,
   });
-  rows.push({ type: 'line', left: 'Tanggal', right: fmtDateTime(transaction.created_at) });
+  rows.push({ type: 'line', variant: 'meta', left: 'Tanggal', right: fmtDateTime(transaction.created_at) });
   if (transaction.created_by) {
-    rows.push({ type: 'line', left: 'Kasir', right: transaction.created_by });
+    rows.push({ type: 'line', variant: 'meta', left: 'Kasir', right: transaction.created_by });
   }
   rows.push({ type: 'dashed' });
 
@@ -94,6 +96,7 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
   if (transaction.qty_fisik > 0) {
     rows.push({
       type: 'line',
+      variant: 'item',
       left: `Kupon Fisik (${transaction.qty_fisik})`,
       right: `Rp ${fmtIdr(transaction.qty_fisik * unitPrice)}`,
     });
@@ -101,12 +104,14 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
   if (transaction.qty_non_fisik > 0) {
     rows.push({
       type: 'line',
+      variant: 'item',
       left: `E-Voucher Digital (${transaction.qty_non_fisik})`,
       right: `Rp ${fmtIdr(transaction.qty_non_fisik * unitPrice)}`,
     });
   }
   rows.push({
     type: 'line',
+    variant: 'total',
     left: 'TOTAL',
     right: `Rp ${fmtIdr(transaction.total_harga)}`,
     bold: true,
@@ -114,13 +119,11 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
   });
   rows.push({ type: 'dashed' });
 
-  // ── E-Voucher digital (QR) ──
-  if (transaction.qty_non_fisik > 0) {
-    rows.push({ type: 'text', align: 'center', bold: true, text: 'E-VOUCHER DIGITAL' });
-    rows.push({ type: 'qr', text: `${getAppBaseUrl()}/v/${transaction.token}` });
-    rows.push({ type: 'text', align: 'center', text: 'Pindai QR saat check-in di loket' });
-    rows.push({ type: 'dashed' });
-  }
+  // ── QR check-in (berlaku untuk semua transaksi) ──
+  rows.push({ type: 'text', align: 'center', bold: true, text: 'QR CHECK-IN' });
+  rows.push({ type: 'qr', text: `${getAppBaseUrl()}/v/${transaction.token}` });
+  rows.push({ type: 'text', align: 'center', text: 'Pindai QR saat check-in di loket' });
+  rows.push({ type: 'dashed' });
 
   // ── Kode kupon fisik ──
   const physicalVouchers = vouchers.filter((v) => v.type === 'fisik');
@@ -132,7 +135,7 @@ export function buildReceiptModel(transaction: Transaction, vouchers: Voucher[])
       text: `KODE KUPON FISIK (${physicalVouchers.length} LBR)`,
     });
     physicalVouchers.forEach((v, idx) => {
-      rows.push({ type: 'text', align: 'center', text: `#${idx + 1}  ${v.code}` });
+      rows.push({ type: 'line', variant: 'coupon', left: `#${idx + 1}`, right: v.code });
     });
     rows.push({ type: 'dashed' });
   }
