@@ -31,9 +31,24 @@ export default function LayarUndianPage() {
   const rollIntervalRef = useRef<number | null>(null);
   const rollTimeoutRef = useRef<number | null>(null);
 
-  // Reads local data only — no network call, no infinite loop
-  const refreshLocalData = () => {
-    const p = getStoredPrizes();
+  // Reads doorprize & eligible count from SERVER first (same source as admin),
+  // falls back to local data so the stage always shows the latest prizes
+  // even if the /api/data localStorage sync is stale or failed.
+  const refreshLocalData = async () => {
+    let p = getStoredPrizes();
+    let eligible = getStoredVouchers().filter((x) => x.status === 'checkin').length;
+
+    try {
+      const res = await fetch('/api/keuangan/doorprize');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.prizes)) p = data.prizes;
+        if (typeof data.eligibleCount === 'number') eligible = data.eligibleCount;
+      }
+    } catch {
+      // fallback: gunakan data lokal hasil sync
+    }
+
     setPrizes(p);
 
     const availablePrizes = p.filter((item) => item.drawn_count < item.stock);
@@ -44,8 +59,6 @@ export default function LayarUndianPage() {
       return availablePrizes.length > 0 ? availablePrizes[0].id : '';
     });
 
-    const v = getStoredVouchers();
-    const eligible = v.filter((x) => x.status === 'checkin').length;
     setEligibleCount(eligible);
   };
 
