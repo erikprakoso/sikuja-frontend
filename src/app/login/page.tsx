@@ -93,7 +93,7 @@ export default function LoginPage() {
           router.push('/undian');
           break;
         case 'verifikator':
-          router.push('/verifikasi');
+          router.push('/verification');
           break;
         case 'admin':
           router.push('/admin');

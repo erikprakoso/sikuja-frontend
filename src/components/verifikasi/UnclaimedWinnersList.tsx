@@ -17,12 +17,15 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
 
   const uniquePrizes = useMemo(() => {
     const prizes = new Set(unclaimedWinners.map((w) => w.prize_name));
-    return Array.from(prizes);
+    return Array.from(prizes).sort((a, b) => a.localeCompare(b, 'id'));
   }, [unclaimedWinners]);
 
   const filteredWinners = useMemo(() => {
-    if (!filterPrize) return unclaimedWinners;
-    return unclaimedWinners.filter((w) => w.prize_name === filterPrize);
+    const base = filterPrize
+      ? unclaimedWinners.filter((w) => w.prize_name === filterPrize)
+      : unclaimedWinners;
+    // Pemenang terbaru tampil paling atas (urut waktu undi menurun)
+    return [...base].sort((a, b) => new Date(b.drawn_at).getTime() - new Date(a.drawn_at).getTime());
   }, [unclaimedWinners, filterPrize]);
 
   return (
@@ -85,7 +88,8 @@ export const UnclaimedWinnersList: React.FC<UnclaimedWinnersListProps> = ({
                 <button
                   onClick={() => onQuickClaim(res.voucher_code)}
                   disabled={processingCode !== null}
-                  className="px-4 py-2 rounded-xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95 border border-[#E70013] disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-xl bg-[#E70013] hover:bg-[#E70013]/90 disabled:opacity-50 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 flex-shrink-0 cursor-pointer active:scale-95 border border-[#E70013] disabled:cursor-not-allowed disabled:active:scale-100"
+                  title={isProcessing ? 'Sedang memproses klaim...' : 'Proses klaim pemenang ini'}
                 >
                   {isProcessing ? (
                     <>

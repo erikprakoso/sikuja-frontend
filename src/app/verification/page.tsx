@@ -32,7 +32,8 @@ export default function VerificationPage() {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim() || isVerifying) return;
+    const trimmed = code.trim();
+    if (!trimmed || isVerifying) return;
 
     setIsVerifying(true);
     setResultMsg(null);
@@ -41,21 +42,21 @@ export default function VerificationPage() {
       const res = await fetch('/api/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: code.trim() }),
+        body: JSON.stringify({ code: trimmed }),
       });
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setResultMsg({ success: true, message: data.message });
         setCode('');
-        refreshData();
+        await applyClaimResult(trimmed, true, data.message);
       } else {
-        setResultMsg({ success: false, message: data.error || 'Gagal memproses verifikasi klaim.' });
+        await applyClaimResult(trimmed, false, data.error || 'Gagal memproses verifikasi klaim.');
       }
     } catch {
-      setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
+      await applyClaimResult(trimmed, false, 'Gagal terhubung ke server verifikasi.');
+    } finally {
+      setIsVerifying(false);
     }
-    setIsVerifying(false);
   };
 
   const handleQuickClaim = async (voucherCode: string) => {
@@ -73,15 +74,30 @@ export default function VerificationPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setResultMsg({ success: true, message: data.message });
-        refreshData();
+        await applyClaimResult(voucherCode, true, data.message);
       } else {
-        setResultMsg({ success: false, message: data.error || 'Gagal memproses verifikasi klaim.' });
+        await applyClaimResult(voucherCode, false, data.error || 'Gagal memproses verifikasi klaim.');
       }
     } catch {
-      setResultMsg({ success: false, message: 'Gagal terhubung ke server verifikasi.' });
+      await applyClaimResult(voucherCode, false, 'Gagal terhubung ke server verifikasi.');
+    } finally {
+      setProcessingCode(null);
     }
-    setProcessingCode(null);
+  };
+
+  // Update UI seketika (optimistic) lalu sinkron data dari server supaya
+  // daftar "menunggu klaim" tidak menampilkan pemenang yang sudah diklaim
+  // (localStorage lama tidak lagi merefleksikan status terbaru di database).
+  const applyClaimResult = async (voucherCode: string, success: boolean, message: string) => {
+    setResultMsg({ success, message });
+    if (!success) return;
+
+    setDrawResults((prev) =>
+      prev.map((r) =>
+        r.voucher_code === voucherCode ? { ...r, claimed: true, claimed_at: new Date().toISOString() } : r
+      )
+    );
+    void syncFromSupabase().then(refreshData);
   };
 
   const unclaimedWinners = drawResults.filter((r) => !r.claimed);

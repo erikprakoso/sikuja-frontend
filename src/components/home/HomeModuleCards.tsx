@@ -47,7 +47,7 @@ export const MODULE_CARDS: ModuleCardItem[] = [
     icon: Trophy,
   },
   {
-    href: '/verifikasi',
+    href: '/verification',
     title: '4. Verifikasi Hadiah',
     desc: 'Validasi klaim hadiah pemenang dan konfirmasi serah terima doorprize.',
     roles: ['verifikator', 'admin'],
