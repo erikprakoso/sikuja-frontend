@@ -105,7 +105,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
             <div className="flex items-center justify-between">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold">
                 <Ticket className="w-3.5 h-3.5" />
-                Daftar Kupon Fisik ({transaction.qty_fisik} Lembar)
+                Kupon Fisik ({transaction.qty_fisik})
               </div>
               <span className="text-[11px] text-slate-500 font-medium">Salin ke kupon fisik</span>
             </div>
@@ -129,12 +129,12 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
         {/* Digital E-Voucher Codes List Section (sama seperti fisik) */}
         {digitalVouchers.length > 0 && (
           <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3.5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold">
                 <Ticket className="w-3.5 h-3.5" />
-                Daftar Kupon Digital ({digitalVouchers.length} Lembar)
+                Kupon Digital ({digitalVouchers.length})
               </div>
-              <span className="text-[11px] text-slate-500 font-medium">Kode juga di kartu E-Voucher</span>
+              <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">Backup kode</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto pr-1">
