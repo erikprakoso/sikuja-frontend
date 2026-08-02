@@ -91,22 +91,26 @@ export default function DrawPage() {
     });
   };
 
-  const handleStartDraw = async (excludeCode?: string) => {
-    if (isRolling || !selectedPrizeId) return;
-    setIsRolling(true);
-    setErrorMsg('');
-    setCandidateVoucher(null);
-    setIsConfirmedWinner(false);
+  /* Ubah fungsi handleStartDraw di file Parent menjadi seperti ini: */
+const handleStartDraw = async (excludeCode?: unknown) => { // ganti ke unknown sementara untuk cek
+  if (isRolling || !selectedPrizeId) return;
+  setIsRolling(true);
+  setErrorMsg('');
+  setCandidateVoucher(null);
+  setIsConfirmedWinner(false);
 
-    try {
-      const res = await fetch('/api/draw', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prizeId: selectedPrizeId,
-          ...(excludeCode ? { excludeCode } : {}),
-        }),
-      });
+  // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
+  const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
+
+  try {
+    const res = await fetch('/api/draw', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prizeId: selectedPrizeId,
+        ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}), // 🌟 Gunakan yang sudah divalidasi
+      }),
+    });
       const data = await res.json();
 
       if (!res.ok || data.error) {
@@ -264,7 +268,7 @@ export default function DrawPage() {
           candidateVoucher={candidateVoucher}
           isConfirmed={isConfirmedWinner}
           selectedPrizeId={selectedPrizeId}
-          onStartDraw={handleStartDraw}
+          onStartDraw={() => handleStartDraw()}
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />
