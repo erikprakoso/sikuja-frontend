@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, getStoredVouchers } from '@/lib/storage';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet, ShoppingBag } from 'lucide-react';
+import { SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 interface Donation {
   id: string;
@@ -58,19 +58,18 @@ export const DonasiList = () => {
     return filteredDonations.slice(startIndex, endIndex);
   }, [filteredDonations, startIndex, endIndex]);
 
-  const [totalPurchases, setTotalPurchases] = useState(0);
-  const [voucherSales, setVoucherSales] = useState(0);
+  const [totalSpentDonations, setTotalSpentDonations] = useState(0);
 
   const fetchOverallStats = async () => {
     try {
       const purRes = await fetch('/api/keuangan/purchases');
       const purData = await purRes.json();
       if (purRes.ok && purData.purchases) {
-        const sum = purData.purchases.reduce((acc: number, p: any) => acc + p.total_price, 0);
-        setTotalPurchases(sum);
+        const spentFromDonasi = purData.purchases
+          .filter((p: any) => p.funding_source !== 'penjualan_kupon')
+          .reduce((acc: number, p: any) => acc + p.total_price, 0);
+        setTotalSpentDonations(spentFromDonasi);
       }
-      const vouchers = getStoredVouchers();
-      setVoucherSales(vouchers.length * 5000);
     } catch (err) {
       console.error('Fetch overall stats error:', err);
     }
@@ -100,7 +99,7 @@ export const DonasiList = () => {
     });
   }, []);
 
-  const sisaKas = totalDonations + voucherSales - totalPurchases;
+  const sisaDonasi = totalDonations - totalSpentDonations;
 
   const handleOpenNewDonation = () => {
     setEditingDonation(null);
@@ -231,25 +230,41 @@ export const DonasiList = () => {
         </div>
       </div>
 
-      {/* Modern Summary Stat Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl text-white border border-white/20">
-            <TrendingUp className="w-6 h-6" />
-          </div>
+      {/* Summary Stat Cards (Specific to Incomes & Donations) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* Total Pemasukan & Sponsor */}
+        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm border border-emerald-500/30 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100">Total Pemasukan & Sponsor</span>
-            <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalDonations)}</p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Total Pemasukan & Sponsor</span>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(totalDonations)}</p>
+            <span className="text-[10px] font-semibold text-emerald-100 mt-0.5 block">{donations.length} transaksi penerimaan</span>
+          </div>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <TrendingUp className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 w-full md:w-auto justify-between md:justify-end">
-          <div className="text-left md:text-right">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-100 block">Sisa Saldo Kas Panitia</span>
-            <p className="text-xl sm:text-2xl font-black text-white">{formatRupiah(sisaKas)}</p>
+        {/* Total Terpakai untuk Pengeluaran Donasi */}
+        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Pengeluaran Terpakai (Donasi)</span>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(totalSpentDonations)}</p>
+            <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">Belanja dari sumber Donasi</span>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-            <span>{donations.length} Transaksi</span>
+          <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Sisa Saldo Donasi & Sponsor */}
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-sm border border-blue-500/30 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Donasi & Sponsor</span>
+            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(sisaDonasi)}</p>
+            <span className="text-[10px] font-semibold text-blue-200 mt-0.5 block">Saldo bersih Donasi & Sponsor</span>
+          </div>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <Wallet className="w-5 h-5" />
           </div>
         </div>
       </div>
@@ -289,10 +304,10 @@ export const DonasiList = () => {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th className="p-4 font-bold text-slate-700">Nama Donatur / Sponsor</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Jumlah Pemasukan</th>
-                <th className="p-4 font-bold text-slate-700">Tanggal</th>
-                <th className="p-4 font-bold text-slate-700">Status</th>
+                <th className="p-4 font-bold text-slate-700">Donatur / Sponsor</th>
+                <th className="p-4 font-bold text-slate-700 text-right">Nominal (Rp)</th>
+                <th className="p-4 font-bold text-slate-700">Tanggal Diterima</th>
+                <th className="p-4 font-bold text-slate-700">Catatan</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
               </tr>
             </thead>
@@ -300,23 +315,29 @@ export const DonasiList = () => {
               {paginatedDonations.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-12 text-center text-slate-500">
-                    <p className="text-lg font-semibold">Belum ada data pemasukan & sponsor.</p>
-                    <p className="text-xs mt-2">Klik "Pemasukan Baru" untuk menambahkan data.</p>
+                    <p className="text-lg font-semibold">Belum ada data pemasukan donasi.</p>
+                    <p className="text-xs mt-2">Klik "Pemasukan Baru" untuk menambahkan data donatur.</p>
                   </td>
                 </tr>
               ) : (
                 paginatedDonations.map((d) => (
                   <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-medium text-slate-900">
-                      {d.donor_name}
-                      {d.donor_phone && (
-                        <span className="block text-xs text-slate-400 font-normal">{d.donor_phone}</span>
-                      )}
+                    <td className="p-4 font-bold text-slate-900">
+                      <div>
+                        <p>{d.donor_name}</p>
+                        {d.donor_phone && (
+                          <p className="text-xs text-slate-500 font-normal">{d.donor_phone}</p>
+                        )}
+                      </div>
                     </td>
-                    <td className="p-4 text-emerald-700 font-bold text-right">{formatRupiah(d.amount)}</td>
-                    <td className="p-4 text-slate-500">{new Date(d.received_at).toLocaleDateString('id-ID')}</td>
-                    <td className="p-4">
-                      <span className="px-2 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold">Diterima</span>
+                    <td className="p-4 text-emerald-600 font-extrabold text-right">
+                      {formatRupiah(d.amount)}
+                    </td>
+                    <td className="p-4 text-slate-500">
+                      {new Date(d.received_at).toLocaleDateString('id-ID')}
+                    </td>
+                    <td className="p-4 text-slate-600 italic">
+                      {d.note || '-'}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
@@ -408,7 +429,7 @@ export const DonasiList = () => {
           <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-black text-slate-900">
-                {editingDonation ? 'Edit Pemasukan & Sponsor' : 'Catat Pemasukan & Sponsor'}
+                {editingDonation ? 'Edit Pemasukan Donasi' : 'Tambah Pemasukan Donasi Baru'}
               </h3>
               <button
                 onClick={() => {
@@ -430,23 +451,23 @@ export const DonasiList = () => {
                   onChange={(e) => setNewDonorName(e.target.value)}
                   required
                   className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
-                  placeholder="Nama donatur atau perusahaan sponsor..."
+                  placeholder="Contoh: H. Ahmad / PT Sinar Mas"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">No HP (opsional)</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Nomor WhatsApp / HP (opsional)</label>
                 <input
                   type="text"
                   value={newDonorPhone}
                   onChange={(e) => setNewDonorPhone(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
-                  placeholder="08123456789"
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
+                  placeholder="Contoh: 081234567890"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah Pemasukan (Rp)</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Nominal Donasi (Rp)</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
                   <input
@@ -454,19 +475,19 @@ export const DonasiList = () => {
                     value={formattedDisplayAmount}
                     onChange={handleAmountInputChange}
                     required
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
-                    placeholder="500.000"
+                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold text-base"
+                    placeholder="1.000.000"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan (opsional)</label>
+                <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan / Keterangan (opsional)</label>
                 <textarea
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-20 resize-none text-slate-900"
-                  placeholder="Catatan tambahan..."
+                  placeholder="Keterangan bantuan / bentuk barang yang dinilai uang..."
                 />
               </div>
 
