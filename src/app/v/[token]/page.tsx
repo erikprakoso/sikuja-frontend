@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
@@ -25,7 +25,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const res = await fetch(`/api/vouchers/${token}`);
       const data = await res.json();
@@ -51,7 +51,7 @@ export default function ParticipantEVoucherPage({ params }: Props) {
     }
 
     setIsLoading(false);
-  };
+  }, [token]);
 
   useEffect(() => {
     loadData();
@@ -63,7 +63,16 @@ export default function ParticipantEVoucherPage({ params }: Props) {
         window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
       }
     };
-  }, [token]);
+  }, [loadData]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadData();
+      }
+    }, 30000);
+    return () => clearInterval(intervalId);
+  }, [loadData]);
 
   useEffect(() => {
     if (transaction) {

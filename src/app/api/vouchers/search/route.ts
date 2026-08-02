@@ -6,10 +6,52 @@ import { format5DigitCode } from '@/lib/services/voucher';
  * GET /api/vouchers/search?q=...
  * Pencarian publik E-Voucher peserta, di-server (bukan localStorage).
  * Hanya mengembalikan `token` — tidak membocorkan nama/no. HP dari query.
- * Urutan: token/id eksak → kode kupon → no. HP → nama pemilik.
+ *
+ * Keamanan:
+ * - HP & nama hanya dicocokkan EKSAK (tanpa wildcard %) agar token tidak bisa
+ *   di-enumerasi dari potongan data (mis. 4 digit nomor HP).
+ * - Ada rate limit per IP untuk memperlambat percobaan berulang.
+ *
+ * Urutan: token/id eksak → kode kupon → no. HP eksak → nama eksak.
  */
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const MIN_PHONE_DIGITS = 8;
+
+const hitTimestamps = new Map<string, number[]>();
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  if (hitTimestamps.size > 5000) {
+    for (const [key, times] of hitTimestamps) {
+      if (times.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) hitTimestamps.delete(key);
+    }
+  }
+  const recent = (hitTimestamps.get(ip) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    hitTimestamps.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hitTimestamps.set(ip, recent);
+  return false;
+}
+
 export async function GET(request: NextRequest) {
   try {
+    if (isRateLimited(getClientIp(request))) {
+      return NextResponse.json(
+        { error: 'Terlalu banyak percobaan. Coba lagi beberapa saat.' },
+        { status: 429 }
+      );
+    }
+
     const q = (request.nextUrl.searchParams.get('q') || '').trim();
     if (!q) {
       return NextResponse.json({ error: 'Parameter q wajib diisi' }, { status: 400 });
@@ -39,7 +81,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, token: byId.token });
     }
 
-    // 3. Kode kupon 5 digit
+    // 3. Kode kupon 5 digit (eksak)
     const formattedCode = format5DigitCode(q);
     if (formattedCode) {
       const { data: voucher } = await serverSupabase
@@ -59,25 +101,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. No. HP / WhatsApp (parsial, minimal 4 digit)
+    // 4. No. HP — cocok EKSAK (nilai mentah & versi digit saja), minimal 8 digit.
+    //    Tanpa wildcard: token tidak bisa ditemukan hanya dari potongan 4 digit HP.
     const phoneClean = q.replace(/\D/g, '');
-    if (phoneClean.length >= 4) {
-      const { data: byPhone } = await serverSupabase
-        .from('transactions')
-        .select('token')
-        .ilike('customer_phone', `%${phoneClean}%`)
-        .limit(1)
-        .maybeSingle();
-      if (byPhone?.token) {
-        return NextResponse.json({ success: true, token: byPhone.token });
+    if (phoneClean.length >= MIN_PHONE_DIGITS) {
+      const candidates = [q, phoneClean];
+      for (const cand of candidates) {
+        const { data: byPhone } = await serverSupabase
+          .from('transactions')
+          .select('token')
+          .eq('customer_phone', cand)
+          .limit(1)
+          .maybeSingle();
+        if (byPhone?.token) {
+          return NextResponse.json({ success: true, token: byPhone.token });
+        }
       }
     }
 
-    // 5. Nama pemilik (parsial)
+    // 5. Nama pemilik — cocok EKSAK (case-insensitive, tanpa wildcard)
     const { data: byName } = await serverSupabase
       .from('transactions')
       .select('token')
-      .ilike('customer_name', `%${q}%`)
+      .ilike('customer_name', q)
       .limit(1)
       .maybeSingle();
     if (byName?.token) {
