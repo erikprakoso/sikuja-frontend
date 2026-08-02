@@ -139,6 +139,12 @@ export function savePurchases(purchases: Purchase[]) {
 /**
  * Compute Prize Categories & Stock dynamically from Purchases (is_doorprize: true) and Draw Results
  */
+export function sortPrizesByUnitPrice(prizes: Prize[]): Prize[] {
+  return [...prizes].sort(
+    (a, b) => (a.price_per_unit ?? Number.MAX_SAFE_INTEGER) - (b.price_per_unit ?? Number.MAX_SAFE_INTEGER)
+  );
+}
+
 export function computePrizesFromPurchases(purchases: Purchase[], drawResults: DrawResult[] = []): Prize[] {
   const doorprizePurchases = purchases.filter((p) => p.is_doorprize !== false);
 

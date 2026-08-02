@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME, sortPrizesByUnitPrice } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
 import { Trophy, AlertCircle } from 'lucide-react';
@@ -35,7 +35,7 @@ export default function DrawPage() {
     const p = getStoredPrizes();
     setPrizes(p);
 
-    const availablePrizes = p.filter((item) => item.drawn_count < item.stock);
+    const availablePrizes = sortPrizesByUnitPrice(p).filter((item) => item.drawn_count < item.stock);
 
     setSelectedPrizeId((prevId) => {
       const isStillAvailable = availablePrizes.some((item) => item.id === prevId);

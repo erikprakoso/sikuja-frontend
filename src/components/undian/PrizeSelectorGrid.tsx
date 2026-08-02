@@ -1,6 +1,7 @@
 import React from 'react';
 import { Prize } from '@/types';
 import { Star, CheckCircle, XCircle } from 'lucide-react';
+import { sortPrizesByUnitPrice } from '@/lib/storage';
 
 interface PrizeSelectorGridProps {
   prizes: Prize[];
@@ -16,9 +17,10 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
   onSelectPrize,
 }) => {
   const availablePrizes = prizes.filter((p) => p.drawn_count < p.stock);
-  const sortedPrizes = [...prizes].sort(
-    (a, b) => (a.price_per_unit ?? Number.MAX_SAFE_INTEGER) - (b.price_per_unit ?? Number.MAX_SAFE_INTEGER)
-  );
+  const sortedPrizes = sortPrizesByUnitPrice(prizes).map((p, i) => ({
+    ...p,
+    order_num: i + 1,
+  }));
 
   if (prizes.length === 0) {
     return (
