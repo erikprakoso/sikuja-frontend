@@ -43,6 +43,17 @@ export interface Purchase {
   created_by?: string;
 }
 
+export interface Donation {
+  id: string;
+  donor_name: string;
+  donor_phone: string | null;
+  amount: number;
+  received_at: string;
+  note?: string | null;
+  received_by?: string;
+  created_at?: string;
+}
+
 export interface Prize {
   id: string;
   name: string;

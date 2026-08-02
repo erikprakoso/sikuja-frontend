@@ -2,6 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/server-auth';
 
+/**
+ * Total donasi (opsional exclude id) & total pengeluaran bersumber Donasi.
+ * Dipakai untuk memastikan edit/hapus donasi tidak membuat saldo donasi negatif.
+ */
+async function getDonasiBalanceInfo(excludeId?: string) {
+  const [{ data: donations }, { data: purchases }] = await Promise.all([
+    serverSupabase.from('donations').select('id, amount'),
+    serverSupabase.from('purchases').select('total_price, funding_source'),
+  ]);
+
+  const totalDonasi = (donations ?? [])
+    .filter((d) => d.id !== excludeId)
+    .reduce((acc, d) => acc + (d.amount ?? 0), 0);
+  const spentDonasi = (purchases ?? [])
+    .filter((p) => p.funding_source !== 'penjualan_kupon')
+    .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
+
+  return { totalDonasi, spentDonasi };
+}
+
+function assertBalanceNotNegative(newTotalDonasi: number, spentDonasi: number): NextResponse | null {
+  if (spentDonasi > newTotalDonasi) {
+    return NextResponse.json(
+      {
+        error:
+          `Sisa Saldo Donasi & Sponsor akan menjadi NEGATIF.\n` +
+          `Total Pengeluaran (Donasi) Terpakai: Rp${spentDonasi.toLocaleString('id-ID')}\n` +
+          `Total Donasi Setelah Perubahan: Rp${Math.max(0, newTotalDonasi).toLocaleString('id-ID')}\n\n` +
+          `Hapus/ubah pengeluaran bersumber Donasi terlebih dahulu.`,
+      },
+      { status: 400 }
+    );
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['admin']);
@@ -122,12 +158,16 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Jumlah donasi harus angka positif' }, { status: 400 });
     }
 
+    // Jangan biarkan pengurangan nominal membuat saldo donasi negatif
+    const info = await getDonasiBalanceInfo(id);
+    const insufficient = assertBalanceNotNegative(info.totalDonasi + Math.floor(amount), info.spentDonasi);
+    if (insufficient) return insufficient;
+
     const donation = {
       donor_name: donor_name.trim(),
       donor_phone: donor_phone?.trim() || null,
       amount: Math.floor(amount),
       note: note?.trim() || null,
-      received_by: auth.name,
     };
 
     const { data: updatedDonation, error } = await serverSupabase
@@ -169,6 +209,11 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'ID donasi wajib diisi' }, { status: 400 });
     }
+
+    // Jangan biarkan penghapusan membuat saldo donasi negatif
+    const info = await getDonasiBalanceInfo(id);
+    const insufficient = assertBalanceNotNegative(info.totalDonasi, info.spentDonasi);
+    if (insufficient) return insufficient;
 
     const { error } = await serverSupabase.from('donations').delete().eq('id', id);
 
