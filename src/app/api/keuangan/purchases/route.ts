@@ -2,51 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { serverSupabase, isServerSupabaseConfigured } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/server-auth';
 
-async function getFundingBalances(excludeId?: string) {
-  const [{ data: donations }, { data: purchases }, { data: transactions }] = await Promise.all([
-    serverSupabase.from('donations').select('amount'),
-    serverSupabase.from('purchases').select('id, total_price, funding_source'),
-    serverSupabase.from('transactions').select('total_harga'),
-  ]);
-
-  const rows = (purchases ?? []).filter((p) => p.id !== excludeId);
-
-  const totalDonasi = (donations ?? []).reduce((acc, d) => acc + (d.amount ?? 0), 0);
-  const spentDonasi = rows
-    .filter((p) => p.funding_source !== 'penjualan_kupon')
-    .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
-  const spentKupon = rows
-    .filter((p) => p.funding_source === 'penjualan_kupon')
-    .reduce((acc, p) => acc + (p.total_price ?? 0), 0);
-  const voucherSales = (transactions ?? []).reduce((acc, t) => acc + (t.total_harga ?? 0), 0);
-
-  return { totalDonasi, spentDonasi, spentKupon, voucherSales };
-}
-
-function assertSufficientBalance(
-  fundingSource: string,
-  totalPrice: number,
-  balances: { totalDonasi: number; spentDonasi: number; spentKupon: number; voucherSales: number }
-): NextResponse | null {
-  const available =
-    fundingSource === 'penjualan_kupon'
-      ? balances.voucherSales - balances.spentKupon
-      : balances.totalDonasi - balances.spentDonasi;
-
-  if (totalPrice > available) {
-    const sourceLabel = fundingSource === 'penjualan_kupon' ? 'Hasil Penjualan Kupon' : 'Donasi & Sponsor';
-    return NextResponse.json(
-      {
-        error:
-          `Saldo kas ${sourceLabel} tidak mencukupi.\n` +
-          `Sisa Saldo Tersedia: Rp${Math.max(0, available).toLocaleString('id-ID')}\n` +
-          `Total Belanja: Rp${totalPrice.toLocaleString('id-ID')}`,
-      },
-      { status: 400 }
-    );
-  }
-
-  return null;
+/**
+ * Jalankan insert/update pembelian via RPC atomik di Postgres.
+ * RPC memeriksa saldo & menulis dalam SATU transaksi (anti overspend concurrent).
+ */
+async function upsertPurchase(params: {
+  p_id: string | null;
+  p_item_name: string;
+  p_qty: number;
+  p_price_per_unit: number;
+  p_is_doorprize: boolean;
+  p_funding_source: string;
+  p_note: string | null;
+  p_created_by?: string;
+}) {
+  const { data, error } = await serverSupabase.rpc('upsert_purchase', params);
+  return { data, error };
 }
 
 export async function GET(request: NextRequest) {
@@ -132,34 +103,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Harga per unit harus angka non-negatif' }, { status: 400 });
     }
 
-    const total_price = qty * price_per_unit;
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
     const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
 
-    const balances = await getFundingBalances();
-    const insufficient = assertSufficientBalance(fundingSource, total_price, balances);
-    if (insufficient) return insufficient;
+    const { data: newPurchase, error } = await upsertPurchase({
+      p_id: null,
+      p_item_name: item_name.trim(),
+      p_qty: Math.floor(qty),
+      p_price_per_unit: price_per_unit,
+      p_is_doorprize: isDoorprize,
+      p_funding_source: fundingSource,
+      p_note: note?.trim() || null,
+      p_created_by: auth.name,
+    });
 
-    const purchase = {
-      id: 'purch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-      item_name: item_name.trim(),
-      qty: Math.floor(qty),
-      price_per_unit: price_per_unit,
-      total_price: total_price,
-      purchase_date: new Date().toISOString().slice(0, 10),
-      is_doorprize: isDoorprize,
-      funding_source: fundingSource,
-      note: note?.trim() || null,
-      created_by: auth.name,
-    };
-
-    const { data: newPurchase, error } = await serverSupabase
-      .from('purchases')
-      .insert([purchase])
-      .select()
-      .single();
-
-    if (error) throw error;
+    if (error) {
+      console.error('API /keuangan/purchases POST upsert error:', error);
+      return NextResponse.json(
+        { error: (error as { message?: string }).message || 'Gagal menyimpan pembelian' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -200,34 +164,27 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Harga per unit harus angka non-negatif' }, { status: 400 });
     }
 
-    const total_price = qty * price_per_unit;
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
     const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
 
-    const balances = await getFundingBalances(id);
-    const insufficient = assertSufficientBalance(fundingSource, total_price, balances);
-    if (insufficient) return insufficient;
+    const { data: updatedPurchase, error } = await upsertPurchase({
+      p_id: id,
+      p_item_name: item_name.trim(),
+      p_qty: Math.floor(qty),
+      p_price_per_unit: price_per_unit,
+      p_is_doorprize: isDoorprize,
+      p_funding_source: fundingSource,
+      p_note: note?.trim() || null,
+      p_created_by: auth.name,
+    });
 
-    const purchase = {
-      item_name: item_name.trim(),
-      qty: Math.floor(qty),
-      price_per_unit: price_per_unit,
-      total_price: total_price,
-      purchase_date: new Date().toISOString().slice(0, 10),
-      is_doorprize: isDoorprize,
-      funding_source: fundingSource,
-      note: note?.trim() || null,
-      created_by: auth.name,
-    };
-
-    const { data: updatedPurchase, error } = await serverSupabase
-      .from('purchases')
-      .update(purchase)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
+    if (error) {
+      console.error('API /keuangan/purchases PUT upsert error:', error);
+      return NextResponse.json(
+        { error: (error as { message?: string }).message || 'Gagal menyimpan pembelian' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

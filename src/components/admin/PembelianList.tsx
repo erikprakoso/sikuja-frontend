@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck, AlertCircle } from 'lucide-react';
-import { SIKUJA_EVENT_NAME, getStoredTransactions, getStoredDrawResults, computePrizesFromPurchases } from '@/lib/storage';
+import { SIKUJA_EVENT_NAME, getStoredTransactions, getStoredDrawResults, computePrizesFromPurchases, syncFromSupabase } from '@/lib/storage';
 import { Purchase, DrawResult } from '@/types';
 
 export const PembelianList = () => {
@@ -27,21 +27,21 @@ export const PembelianList = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
 
-  const totalSpent = useMemo(() => {
-    return purchases.reduce((acc, p) => acc + p.total_price, 0);
+  const purchaseTotals = useMemo(() => {
+    let total = 0;
+    let donasi = 0;
+    let kupon = 0;
+    for (const p of purchases) {
+      total += p.total_price;
+      if (p.funding_source === 'penjualan_kupon') kupon += p.total_price;
+      else donasi += p.total_price;
+    }
+    return { total, donasi, kupon };
   }, [purchases]);
 
-  const totalSpentDonations = useMemo(() => {
-    return purchases
-      .filter((p) => p.funding_source !== 'penjualan_kupon')
-      .reduce((acc, p) => acc + p.total_price, 0);
-  }, [purchases]);
-
-  const totalSpentVouchers = useMemo(() => {
-    return purchases
-      .filter((p) => p.funding_source === 'penjualan_kupon')
-      .reduce((acc, p) => acc + p.total_price, 0);
-  }, [purchases]);
+  const totalSpent = purchaseTotals.total;
+  const totalSpentDonations = purchaseTotals.donasi;
+  const totalSpentVouchers = purchaseTotals.kupon;
 
   const filteredPurchases = useMemo(() => {
     if (!searchQuery.trim()) return purchases;
@@ -110,6 +110,9 @@ export const PembelianList = () => {
       loadDrawResults();
     };
     refresh();
+    // Sinkronkan data server (transactions & draw_results) ke localStorage dulu agar
+    // saldo penjualan kupon & jumlah "Terundi" selalu akurat, lalu event akan me-refresh lagi.
+    syncFromSupabase();
 
     window.addEventListener(SIKUJA_EVENT_NAME, refresh);
   }, []);
@@ -129,9 +132,9 @@ export const PembelianList = () => {
   }, [fundingSource, sisaDonasi, sisaKupon, editingPurchase]);
 
   const calculatedTotalPrice = useMemo(() => {
-    const qty = parseInt(newQty, 10);
-    const price = parseInt(newPrice, 10);
-    if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) return 0;
+    const qty = Number(newQty);
+    const price = Number(newPrice);
+    if (!Number.isFinite(qty) || !Number.isFinite(price) || qty <= 0 || price <= 0) return 0;
     return qty * price;
   }, [newQty, newPrice]);
 
@@ -142,8 +145,8 @@ export const PembelianList = () => {
   }, [currentAvailableBalance, calculatedTotalPrice]);
 
   const handleOpenNewPurchase = () => {
-    if (totalDonations <= 0 && voucherSales <= 0) {
-      alert('Belum ada Pemasukan Donasi/Sponsor maupun Penjualan Kupon (Total Saldo Rp 0).\n\nAnda belum bisa membuat pengeluaran. Harap catat Pemasukan Donasi atau Penjualan Kupon terlebih dahulu!');
+    if (sisaDonasi <= 0 && sisaKupon <= 0) {
+      alert('Sisa Saldo Donasi/Sponsor maupun Penjualan Kupon sudah habis (Rp 0).\n\nAnda belum bisa membuat pengeluaran baru. Harap catat Pemasukan Donasi atau Penjualan Kupon terlebih dahulu!');
       return;
     }
     setEditingPurchase(null);
@@ -195,8 +198,8 @@ export const PembelianList = () => {
 
   const formattedDisplayPrice = useMemo(() => {
     if (!newPrice) return '';
-    const num = parseInt(newPrice, 10);
-    if (isNaN(num)) return '';
+    const num = Number(newPrice);
+    if (!Number.isFinite(num)) return '';
     return new Intl.NumberFormat('id-ID').format(num);
   }, [newPrice]);
 
