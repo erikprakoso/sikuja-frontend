@@ -11,6 +11,10 @@ interface AdminStatCardsProps {
   totalOmzet: number;
 }
 
+const formatRupiah = (amount: number) => {
+  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+};
+
 export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
   totalSales,
   totalFisik,
@@ -21,10 +25,6 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
 }) => {
   const participationRate = totalSales > 0 ? ((totalCheckin / totalSales) * 100).toFixed(0) : '0';
   const totalClaimed = drawResults.filter((r) => r.claimed).length;
-
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
-  };
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

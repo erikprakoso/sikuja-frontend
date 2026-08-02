@@ -9,7 +9,11 @@ export default function AdminUsersPage() {
   return (
     <RequireAuth roles={['admin']}>
       <div className="space-y-8 py-4 max-w-4xl mx-auto">
-        <AdminHeader />
+        <AdminHeader
+          badge="Manajemen Akun Panitia"
+          title="Kelola Pengguna & Akses"
+          subtitle="Atur akun panitia, peran (penjual, pos, mc, verifikator, admin), dan status aktif setiap pengguna."
+        />
         <UserManagement />
       </div>
     </RequireAuth>
