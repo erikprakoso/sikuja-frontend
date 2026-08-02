@@ -14,17 +14,14 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/penjualan', label: 'Penjualan', roles: ['penjual', 'admin'] },
-  { href: '/checkin', label: 'Pos Check-In', roles: ['pos', 'admin'] },
-  { href: '/undian', label: 'Layar Undian', roles: ['mc', 'admin'] },
-  { href: '/verifikasi', label: 'Verifikasi', roles: ['verifikator', 'admin'] },
-];
-
-const ADMIN_SUBMENU = [
-  { href: '/admin', label: 'Monitoring Kupon', roles: ['admin'] },
-  { href: '/admin/keuangan/donasi', label: 'Pemasukan & Sponsor', roles: ['admin'] },
-  { href: '/admin/keuangan/pembelian', label: 'Pengeluaran & Belanja', roles: ['admin'] },
-  { href: '/admin/users', label: 'Petugas', roles: ['admin'] },
+  { href: '/sales', label: 'Sales', roles: ['penjual', 'admin'] },
+  { href: '/checkin', label: 'Check-In', roles: ['pos', 'admin'] },
+  { href: '/draw', label: 'Draw', roles: ['mc', 'admin'] },
+  { href: '/verification', label: 'Verification', roles: ['verifikator', 'admin'] },
+  { href: '/monitoring', label: 'Monitoring', roles: ['admin'] },
+  { href: '/incomes', label: 'Incomes', roles: ['admin'] },
+  { href: '/expenses', label: 'Expenses', roles: ['admin'] },
+  { href: '/users', label: 'Users', roles: ['admin'] },
 ];
 
 export default function Navbar() {
@@ -104,7 +101,7 @@ export default function Navbar() {
 
   // Layar Undian: tampil navbar seperti biasa; saat fullscreen (stage proyektor)
   // navbar disembunyikan agar layar panggung bersih. Halaman e-voucher publik (/v/) tetap tanpa navbar.
-  if ((pathname === '/undian' && isFullscreen) || pathname.startsWith('/v/')) {
+  if (((pathname === '/draw' || pathname === '/undian') && isFullscreen) || pathname.startsWith('/v/')) {
     return null;
   }
 
@@ -117,7 +114,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
 
-          {/* Brand Logo (ketuk 5x untuk akses login panitia) */}
+          {/* Brand Logo */}
           <Link href="/" onClick={handleBrandClick} className="flex items-center gap-2.5 group">
             <img
               src="/logo-ri.png"
@@ -151,40 +148,10 @@ export default function Navbar() {
                    </Link>
                  );
                })}
-               
-               {/* Admin Submenu Dropdown */}
-               {session?.role === 'admin' && (
-                 <div className="relative group">
-                   <button className="px-3.5 py-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg flex items-center gap-1 transition-all">
-                     Admin
-                     <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                     </svg>
-                   </button>
-                   <div className="absolute left-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                     {ADMIN_SUBMENU.filter(i => i.roles.includes(session.role)).map((sub) => {
-                       const subActive = pathname === sub.href;
-                       return (
-                         <Link
-                           key={sub.href}
-                           href={sub.href}
-                           className={`block px-4 py-2.5 text-sm font-semibold transition-colors ${
-                             subActive
-                               ? 'text-[#E70013] bg-[#E70013]/5'
-                               : 'text-slate-600 hover:bg-slate-50'
-                           }`}
-                         >
-                           {sub.label}
-                         </Link>
-                       );
-                     })}
-                   </div>
-                 </div>
-               )}
              </nav>
            )}
 
-          {/* Right Controls (Online/Audio/Sesi — hanya untuk panitia yang login) */}
+          {/* Right Controls */}
           {session && (
             <div className="flex items-center gap-2">
               {/* Online Status Badge */}
@@ -219,14 +186,18 @@ export default function Navbar() {
 
               {/* User Session */}
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-full border border-slate-200/60">
-                  <UserIcon className="w-3 h-3 text-slate-500" />
-                  <span className="capitalize">{session.name}</span>
+                <div className="hidden sm:flex flex-col text-right">
+                  <span className="text-xs font-bold text-slate-900 leading-tight">
+                    {session.name}
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                    {session.role}
+                  </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  title="Keluar"
-                  className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                  title="Keluar (Logout)"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#E70013] hover:bg-red-50 transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -237,14 +208,14 @@ export default function Navbar() {
 
         {/* Mobile Clean Nav Bar */}
         {visibleNavItems.length > 0 && (
-          <div className="md:hidden flex items-center justify-around border-t border-slate-100 py-1.5">
+          <div className="md:hidden flex items-center justify-around border-t border-slate-100 py-1.5 overflow-x-auto">
             {visibleNavItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`px-3 py-1 text-xs transition-all relative ${
+                  className={`px-2 py-1 text-xs whitespace-nowrap transition-all relative ${
                     isActive
                       ? 'text-slate-900 font-extrabold'
                       : 'text-slate-500 font-medium hover:text-slate-800'
@@ -257,19 +228,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            {/* Mobile Admin Menu Button */}
-            {session?.role === 'admin' && (
-              <button
-                className="px-3 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 relative"
-                title="Menu Admin"
-              >
-                <span className="absolute top-0 right-0 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E70013] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E70013]"></span>
-                </span>
-                Admin
-              </button>
-            )}
           </div>
         )}
       </div>
