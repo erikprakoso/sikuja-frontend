@@ -114,12 +114,15 @@ export default function LayarUndianPage() {
     });
   };
 
-  const handleStartDraw = async (excludeCode?: string) => {
+  const handleStartDraw = async (excludeCode?: unknown) => {
     if (isRolling || !selectedPrizeId) return;
     setIsRolling(true);
     setErrorMsg('');
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
+
+    // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
+    const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
 
     try {
       const res = await fetch('/api/draw', {
@@ -127,7 +130,7 @@ export default function LayarUndianPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prizeId: selectedPrizeId,
-          ...(excludeCode ? { excludeCode } : {}),
+          ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}),
         }),
       });
       const data = await res.json();
@@ -297,7 +300,7 @@ export default function LayarUndianPage() {
           candidateVoucher={candidateVoucher}
           isConfirmed={isConfirmedWinner}
           selectedPrizeId={selectedPrizeId}
-          onStartDraw={handleStartDraw}
+          onStartDraw={() => handleStartDraw()}
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />

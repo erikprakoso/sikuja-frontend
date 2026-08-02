@@ -31,7 +31,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
         isConfirmed ? (
           /* ── Confirmed Winner: Next Draw CTA ── */
           <button
-            onClick={onStartDraw}
+            onClick={() => onStartDraw()}
             disabled={isRolling}
             className="group relative px-10 py-4 rounded-2xl text-base font-black tracking-wide bg-[#E70013] text-white border-2 border-[#E70013] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 flex items-center gap-2.5 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -89,7 +89,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
               </>
             )}
             <button
-              onClick={onStartDraw}
+              onClick={() => onStartDraw()}
               disabled={!canStart}
               className={`relative px-14 py-6 rounded-3xl text-2xl font-black tracking-wide transition-all duration-300 flex items-center gap-4 shadow-xl
                 ${!canStart

@@ -91,26 +91,25 @@ export default function DrawPage() {
     });
   };
 
-  /* Ubah fungsi handleStartDraw di file Parent menjadi seperti ini: */
-const handleStartDraw = async (excludeCode?: unknown) => { // ganti ke unknown sementara untuk cek
-  if (isRolling || !selectedPrizeId) return;
-  setIsRolling(true);
-  setErrorMsg('');
-  setCandidateVoucher(null);
-  setIsConfirmedWinner(false);
+  const handleStartDraw = async (excludeCode?: unknown) => {
+    if (isRolling || !selectedPrizeId) return;
+    setIsRolling(true);
+    setErrorMsg('');
+    setCandidateVoucher(null);
+    setIsConfirmedWinner(false);
 
-  // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
-  const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
+    // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
+    const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
 
-  try {
-    const res = await fetch('/api/draw', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prizeId: selectedPrizeId,
-        ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}), // 🌟 Gunakan yang sudah divalidasi
-      }),
-    });
+    try {
+      const res = await fetch('/api/draw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prizeId: selectedPrizeId,
+          ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}),
+        }),
+      });
       const data = await res.json();
 
       if (!res.ok || data.error) {
