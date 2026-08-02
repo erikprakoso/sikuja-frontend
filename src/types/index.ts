@@ -38,6 +38,7 @@ export interface Purchase {
   total_price: number;
   purchase_date: string;
   is_doorprize: boolean;
+  funding_source?: 'donasi' | 'penjualan_kupon';
   note?: string | null;
   created_by?: string;
 }

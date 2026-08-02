@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck } from 'lucide-react';
+import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, ShoppingBag, Gift, Package, Trophy, PackageCheck, AlertCircle } from 'lucide-react';
 import { SIKUJA_EVENT_NAME, getStoredVouchers, getStoredDrawResults, computePrizesFromPurchases } from '@/lib/storage';
 import { Purchase, DrawResult } from '@/types';
 
@@ -13,6 +13,7 @@ export const PembelianList = () => {
   const [newQty, setNewQty] = useState<string>('');
   const [newPrice, setNewPrice] = useState<string>(''); // Raw numeric string
   const [isDoorprize, setIsDoorprize] = useState<boolean>(true);
+  const [fundingSource, setFundingSource] = useState<'donasi' | 'penjualan_kupon'>('donasi');
   const [newNote, setNewNote] = useState('');
 
   const doorprizePrizes = useMemo(() => {
@@ -29,6 +30,18 @@ export const PembelianList = () => {
 
   const totalSpent = useMemo(() => {
     return purchases.reduce((acc, p) => acc + p.total_price, 0);
+  }, [purchases]);
+
+  const totalSpentDonations = useMemo(() => {
+    return purchases
+      .filter((p) => p.funding_source !== 'penjualan_kupon')
+      .reduce((acc, p) => acc + p.total_price, 0);
+  }, [purchases]);
+
+  const totalSpentVouchers = useMemo(() => {
+    return purchases
+      .filter((p) => p.funding_source === 'penjualan_kupon')
+      .reduce((acc, p) => acc + p.total_price, 0);
   }, [purchases]);
 
   const filteredPurchases = useMemo(() => {
@@ -99,14 +112,45 @@ export const PembelianList = () => {
     });
   }, []);
 
-  const sisaKas = totalDonations + voucherSales - totalSpent;
+  const sisaDonasi = totalDonations - totalSpentDonations;
+  const sisaKupon = voucherSales - totalSpentVouchers;
+  const sisaKas = sisaDonasi + sisaKupon;
+
+  // Modal Balance Validation
+  const currentAvailableBalance = useMemo(() => {
+    const rawBalance = fundingSource === 'donasi' ? sisaDonasi : sisaKupon;
+    // Add back the item's previous price if editing an existing purchase from the same funding source
+    const currentItemOldPrice = (editingPurchase && (editingPurchase.funding_source || 'donasi') === fundingSource)
+      ? editingPurchase.total_price
+      : 0;
+    return rawBalance + currentItemOldPrice;
+  }, [fundingSource, sisaDonasi, sisaKupon, editingPurchase]);
+
+  const calculatedTotalPrice = useMemo(() => {
+    const qty = parseInt(newQty, 10);
+    const price = parseInt(newPrice, 10);
+    if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) return 0;
+    return qty * price;
+  }, [newQty, newPrice]);
+
+  const isInsufficientBalance = useMemo(() => {
+    if (currentAvailableBalance <= 0) return true;
+    if (calculatedTotalPrice > currentAvailableBalance) return true;
+    return false;
+  }, [currentAvailableBalance, calculatedTotalPrice]);
 
   const handleOpenNewPurchase = () => {
+    if (totalDonations <= 0 && voucherSales <= 0) {
+      alert('Belum ada Pemasukan Donasi/Sponsor maupun Penjualan Kupon (Total Saldo Rp 0).\n\nAnda belum bisa membuat pengeluaran. Harap catat Pemasukan Donasi atau Penjualan Kupon terlebih dahulu!');
+      return;
+    }
     setEditingPurchase(null);
     setNewItem('');
     setNewQty('');
     setNewPrice('');
     setIsDoorprize(true);
+    // Pick default funding source that has available balance
+    setFundingSource(sisaDonasi > 0 ? 'donasi' : 'penjualan_kupon');
     setNewNote('');
     setIsAdding(true);
   };
@@ -117,14 +161,13 @@ export const PembelianList = () => {
     setNewQty(p.qty.toString());
     setNewPrice(p.price_per_unit.toString());
     setIsDoorprize(typeof p.is_doorprize === 'boolean' ? p.is_doorprize : true);
+    setFundingSource(p.funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi');
     setNewNote(p.note || '');
     setIsAdding(true);
   };
 
   const handleDeletePurchase = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?')) return;
-
-    const target = purchases.find((p) => p.id === id);
 
     setIsLoading(true);
     try {
@@ -155,16 +198,24 @@ export const PembelianList = () => {
     return new Intl.NumberFormat('id-ID').format(num);
   }, [newPrice]);
 
-  const calculatedTotalPrice = useMemo(() => {
-    const qty = parseInt(newQty, 10);
-    const price = parseInt(newPrice, 10);
-    if (isNaN(qty) || isNaN(price) || qty <= 0 || price <= 0) return 0;
-    return qty * price;
-  }, [newQty, newPrice]);
+  const formatRupiah = (amount: number) => {
+    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
+  };
 
   const handleSavePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim() || !newQty || !newPrice) return;
+
+    const sourceLabel = fundingSource === 'donasi' ? 'Donasi & Sponsor' : 'Hasil Penjualan Kupon';
+    if (isInsufficientBalance) {
+      alert(
+        `Gagal menyimpan pengeluaran!\nSaldo Kas ${sourceLabel} tidak mencukupi.\n\n` +
+        `Sisa Saldo Tersedia: ${formatRupiah(currentAvailableBalance)}\n` +
+        `Total Belanja: ${formatRupiah(calculatedTotalPrice)}\n\n` +
+        `Harap catat Pemasukan atau Penjualan Kupon terlebih dahulu!`
+      );
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -174,6 +225,7 @@ export const PembelianList = () => {
         qty: Number(newQty),
         price_per_unit: Number(newPrice),
         is_doorprize: isDoorprize,
+        funding_source: fundingSource,
         note: newNote.trim() || null,
       };
 
@@ -219,10 +271,6 @@ export const PembelianList = () => {
     }
   };
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-  };
-
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -243,25 +291,59 @@ export const PembelianList = () => {
         </div>
       </div>
 
-      {/* Modern Summary Stat Banner */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-white/15 backdrop-blur-md rounded-xl text-white border border-white/20">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
+      {/* Modern Summary Stat Cards (Split Balances) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Pengeluaran */}
+        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100">Total Pengeluaran & Belanja</span>
-            <p className="text-2xl sm:text-3xl font-black text-white">{formatRupiah(totalSpent)}</p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Pengeluaran</span>
+            <p className="text-xl font-black text-white mt-0.5">{formatRupiah(totalSpent)}</p>
+            <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">{purchases.length} transaksi</span>
+          </div>
+          <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white">
+            <ShoppingBag className="w-5 h-5" />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 w-full md:w-auto justify-between md:justify-end">
-          <div className="text-left md:text-right">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Kas Panitia</span>
-            <p className="text-xl sm:text-2xl font-black text-white">{formatRupiah(sisaKas)}</p>
+        {/* Sisa Donasi / Sponsor */}
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-sm border border-blue-500/30 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Donasi/Sponsor</span>
+            <p className="text-xl font-black text-white mt-0.5">{formatRupiah(sisaDonasi)}</p>
+            <span className="text-[10px] font-medium text-blue-200 mt-0.5 block">
+              Total Masuk: {formatRupiah(totalDonations)}
+            </span>
           </div>
-          <div className="flex items-center gap-2 text-xs font-bold text-white bg-white/15 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/20">
-            <span>{purchases.length} Transaksi</span>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <Gift className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Sisa Penjualan Kupon */}
+        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm border border-emerald-500/30 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Sisa Saldo Penjualan Kupon</span>
+            <p className="text-xl font-black text-white mt-0.5">{formatRupiah(sisaKupon)}</p>
+            <span className="text-[10px] font-medium text-emerald-200 mt-0.5 block">
+              Total Masuk: {formatRupiah(voucherSales)}
+            </span>
+          </div>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <Package className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Total Sisa Kas Panitia */}
+        <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl p-4 shadow-sm border border-amber-400/30 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-100 block">Total Sisa Kas Panitia</span>
+            <p className="text-xl font-black text-white mt-0.5">{formatRupiah(sisaKas)}</p>
+            <span className="text-[10px] font-medium text-amber-100 mt-0.5 block">
+              Gabungan Seluruh Kas
+            </span>
+          </div>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <Trophy className="w-5 h-5" />
           </div>
         </div>
       </div>
@@ -351,6 +433,7 @@ export const PembelianList = () => {
             <thead className="bg-slate-50">
               <tr>
                 <th className="p-4 font-bold text-slate-700">Item Barang</th>
+                <th className="p-4 font-bold text-slate-700">Sumber Dana</th>
                 <th className="p-4 font-bold text-slate-700">Tipe Barang</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Jumlah</th>
                 <th className="p-4 font-bold text-slate-700 text-right">Harga Satuan</th>
@@ -362,7 +445,7 @@ export const PembelianList = () => {
             <tbody className="divide-y divide-slate-100">
               {paginatedPurchases.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={8} className="p-12 text-center text-slate-500">
                     <p className="text-lg font-semibold">Belum ada data pengeluaran & belanja.</p>
                     <p className="text-xs mt-2">Klik "Pengeluaran Baru" untuk menambahkan data.</p>
                   </td>
@@ -371,6 +454,17 @@ export const PembelianList = () => {
                 paginatedPurchases.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                     <td className="p-4 font-medium text-slate-900">{p.item_name}</td>
+                    <td className="p-4">
+                      {p.funding_source === 'penjualan_kupon' ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold inline-flex items-center gap-1">
+                          🎟️ Penjualan Kupon
+                        </span>
+                      ) : (
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold inline-flex items-center gap-1">
+                          🎁 Donasi & Sponsor
+                        </span>
+                      )}
+                    </td>
                     <td className="p-4">
                       {p.is_doorprize !== false ? (
                         <span className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold inline-flex items-center gap-1">
@@ -504,6 +598,41 @@ export const PembelianList = () => {
                 />
               </div>
 
+              {/* Sumber Dana Selector */}
+              <div>
+                <label className="text-xs font-bold text-slate-600 mb-1.5 block">Sumber Dana Pengeluaran</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFundingSource('donasi')}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      fundingSource === 'donasi'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>🎁 Donasi & Sponsor</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFundingSource('penjualan_kupon')}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      fundingSource === 'penjualan_kupon'
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>🎟️ Penjualan Kupon</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
+                  {fundingSource === 'donasi'
+                    ? `💰 Saldo Donasi Tersedia: ${formatRupiah(currentAvailableBalance)}`
+                    : `🎫 Saldo Kupon Tersedia: ${formatRupiah(currentAvailableBalance)}`}
+                </p>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-600 mb-1 block">Jumlah (Qty)</label>
@@ -534,11 +663,27 @@ export const PembelianList = () => {
                 </div>
               </div>
 
-              {/* Total Price Auto Preview */}
+              {/* Total Price Auto Preview & Insufficient Balance Warning */}
               {calculatedTotalPrice > 0 && (
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-center justify-between">
-                  <span className="text-xs font-bold text-blue-700">Total Harga Belanja:</span>
-                  <span className="text-base font-black text-blue-900">{formatRupiah(calculatedTotalPrice)}</span>
+                <div className={`p-3 rounded-xl border flex items-center justify-between ${
+                  isInsufficientBalance
+                    ? 'bg-red-50 border-red-200 text-red-900'
+                    : 'bg-blue-50 border-blue-200 text-blue-900'
+                }`}>
+                  <span className="text-xs font-bold">Total Harga Belanja:</span>
+                  <span className="text-base font-black">{formatRupiah(calculatedTotalPrice)}</span>
+                </div>
+              )}
+
+              {isInsufficientBalance && (
+                <div className="p-3 bg-red-100 border border-red-300 rounded-xl flex items-start gap-2.5 text-red-800 text-xs font-bold">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="font-extrabold">Saldo Kas Tidak Mencukupi!</p>
+                    <p className="font-medium text-[11px] mt-0.5">
+                      Sisa Saldo Kas {fundingSource === 'donasi' ? 'Donasi & Sponsor' : 'Hasil Penjualan Kupon'} hanya {formatRupiah(currentAvailableBalance)}. Harap catat pemasukan terlebih dahulu sebelum membuat belanja.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -602,8 +747,8 @@ export const PembelianList = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 flex items-center gap-2"
+                  disabled={isLoading || isInsufficientBalance}
+                  className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                   {editingPurchase ? 'Simpan Perubahan' : 'Simpan Pembelian'}

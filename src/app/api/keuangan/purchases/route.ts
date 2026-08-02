@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { item_name, qty, price_per_unit, is_doorprize, note } = body;
+    const { item_name, qty, price_per_unit, is_doorprize, funding_source, note } = body;
 
     if (!item_name || !qty || !price_per_unit) {
       return NextResponse.json({ error: 'Nama item, jumlah, dan harga per unit wajib diisi' }, { status: 400 });
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
 
     const total_price = qty * price_per_unit;
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
+    const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
 
     const purchase = {
       id: 'purch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
       total_price: total_price,
       purchase_date: new Date().toISOString().slice(0, 10),
       is_doorprize: isDoorprize,
+      funding_source: fundingSource,
       note: note?.trim() || null,
       created_by: auth.name,
     };
@@ -104,7 +106,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, item_name, qty, price_per_unit, is_doorprize, note } = body;
+    const { id, item_name, qty, price_per_unit, is_doorprize, funding_source, note } = body;
 
     if (!id || !item_name || !qty || !price_per_unit) {
       return NextResponse.json({ error: 'ID, nama item, jumlah, dan harga per unit wajib diisi' }, { status: 400 });
@@ -120,6 +122,7 @@ export async function PUT(request: NextRequest) {
 
     const total_price = qty * price_per_unit;
     const isDoorprize = typeof is_doorprize === 'boolean' ? is_doorprize : true;
+    const fundingSource = funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi';
 
     const purchase = {
       item_name: item_name.trim(),
@@ -128,6 +131,7 @@ export async function PUT(request: NextRequest) {
       total_price: total_price,
       purchase_date: new Date().toISOString().slice(0, 10),
       is_doorprize: isDoorprize,
+      funding_source: fundingSource,
       note: note?.trim() || null,
       created_by: auth.name,
     };

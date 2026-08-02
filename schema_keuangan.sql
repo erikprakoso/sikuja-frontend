@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS public.purchases (
   total_price INT NOT NULL CHECK (total_price >= 0),
   purchase_date DATE NOT NULL DEFAULT CURRENT_DATE,
   is_doorprize BOOLEAN NOT NULL DEFAULT TRUE,
+  funding_source TEXT NOT NULL DEFAULT 'donasi',
   note TEXT,
   created_by TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.purchases (
 ALTER TABLE public.purchases DROP COLUMN IF EXISTS supplier_name;
 ALTER TABLE public.purchases DROP COLUMN IF EXISTS payment_method;
 ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS is_doorprize BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS funding_source TEXT NOT NULL DEFAULT 'donasi';
 
 CREATE INDEX IF NOT EXISTS idx_purchases_purchase_date ON public.purchases(purchase_date DESC);
 
