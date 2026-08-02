@@ -137,7 +137,7 @@ export const TransactionResult: React.FC<TransactionResultProps> = ({
               <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">Backup kode</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-52 overflow-y-auto pr-1 pb-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-72 overflow-y-auto pr-1 pb-2">
               {digitalVouchers.map((v, idx) => (
                 <div
                   key={v.code}
