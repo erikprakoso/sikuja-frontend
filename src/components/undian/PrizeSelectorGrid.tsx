@@ -57,6 +57,11 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
                   </span>
                 </div>
                 <p className="text-xs font-black truncate mt-1">{p.name}</p>
+                {p.donor_name && (
+                  <p className="mt-0.5 text-[9px] font-semibold text-violet-500 truncate">
+                    🎁 {p.donor_name}
+                  </p>
+                )}
                 <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">
                   <XCircle className="w-3 h-3" />
                   Stok Habis
@@ -85,6 +90,11 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
                 </span>
               </div>
               <p className="text-xs font-black truncate mt-1">{p.name}</p>
+              {p.donor_name && (
+                <p className={`mt-0.5 text-[9px] font-semibold truncate ${isSelected ? 'text-white/80' : 'text-violet-600'}`}>
+                  🎁 {p.donor_name}
+                </p>
+              )}
             </button>
           );
         })}

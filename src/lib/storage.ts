@@ -148,20 +148,23 @@ export function sortPrizesByUnitPrice(prizes: Prize[]): Prize[] {
 export function computePrizesFromPurchases(purchases: Purchase[], drawResults: DrawResult[] = []): Prize[] {
   const doorprizePurchases = purchases.filter((p) => p.is_doorprize !== false);
 
-  const map = new Map<string, { name: string; stock: number; firstId: string; price: number }>();
+  const map = new Map<string, { name: string; stock: number; firstId: string; price: number; donors: string[] }>();
 
   for (const p of doorprizePurchases) {
     const trimmedName = p.item_name.trim();
     const key = trimmedName.toLowerCase();
+    const donor = p.funding_source === 'donasi_barang' && p.donor_name?.trim() ? p.donor_name.trim() : '';
     if (map.has(key)) {
       const existing = map.get(key)!;
       existing.stock += p.qty;
+      if (donor && !existing.donors.includes(donor)) existing.donors.push(donor);
     } else {
       map.set(key, {
         name: trimmedName,
         stock: p.qty,
         firstId: p.id,
         price: p.price_per_unit,
+        donors: donor ? [donor] : [],
       });
     }
   }
@@ -184,6 +187,7 @@ export function computePrizesFromPurchases(purchases: Purchase[], drawResults: D
       drawn_count: drawn,
       order_num: orderNum++,
       price_per_unit: item.price,
+      donor_name: item.donors.length > 0 ? item.donors.join(', ') : null,
     });
   }
 

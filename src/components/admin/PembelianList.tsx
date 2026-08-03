@@ -13,7 +13,8 @@ export const PembelianList = () => {
   const [newQty, setNewQty] = useState<string>('');
   const [newPrice, setNewPrice] = useState<string>(''); // Raw numeric string
   const [isDoorprize, setIsDoorprize] = useState<boolean>(true);
-  const [fundingSource, setFundingSource] = useState<'donasi' | 'penjualan_kupon'>('donasi');
+  const [fundingSource, setFundingSource] = useState<'donasi' | 'penjualan_kupon' | 'donasi_barang'>('donasi');
+  const [newDonorName, setNewDonorName] = useState('');
   const [newNote, setNewNote] = useState('');
 
   const doorprizePrizes = useMemo(() => {
@@ -35,15 +36,18 @@ export const PembelianList = () => {
     let total = 0;
     let donasi = 0;
     let kupon = 0;
+    let barang = 0;
     for (const p of purchases) {
       total += p.total_price;
       if (p.funding_source === 'penjualan_kupon') kupon += p.total_price;
+      else if (p.funding_source === 'donasi_barang') barang += p.total_price;
       else donasi += p.total_price;
     }
-    return { total, donasi, kupon };
+    return { total, donasi, kupon, barang };
   }, [purchases]);
 
-  const totalSpent = purchaseTotals.total;
+  const totalSpent = purchaseTotals.donasi + purchaseTotals.kupon;
+  const totalSpentBarang = purchaseTotals.barang;
   const totalSpentDonations = purchaseTotals.donasi;
   const totalSpentVouchers = purchaseTotals.kupon;
 
@@ -148,6 +152,7 @@ export const PembelianList = () => {
 
   // Modal Balance Validation
   const currentAvailableBalance = useMemo(() => {
+    if (fundingSource === 'donasi_barang') return 0;
     const rawBalance = fundingSource === 'donasi' ? sisaDonasi : sisaKupon;
     // Add back the item's previous price if editing an existing purchase from the same funding source
     const currentItemOldPrice = (editingPurchase && (editingPurchase.funding_source || 'donasi') === fundingSource)
@@ -164,16 +169,13 @@ export const PembelianList = () => {
   }, [newQty, newPrice]);
 
   const isInsufficientBalance = useMemo(() => {
+    if (fundingSource === 'donasi_barang') return false;
     if (currentAvailableBalance <= 0) return true;
     if (calculatedTotalPrice > currentAvailableBalance) return true;
     return false;
-  }, [currentAvailableBalance, calculatedTotalPrice]);
+  }, [currentAvailableBalance, calculatedTotalPrice, fundingSource]);
 
   const handleOpenNewPurchase = () => {
-    if (sisaDonasi <= 0 && sisaKupon <= 0) {
-      alert('Sisa Saldo Donasi/Sponsor maupun Penjualan Kupon sudah habis (Rp 0).\n\nAnda belum bisa membuat pengeluaran baru. Harap catat Pemasukan Donasi atau Penjualan Kupon terlebih dahulu!');
-      return;
-    }
     setEditingPurchase(null);
     setNewItem('');
     setNewQty('');
@@ -181,6 +183,7 @@ export const PembelianList = () => {
     setIsDoorprize(true);
     // Pick default funding source that has available balance
     setFundingSource(sisaDonasi > 0 ? 'donasi' : 'penjualan_kupon');
+    setNewDonorName('');
     setNewNote('');
     setIsAdding(true);
   };
@@ -191,7 +194,12 @@ export const PembelianList = () => {
     setNewQty(p.qty.toString());
     setNewPrice(p.price_per_unit.toString());
     setIsDoorprize(typeof p.is_doorprize === 'boolean' ? p.is_doorprize : true);
-    setFundingSource(p.funding_source === 'penjualan_kupon' ? 'penjualan_kupon' : 'donasi');
+    setFundingSource(
+      p.funding_source === 'penjualan_kupon' || p.funding_source === 'donasi_barang'
+        ? p.funding_source
+        : 'donasi'
+    );
+    setNewDonorName(p.donor_name || '');
     setNewNote(p.note || '');
     setIsAdding(true);
   };
@@ -234,10 +242,17 @@ export const PembelianList = () => {
 
   const handleSavePurchase = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItem.trim() || !newQty || !newPrice) return;
+    if (!newItem.trim() || !newQty) return;
 
-    const sourceLabel = fundingSource === 'donasi' ? 'Donasi & Sponsor' : 'Hasil Penjualan Kupon';
-    if (isInsufficientBalance) {
+    const isInKind = fundingSource === 'donasi_barang';
+    const sourceLabel = fundingSource === 'donasi' ? 'Donasi & Sponsor' : fundingSource === 'penjualan_kupon' ? 'Hasil Penjualan Kupon' : 'Donasi Barang (In-Kind)';
+
+    if (isInKind && !newDonorName.trim()) {
+      alert('Nama donatur wajib diisi untuk donasi barang (barang diberikan langsung oleh donatur).');
+      return;
+    }
+
+    if (!isInKind && isInsufficientBalance) {
       alert(
         `Gagal menyimpan pengeluaran!\nSaldo Kas ${sourceLabel} tidak mencukupi.\n\n` +
         `Sisa Saldo Tersedia: ${formatRupiah(currentAvailableBalance)}\n` +
@@ -253,9 +268,10 @@ export const PembelianList = () => {
       const payload = {
         item_name: newItem.trim(),
         qty: Number(newQty),
-        price_per_unit: Number(newPrice),
+        price_per_unit: Number(newPrice || 0),
         is_doorprize: isDoorprize,
         funding_source: fundingSource,
+        donor_name: isInKind ? newDonorName.trim() : null,
         note: newNote.trim() || null,
       };
 
@@ -288,6 +304,7 @@ export const PembelianList = () => {
         setNewItem('');
         setNewQty('');
         setNewPrice('');
+        setNewDonorName('');
         setNewNote('');
         setEditingPurchase(null);
         setIsAdding(false);
@@ -322,7 +339,7 @@ export const PembelianList = () => {
       </div>
 
       {/* Modern Summary Stat Cards (Split Balances) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {/* Total Pengeluaran */}
         <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
           <div>
@@ -332,6 +349,20 @@ export const PembelianList = () => {
           </div>
           <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white">
             <ShoppingBag className="w-5 h-5" />
+          </div>
+        </div>
+
+        {/* Total Donasi Barang (In-Kind) */}
+        <div className="bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-2xl p-4 shadow-sm border border-violet-400/30 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-violet-100 block">Total Donasi Barang</span>
+            <p className="text-xl font-black text-white mt-0.5">{formatRupiah(totalSpentBarang)}</p>
+            <span className="text-[10px] font-medium text-violet-200 mt-0.5 block">
+              Hadiah langsung dari donatur (in-kind)
+            </span>
+          </div>
+          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
+            <PackageCheck className="w-5 h-5" />
           </div>
         </div>
 
@@ -412,6 +443,11 @@ export const PembelianList = () => {
                     <span className="text-[11px] font-mono font-bold text-slate-400">#{p.order_num}</span>
                     <span className="text-xs font-bold text-slate-900">{p.name}</span>
                   </div>
+                  {p.donor_name && (
+                    <p className="text-[10px] font-semibold text-violet-600 mt-0.5 truncate">
+                      🎁 Hadiah dari: {p.donor_name}
+                    </p>
+                  )}
                   <div className="flex items-center gap-3 mt-1 text-[11px]">
                     <p className="font-semibold text-slate-500">
                       Stok: <span className="font-mono font-bold text-[#E70013]">{p.stock} Unit</span>
@@ -520,11 +556,22 @@ export const PembelianList = () => {
               ) : (
                 paginatedPurchases.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-medium text-slate-900">{p.item_name}</td>
+                    <td className="p-4 font-medium text-slate-900">
+                      <div>
+                        <p>{p.item_name}</p>
+                        {p.donor_name && (
+                          <p className="text-[11px] text-violet-600 font-semibold">🎁 dari {p.donor_name}</p>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-4">
                       {p.funding_source === 'penjualan_kupon' ? (
                         <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold inline-flex items-center gap-1">
                           🎟️ Penjualan Kupon
+                        </span>
+                      ) : p.funding_source === 'donasi_barang' ? (
+                        <span className="px-2.5 py-1 rounded-lg bg-violet-100 text-violet-800 border border-violet-200 text-xs font-bold inline-flex items-center gap-1">
+                          🎁 Donasi Barang
                         </span>
                       ) : (
                         <span className="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-800 border border-blue-200 text-xs font-bold inline-flex items-center gap-1">
@@ -665,7 +712,7 @@ export const PembelianList = () => {
               {/* Sumber Dana Selector */}
               <div>
                 <label className="text-xs font-bold text-slate-600 mb-1.5 block">Sumber Dana Pengeluaran</label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     type="button"
                     onClick={() => setFundingSource('donasi')}
@@ -675,7 +722,7 @@ export const PembelianList = () => {
                         : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <span>🎁 Donasi & Sponsor</span>
+                    <span>🎁 Donasi</span>
                   </button>
 
                   <button
@@ -687,15 +734,44 @@ export const PembelianList = () => {
                         : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
                     }`}
                   >
-                    <span>🎟️ Penjualan Kupon</span>
+                    <span>🎟️ Kupon</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFundingSource('donasi_barang')}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      fundingSource === 'donasi_barang'
+                        ? 'bg-violet-600 border-violet-600 text-white shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <span>📦 Barang</span>
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
-                  {fundingSource === 'donasi'
+                  {fundingSource === 'donasi_barang'
+                    ? '📦 Barang diberikan langsung donatur (tidak memakai kas). Isi nilai taksiran untuk urutan hadiah.'
+                    : fundingSource === 'donasi'
                     ? `💰 Saldo Donasi Tersedia: ${formatRupiah(currentAvailableBalance)}`
                     : `🎫 Saldo Kupon Tersedia: ${formatRupiah(currentAvailableBalance)}`}
                 </p>
               </div>
+
+              {/* Nama Donatur (khusus Donasi Barang) */}
+              {fundingSource === 'donasi_barang' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-600 mb-1 block">Nama Donatur / Penyumbang Barang</label>
+                  <input
+                    type="text"
+                    value={newDonorName}
+                    onChange={(e) => setNewDonorName(e.target.value)}
+                    required
+                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
+                    placeholder="Contoh: H. Ahmad / PT Sinar Mas"
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -712,18 +788,25 @@ export const PembelianList = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-600 mb-1 block">Harga Satuan (Rp)</label>
+                  <label className="text-xs font-bold text-slate-600 mb-1 block">
+                    {fundingSource === 'donasi_barang' ? 'Nilai Taksiran Satuan (Rp)' : 'Harga Satuan (Rp)'}
+                  </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
                     <input
                       type="text"
                       value={formattedDisplayPrice}
                       onChange={handlePriceInputChange}
-                      required
+                      required={fundingSource !== 'donasi_barang'}
                       className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
                       placeholder="1.750.000"
                     />
                   </div>
+                  {fundingSource === 'donasi_barang' && (
+                    <p className="text-[11px] text-slate-500 mt-1 font-medium">
+                      Nilai taksiran opsional — dipakai untuk urutan hadiah & laporan. Kosongkan jika tidak diketahui.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -732,9 +815,13 @@ export const PembelianList = () => {
                 <div className={`p-3 rounded-xl border flex items-center justify-between ${
                   isInsufficientBalance
                     ? 'bg-red-50 border-red-200 text-red-900'
+                    : fundingSource === 'donasi_barang'
+                    ? 'bg-violet-50 border-violet-200 text-violet-900'
                     : 'bg-blue-50 border-blue-200 text-blue-900'
                 }`}>
-                  <span className="text-xs font-bold">Total Harga Belanja:</span>
+                  <span className="text-xs font-bold">
+                    {fundingSource === 'donasi_barang' ? 'Total Nilai Taksiran Barang:' : 'Total Harga Belanja:'}
+                  </span>
                   <span className="text-base font-black">{formatRupiah(calculatedTotalPrice)}</span>
                 </div>
               )}

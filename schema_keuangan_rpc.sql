@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION public.upsert_purchase(
   p_price_per_unit INT,
   p_is_doorprize BOOLEAN,
   p_funding_source TEXT,
+  p_donor_name TEXT,
   p_note TEXT,
   p_created_by TEXT
 ) RETURNS JSONB
@@ -33,14 +34,19 @@ BEGIN
     RAISE EXCEPTION 'Jumlah harus angka positif dan harga non-negatif';
   END IF;
 
+  IF p_funding_source = 'donasi_barang' AND COALESCE(p_donor_name, '') = '' THEN
+    RAISE EXCEPTION 'Nama donatur wajib diisi untuk donasi barang';
+  END IF;
+
   -- Saldo masuk: total donasi & total penjualan kupon (sum transactions.total_harga)
   SELECT COALESCE(SUM(amount), 0) INTO v_total_donasi FROM public.donations;
   SELECT COALESCE(SUM(total_harga), 0) INTO v_voucher_sales FROM public.transactions;
 
-  -- Belanja terpakai (exclude item yang sedang diedit, bila ada)
+  -- Belanja terpakai (exclude item yang sedang diedit, bila ada).
+  -- 'donasi_barang' TIDAK dihitung sebagai belanja kas (barang datang langsung dari donatur).
   SELECT COALESCE(SUM(total_price), 0) INTO v_spent_donasi
   FROM public.purchases
-  WHERE COALESCE(funding_source, 'donasi') <> 'penjualan_kupon'
+  WHERE COALESCE(funding_source, 'donasi') NOT IN ('penjualan_kupon', 'donasi_barang')
     AND (p_id IS NULL OR id <> p_id);
 
   SELECT COALESCE(SUM(total_price), 0) INTO v_spent_kupon
@@ -51,6 +57,10 @@ BEGIN
   IF p_funding_source = 'penjualan_kupon' THEN
     v_available := v_voucher_sales - v_spent_kupon;
     v_source_label := 'Hasil Penjualan Kupon';
+  ELSIF p_funding_source = 'donasi_barang' THEN
+    -- Barang in-kind: tidak menyentuh kas, tidak perlu cek saldo.
+    v_available := v_total_price;
+    v_source_label := 'Donasi Barang (In-Kind)';
   ELSE
     v_available := v_total_donasi - v_spent_donasi;
     v_source_label := 'Donasi & Sponsor';
@@ -64,10 +74,10 @@ BEGIN
   IF p_id IS NULL THEN
     INSERT INTO public.purchases
       (item_name, qty, price_per_unit, total_price, purchase_date,
-       is_doorprize, funding_source, note, created_by)
+       is_doorprize, funding_source, donor_name, note, created_by)
     VALUES
       (p_item_name, p_qty, p_price_per_unit, v_total_price, CURRENT_DATE,
-       p_is_doorprize, p_funding_source, p_note, p_created_by)
+       p_is_doorprize, p_funding_source, p_donor_name, p_note, p_created_by)
     RETURNING * INTO v_row;
   ELSE
     UPDATE public.purchases SET
@@ -78,6 +88,7 @@ BEGIN
       purchase_date = CURRENT_DATE,
       is_doorprize = p_is_doorprize,
       funding_source = p_funding_source,
+      donor_name = p_donor_name,
       note = p_note,
       created_by = p_created_by
     WHERE id = p_id
@@ -93,5 +104,5 @@ END;
 $$;
 
 -- Izin eksekusi (default: public dapat execute; batasi ke authenticated bila perlu)
-REVOKE ALL ON FUNCTION public.upsert_purchase(TEXT, TEXT, INT, INT, BOOLEAN, TEXT, TEXT, TEXT) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.upsert_purchase(TEXT, TEXT, INT, INT, BOOLEAN, TEXT, TEXT, TEXT) TO authenticated;
+REVOKE ALL ON FUNCTION public.upsert_purchase(TEXT, TEXT, INT, INT, BOOLEAN, TEXT, TEXT, TEXT, TEXT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.upsert_purchase(TEXT, TEXT, INT, INT, BOOLEAN, TEXT, TEXT, TEXT, TEXT) TO authenticated;

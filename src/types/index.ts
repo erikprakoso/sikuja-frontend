@@ -38,7 +38,8 @@ export interface Purchase {
   total_price: number;
   purchase_date: string;
   is_doorprize: boolean;
-  funding_source?: 'donasi' | 'penjualan_kupon';
+  funding_source?: 'donasi' | 'penjualan_kupon' | 'donasi_barang';
+  donor_name?: string | null;
   note?: string | null;
   created_by?: string;
 }
@@ -62,6 +63,7 @@ export interface Prize {
   order_num: number;
   icon?: string;
   price_per_unit?: number;
+  donor_name?: string | null;
 }
 
 export interface DrawResult {

@@ -265,9 +265,16 @@ export default function LayarUndianPage() {
       <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
         {/* Selected Prize Badge */}
         {currentPrize && (
-          <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
-            <Trophy className="w-5 h-5 text-white animate-bounce" />
-            Kategori Hadiah: {currentPrize.name}
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
+              <Trophy className="w-5 h-5 text-white animate-bounce" />
+              Kategori Hadiah: {currentPrize.name}
+            </div>
+            {currentPrize.donor_name && (
+              <p className="text-xs font-bold text-violet-700">
+                🎁 Hadiah dari: {currentPrize.donor_name}
+              </p>
+            )}
           </div>
         )}
 

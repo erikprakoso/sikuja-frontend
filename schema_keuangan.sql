@@ -41,6 +41,7 @@ ALTER TABLE public.purchases DROP COLUMN IF EXISTS supplier_name;
 ALTER TABLE public.purchases DROP COLUMN IF EXISTS payment_method;
 ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS is_doorprize BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS funding_source TEXT NOT NULL DEFAULT 'donasi';
+ALTER TABLE public.purchases ADD COLUMN IF NOT EXISTS donor_name TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_purchases_purchase_date ON public.purchases(purchase_date DESC);
 
