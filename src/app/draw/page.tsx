@@ -11,7 +11,6 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
 import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
-import { WinnerBanner } from '@/components/undian/WinnerBanner';
 import { DrawControls } from '@/components/undian/DrawControls';
 
 export default function DrawPage() {
@@ -29,7 +28,7 @@ export default function DrawPage() {
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
 
   const rollIntervalRef = useRef<number | null>(null);
-  const rollTimeoutRef = useRef<number | null>(null);
+  const candidateRef = useRef<Voucher | null>(null);
 
   const refreshLocalData = () => {
     const p = getStoredPrizes();
@@ -69,7 +68,6 @@ export default function DrawPage() {
   useEffect(() => {
     return () => {
       if (rollIntervalRef.current !== null) clearInterval(rollIntervalRef.current);
-      if (rollTimeoutRef.current !== null) clearTimeout(rollTimeoutRef.current);
       soundManager.stopDrumroll();
     };
   }, []);
@@ -121,12 +119,15 @@ export default function DrawPage() {
       }
 
       const candidate: Voucher = data.candidate;
+      candidateRef.current = candidate;
       if (typeof data.audit?.pool_size === 'number') {
         setLastPoolSize(data.audit.pool_size);
       }
 
       soundManager.startDrumroll();
 
+      // Roll angka berjalan terus — berhenti hanya saat MC menekan Spasi
+      // (atau tombol Stop). Kandidat pemenang sudah diambil server di atas.
       rollIntervalRef.current = window.setInterval(() => {
         const random5Digit = Math.floor(Math.random() * 100000)
           .toString()
@@ -134,28 +135,30 @@ export default function DrawPage() {
         setDisplayDigits(random5Digit);
         soundManager.playTick();
       }, 85);
-
-      rollTimeoutRef.current = window.setTimeout(() => {
-        if (rollIntervalRef.current !== null) {
-          clearInterval(rollIntervalRef.current);
-          rollIntervalRef.current = null;
-        }
-        rollTimeoutRef.current = null;
-
-        soundManager.stopDrumroll();
-        soundManager.playVictoryFanfare();
-        triggerConfetti();
-
-        setIsRolling(false);
-        setDisplayDigits(candidate.code);
-        setCandidateVoucher(candidate);
-      }, 3200);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Draw error message:', msg);
       setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
       setIsRolling(false);
     }
+  };
+
+  const stopRoll = () => {
+    if (!isRolling) return;
+    if (rollIntervalRef.current !== null) {
+      clearInterval(rollIntervalRef.current);
+      rollIntervalRef.current = null;
+    }
+    soundManager.stopDrumroll();
+
+    const candidate = candidateRef.current;
+    if (candidate) {
+      soundManager.playVictoryFanfare();
+      triggerConfetti();
+      setDisplayDigits(candidate.code);
+      setCandidateVoucher(candidate);
+    }
+    setIsRolling(false);
   };
 
   const handleConfirmWinner = async () => {
@@ -202,6 +205,39 @@ export default function DrawPage() {
     setIsConfirmedWinner(false);
     handleStartDraw(forfeitedCode);
   };
+
+  // Kontrol undian dengan keyboard: Spasi untuk memulai/berhenti/undi
+  // berikutnya; Y = konfirmasi pemenang, N = gugurkan & undi ulang.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'y' || e.key === 'Y') {
+        if (candidateVoucher && !isConfirmedWinner && !isConfirming) {
+          e.preventDefault();
+          handleConfirmWinner();
+        }
+        return;
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        if (candidateVoucher && !isConfirmedWinner && !isConfirming) {
+          e.preventDefault();
+          handleForfeitAndRedraw();
+        }
+        return;
+      }
+      if (e.key !== ' ') return;
+      e.preventDefault();
+      if (isRolling) {
+        stopRoll();
+      } else if (!candidateVoucher && selectedPrizeId) {
+        handleStartDraw();
+      } else if (candidateVoucher && isConfirmedWinner) {
+        handleStartDraw();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRolling, isConfirming, candidateVoucher, selectedPrizeId, isConfirmedWinner]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -257,13 +293,6 @@ export default function DrawPage() {
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
         />
 
-        {candidateVoucher && (
-          <WinnerBanner
-            voucher={candidateVoucher}
-            isConfirmed={isConfirmedWinner}
-          />
-        )}
-
         {errorMsg && (
           <div className="p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 max-w-md shadow-md">
             <AlertCircle className="w-5 h-5 flex-shrink-0 text-white" />
@@ -278,6 +307,7 @@ export default function DrawPage() {
           isConfirmed={isConfirmedWinner}
           selectedPrizeId={selectedPrizeId}
           onStartDraw={() => handleStartDraw()}
+          onStopDraw={stopRoll}
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />

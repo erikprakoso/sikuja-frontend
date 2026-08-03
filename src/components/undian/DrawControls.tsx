@@ -1,6 +1,6 @@
 import React from 'react';
 import { Voucher } from '@/types';
-import { Play, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Play, Square, CheckCircle, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 interface DrawControlsProps {
   isRolling: boolean;
@@ -9,6 +9,7 @@ interface DrawControlsProps {
   isConfirmed: boolean;
   selectedPrizeId: string;
   onStartDraw: () => void;
+  onStopDraw: () => void;
   onConfirmWinner: () => void;
   onForfeitAndRedraw: () => void;
 }
@@ -20,6 +21,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
   isConfirmed,
   selectedPrizeId,
   onStartDraw,
+  onStopDraw,
   onConfirmWinner,
   onForfeitAndRedraw,
 }) => {
@@ -30,14 +32,19 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
       {candidateVoucher ? (
         isConfirmed ? (
           /* ── Confirmed Winner: Next Draw CTA ── */
-          <button
-            onClick={() => onStartDraw()}
-            disabled={isRolling}
-            className="group relative px-10 py-4 rounded-2xl text-base font-black tracking-wide bg-[#E70013] text-white border-2 border-[#E70013] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 flex items-center gap-2.5 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Play className="w-5 h-5 fill-current group-hover:translate-x-0.5 transition-transform" />
-            Undi Hadiah Berikutnya
-          </button>
+          <div className="flex flex-col items-center gap-2">
+            <button
+              onClick={() => onStartDraw()}
+              disabled={isRolling}
+              className="group px-10 py-4 rounded-2xl text-base font-black tracking-wide bg-[#E70013] text-white border-2 border-[#E70013] shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 cursor-pointer transition-all duration-200 flex items-center gap-2.5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Play className="w-5 h-5 fill-current group-hover:translate-x-0.5 transition-transform" />
+              Undi Hadiah Berikutnya
+            </button>
+            <p className="text-[10px] font-bold text-slate-500">
+              atau tekan <kbd className="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-700 text-[10px] font-black">Spasi</kbd>
+            </p>
+          </div>
         ) : (
           /* ── Candidate Pending: Confirm or Forfeit ── */
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full max-w-xl">
@@ -53,6 +60,9 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
                 <CheckCircle className="w-5 h-5" />
               )}
               {isConfirming ? 'Mengonfirmasi...' : 'Konfirmasi Pemenang'}
+              {!isConfirming && (
+                <kbd className="px-1.5 py-0.5 rounded border border-white/40 bg-white/15 text-white text-[10px] font-black">Y</kbd>
+              )}
             </button>
 
             {/* Divider */}
@@ -66,6 +76,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
             >
               <XCircle className="w-5 h-5" />
               Gugurkan & Undi Ulang
+              <kbd className="px-1.5 py-0.5 rounded border border-[#E70013]/40 bg-[#E70013]/10 text-[#E70013] text-[10px] font-black">N</kbd>
             </button>
           </div>
         )
@@ -79,37 +90,42 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
             </div>
           )}
 
-          {/* Big Stage CTA Button */}
-          <div className="relative">
-            {/* Pulsing ring when ready */}
-            {canStart && (
+          {/* Big Stage CTA Button: starts OR stops the roll */}
+          <button
+            onClick={isRolling ? () => onStopDraw() : () => onStartDraw()}
+            disabled={!canStart && !isRolling}
+            className={`px-14 py-6 rounded-3xl text-2xl font-black tracking-wide transition-all duration-300 flex items-center gap-4 shadow-xl
+              ${!canStart && !isRolling
+                ? 'bg-white text-[#E70013]/40 border-4 border-[#E70013]/30 cursor-not-allowed'
+                : isRolling
+                  ? 'bg-slate-900 text-white border-4 border-slate-900 cursor-pointer hover:scale-105 active:scale-95 hover:shadow-2xl'
+                  : 'bg-[#E70013] text-white border-4 border-[#E70013] cursor-pointer hover:scale-105 active:scale-95 hover:shadow-2xl'
+              }`}
+          >
+            {isRolling ? (
               <>
-                <span className="absolute inset-0 rounded-3xl bg-[#E70013]/20 animate-ping pointer-events-none" />
-                <span className="absolute inset-0 rounded-3xl bg-[#E70013]/10 scale-110 animate-pulse pointer-events-none" />
+                <Square className="w-7 h-7 fill-current" />
+                Stop Undian
+              </>
+            ) : (
+              <>
+                <Play className="w-7 h-7 fill-current" />
+                Mulai Pengundian
               </>
             )}
-            <button
-              onClick={() => onStartDraw()}
-              disabled={!canStart}
-              className={`relative px-14 py-6 rounded-3xl text-2xl font-black tracking-wide transition-all duration-300 flex items-center gap-4 shadow-xl
-                ${!canStart
-                  ? 'bg-white text-[#E70013]/40 border-4 border-[#E70013]/30 cursor-not-allowed'
-                  : 'bg-[#E70013] text-white border-4 border-[#E70013] cursor-pointer hover:scale-105 active:scale-95 hover:shadow-2xl'
-                }`}
-            >
-              {isRolling ? (
-                <>
-                  <Loader2 className="w-7 h-7 animate-spin" />
-                  <span>Memutar Kode Kupon...</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-7 h-7 fill-current" />
-                  <span>Mulai Pengundian</span>
-                </>
-              )}
-            </button>
-          </div>
+          </button>
+
+          {canStart && (
+            <p className="text-[10px] font-bold text-slate-500">
+              Tekan <kbd className="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-700 text-[10px] font-black">Spasi</kbd> untuk memulai
+            </p>
+          )}
+
+          {isRolling && (
+            <p className="text-[10px] font-bold text-slate-500">
+              Tekan <kbd className="px-1.5 py-0.5 rounded border border-slate-300 bg-slate-100 text-slate-700 text-[10px] font-black">Spasi</kbd> untuk berhenti
+            </p>
+          )}
         </div>
       )}
     </div>
