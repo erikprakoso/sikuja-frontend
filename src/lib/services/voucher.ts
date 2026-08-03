@@ -288,7 +288,7 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
 }
 
 // 4. Random Draw Execution (CSPRNG compliant)
-export function drawWinner(prizeId: string): {
+export function drawWinner(prizeId: string, excludeCode?: string): {
   success: boolean;
   message: string;
   winner?: DrawResult;
@@ -307,7 +307,20 @@ export function drawWinner(prizeId: string): {
     return { success: false, message: `Stok hadiah ${prize.name} sudah habis (${prize.stock} unit).` };
   }
 
-  const eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
+  let eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
+
+  // Undian ulang setelah gugur: kupon yang digugurkan dianggap HANGUS (status
+  // diubah 'forfeited' agar tidak pernah masuk pool lagi), dan semua kupon milik
+  // pembeli yang sama ikut dikecualikan dari undian ulang kali ini.
+  if (excludeCode) {
+    const forfeited = vouchers.find((v) => v.code === excludeCode);
+    if (forfeited) {
+      forfeited.status = 'forfeited';
+      saveVouchers(vouchers);
+      eligibleVouchers = eligibleVouchers.filter((v) => v.transaction_id !== forfeited.transaction_id);
+    }
+  }
+
   if (eligibleVouchers.length === 0) {
     return {
       success: false,

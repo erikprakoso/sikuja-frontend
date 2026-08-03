@@ -16,7 +16,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   return (
     <div className="py-6 flex items-center justify-center gap-3 sm:gap-6 relative">
       {/* Left Stage Side Flare Column */}
-      <div className="hidden md:flex flex-col items-center justify-center gap-3 opacity-90">
+      <div className="hidden xl:flex flex-col items-center justify-center gap-3 opacity-90">
         <div
           className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
             winnerVoucher
@@ -37,7 +37,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
       {/* Main 5-Digit Display Slot Screen */}
       <div className="flex flex-col items-center">
         <div
-          className={`inline-flex items-center justify-center gap-2 sm:gap-4 p-4 sm:p-8 rounded-3xl max-w-full transition-all duration-500 relative ${
+          className={`inline-flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-6 rounded-3xl max-w-full transition-all duration-500 relative ${
             winnerVoucher
               ? 'bg-[#E70013] shadow-2xl ring-4 ring-[#E70013]/40'
               : 'bg-white border-4 border-[#E70013] shadow-xl'
@@ -48,11 +48,11 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               key={idx}
               style={{ animationDelay: `${idx * 60}ms` }}
               className={`
-                w-12 h-18 sm:w-24 sm:h-36
+                w-10 h-14 sm:w-20 sm:h-28 lg:w-12 lg:h-16 xl:w-16 xl:h-24
                 rounded-2xl
                 flex items-center justify-center
                 font-mono font-black
-                text-4xl sm:text-7xl
+                text-3xl sm:text-6xl lg:text-3xl xl:text-5xl
                 tracking-tighter
                 select-none
                 transition-all duration-300
@@ -78,7 +78,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
       </div>
 
       {/* Right Stage Side Flare Column */}
-      <div className="hidden md:flex flex-col items-center justify-center gap-3 opacity-90">
+      <div className="hidden xl:flex flex-col items-center justify-center gap-3 opacity-90">
         <div
           className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
             winnerVoucher

@@ -106,6 +106,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             <option value="checkin">Terverifikasi Pos</option>
             <option value="menang">Pemenang Undian</option>
             <option value="diklaim">Hadiah Diserahkan</option>
+            <option value="forfeited">Gugur (Hangus)</option>
           </select>
 
           {/* Page Size Select */}
@@ -163,6 +164,8 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                             ? 'bg-amber-100 text-amber-800 border border-amber-300'
                             : v.status === 'diklaim'
                             ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                            : v.status === 'forfeited'
+                            ? 'bg-red-100 text-red-800 border border-red-300'
                             : 'bg-slate-100 text-slate-600 border border-slate-300'
                         }`}
                       >
@@ -172,6 +175,8 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                           ? 'Pemenang'
                           : v.status === 'diklaim'
                           ? 'Diserahkan'
+                          : v.status === 'forfeited'
+                          ? 'Gugur'
                           : 'Terbit'}
                       </span>
                     </td>

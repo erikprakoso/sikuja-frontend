@@ -11,6 +11,7 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
 import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
+import { WinnersPanel } from '@/components/undian/WinnersPanel';
 import { DrawControls } from '@/components/undian/DrawControls';
 
 export default function LayarUndianPage() {
@@ -26,6 +27,7 @@ export default function LayarUndianPage() {
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
+  const [winners, setWinners] = useState<Voucher[]>([]);
 
   const rollIntervalRef = useRef<number | null>(null);
   const candidateRef = useRef<Voucher | null>(null);
@@ -59,6 +61,7 @@ export default function LayarUndianPage() {
     });
 
     setEligibleCount(eligible);
+    setWinners(getStoredVouchers().filter((x) => x.status === 'menang'));
   };
 
   useEffect(() => {
@@ -285,7 +288,7 @@ export default function LayarUndianPage() {
         onToggleFullscreen={toggleFullscreen}
       />
 
-      <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-start lg:gap-6">
         <aside className="lg:sticky lg:top-16 @container">
           {/* Prize Selector Grid */}
           <PrizeSelectorGrid
@@ -301,7 +304,7 @@ export default function LayarUndianPage() {
         </aside>
 
         {/* BIG STAGE SCREEN (PROYEKTOR MODE) */}
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-5 sm:p-8 text-center space-y-5 shadow-xl">
         {/* Selected Prize Badge */}
         {currentPrize && (
           <div className="space-y-2">
@@ -344,6 +347,10 @@ export default function LayarUndianPage() {
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />
         </div>
+
+        <aside className="lg:sticky lg:top-16">
+          <WinnersPanel winners={winners} />
+        </aside>
       </div>
     </div>
     </RequireAuth>

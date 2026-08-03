@@ -144,7 +144,7 @@ export default function ParticipantEVoucherClient({
     return <EVoucherNotFound token={token} />;
   }
 
-  const checkinCount = vouchers.filter((v) => v.status !== 'terbit').length;
+  const checkinCount = vouchers.filter((v) => v.status !== 'terbit' && v.status !== 'forfeited').length;
 
   return (
     <div className="max-w-xl mx-auto space-y-6 py-4 animate-fade-in">

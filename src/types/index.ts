@@ -1,6 +1,6 @@
 export type VoucherType = 'fisik' | 'non-fisik';
 
-export type VoucherStatus = 'terbit' | 'checkin' | 'menang' | 'diklaim';
+export type VoucherStatus = 'terbit' | 'checkin' | 'menang' | 'diklaim' | 'forfeited';
 
 export type RoleType = 'penjual' | 'pos' | 'mc' | 'verifikator' | 'admin';
 

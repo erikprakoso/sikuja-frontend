@@ -117,6 +117,14 @@ export async function POST(request: NextRequest) {
             .eq('voucher_code', excludeCode)
             .eq('status', 'pending');
 
+          // Kupon yang digugurkan dianggap HANGUS: ubah status voucher sehingga
+          // tidak lagi masuk pool undian mana pun (pool hanya mengambil status 'checkin').
+          await serverSupabase
+            .from('vouchers')
+            .update({ status: 'forfeited' })
+            .eq('code', excludeCode)
+            .eq('status', 'checkin');
+
           pool = eligibleVouchers.filter((v) => v.transaction_id !== forfeitedVoucher.transaction_id);
         }
       }
@@ -157,7 +165,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } else {
-      const result = drawWinnerForPrize(prizeId);
+      const result = drawWinnerForPrize(prizeId, excludeCode);
       if (!result.success) {
         return NextResponse.json({ error: result.message }, { status: 400 });
       }

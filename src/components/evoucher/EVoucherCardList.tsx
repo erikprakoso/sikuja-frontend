@@ -1,6 +1,6 @@
 import React from 'react';
 import { Voucher } from '@/types';
-import { Ticket, CheckCircle, Trophy, Award } from 'lucide-react';
+import { Ticket, CheckCircle, Trophy, Award, Ban } from 'lucide-react';
 
 interface EVoucherCardListProps {
   vouchers: Voucher[];
@@ -42,6 +42,12 @@ export const EVoucherCardList: React.FC<EVoucherCardListProps> = ({ vouchers }) 
             badgeBg = 'bg-white text-purple-900';
             statusText = '✓ Hadiah Diserahkan';
             StatusIcon = Award;
+            codeColor = 'text-white';
+          } else if (v.status === 'forfeited') {
+            cardBg = 'bg-red-900 border border-red-900 text-white';
+            badgeBg = 'bg-white text-red-900';
+            statusText = '✕ Kupon Gugur';
+            StatusIcon = Ban;
             codeColor = 'text-white';
           }
 

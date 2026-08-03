@@ -11,6 +11,7 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
 import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
+import { WinnersPanel } from '@/components/undian/WinnersPanel';
 import { DrawControls } from '@/components/undian/DrawControls';
 
 export default function DrawPage() {
@@ -26,6 +27,7 @@ export default function DrawPage() {
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
+  const [winners, setWinners] = useState<Voucher[]>([]);
 
   const rollIntervalRef = useRef<number | null>(null);
   const candidateRef = useRef<Voucher | null>(null);
@@ -45,6 +47,7 @@ export default function DrawPage() {
     const v = getStoredVouchers();
     const eligible = v.filter((x) => x.status === 'checkin').length;
     setEligibleCount(eligible);
+    setWinners(v.filter((x) => x.status === 'menang'));
   };
 
   useEffect(() => {
@@ -258,7 +261,7 @@ export default function DrawPage() {
         onToggleFullscreen={toggleFullscreen}
       />
 
-      <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-start lg:gap-6">
         <aside className="lg:sticky lg:top-16 @container">
           <PrizeSelectorGrid
             prizes={prizes}
@@ -272,7 +275,7 @@ export default function DrawPage() {
           />
         </aside>
 
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-5 sm:p-8 text-center space-y-5 shadow-xl">
         {currentPrize && (
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
@@ -312,6 +315,10 @@ export default function DrawPage() {
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />
         </div>
+
+        <aside className="lg:sticky lg:top-16">
+          <WinnersPanel winners={winners} />
+        </aside>
       </div>
     </div>
     </RequireAuth>

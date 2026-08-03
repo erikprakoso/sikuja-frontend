@@ -46,7 +46,7 @@ export default function MonitoringPage() {
   const totalSales = vouchers.length;
   const totalFisik = vouchers.filter((v) => v.type === 'fisik').length;
   const totalNonFisik = vouchers.filter((v) => v.type === 'non-fisik').length;
-  const totalCheckin = vouchers.filter((v) => v.status !== 'terbit').length;
+  const totalCheckin = vouchers.filter((v) => v.status !== 'terbit' && v.status !== 'forfeited').length;
   const totalOmzet = transactions.reduce((acc, tx) => acc + (tx.total_harga || 0), 0);
 
   return (
