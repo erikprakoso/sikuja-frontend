@@ -1,15 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Voucher } from '@/types';
-import { Trophy } from 'lucide-react';
+import { Trophy, ChevronDown } from 'lucide-react';
 
 interface WinnersPanelProps {
   winners: Voucher[];
 }
 
+const PAGE_SIZE = 8;
+
 export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
   const sortedWinners = [...winners].sort(
     (a, b) => new Date(b.won_at ?? 0).getTime() - new Date(a.won_at ?? 0).getTime()
   );
+
+  const visibleWinners = sortedWinners.slice(0, visibleCount);
+  const hasMore = visibleCount < sortedWinners.length;
 
   return (
     <div className="space-y-3">
@@ -25,8 +32,8 @@ export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-1.5 max-h-64 sm:max-h-72 lg:max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 pb-2">
-          {sortedWinners.map((w) => (
+        <div className="flex flex-col gap-1.5 max-h-[45vh] sm:max-h-[50vh] lg:max-h-[calc(100vh-8rem)] overflow-y-auto overscroll-contain pr-1 pb-2 [scrollbar-width:thin] [scrollbar-color:#E70013_transparent]">
+          {visibleWinners.map((w) => (
             <div
               key={w.code}
               className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl border-2 border-slate-200 bg-white"
@@ -40,6 +47,16 @@ export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
               </span>
             </div>
           ))}
+
+          {hasMore && (
+            <button
+              onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+              className="w-full flex items-center justify-center gap-1.5 mt-1 py-2 rounded-xl bg-[#E70013]/10 border border-[#E70013]/30 text-[#E70013] text-[11px] font-black hover:bg-[#E70013]/20 transition-colors cursor-pointer active:scale-95"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+              Muat {Math.min(PAGE_SIZE, sortedWinners.length - visibleCount)} lagi ({sortedWinners.length - visibleCount} tersisa)
+            </button>
+          )}
         </div>
       )}
     </div>
