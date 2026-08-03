@@ -25,7 +25,7 @@ export interface Transaction {
   total_harga: number; // qty * 5000
   customer_name?: string;
   customer_phone?: string;
-  payment_method?: 'cash' | 'qris';
+  payment_method?: 'cash' | 'qris' | 'free';
   created_by?: string;
   created_at: string;
 }

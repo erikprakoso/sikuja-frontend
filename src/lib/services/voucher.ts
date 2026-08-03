@@ -66,7 +66,7 @@ export function createPurchaseTransaction(
   customCodes: string[] = [],
   customerName: string = '',
   customerPhone: string = '',
-  paymentMethod: 'cash' | 'qris' = 'cash'
+  paymentMethod: 'cash' | 'qris' | 'free' = 'cash'
 ): {
   transaction: Transaction;
   vouchers: Voucher[];
@@ -139,7 +139,7 @@ export function createPurchaseTransaction(
     token,
     qty_fisik: qtyFisik,
     qty_non_fisik: qtyNonFisik,
-    total_harga: totalLembar * 5000,
+    total_harga: paymentMethod === 'free' ? 0 : totalLembar * 5000,
     customer_name: customerName.trim() || undefined,
     customer_phone: customerPhone.trim() || undefined,
     payment_method: paymentMethod,

@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const customCodes: string[] = Array.isArray(body.customCodes) ? body.customCodes : [];
     const customerName = (body.customerName || '').toString();
     const customerPhone = (body.customerPhone || '').toString();
-    const paymentMethod: 'cash' | 'qris' = body.paymentMethod === 'qris' ? 'qris' : 'cash';
+    const paymentMethod: 'cash' | 'qris' | 'free' =
+      body.paymentMethod === 'qris' ? 'qris' : body.paymentMethod === 'free' ? 'free' : 'cash';
 
     const totalLembar = qtyFisik + qtyNonFisik;
 
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         token,
         qty_fisik: qtyFisik,
         qty_non_fisik: qtyNonFisik,
-        total_harga: totalLembar * 5000,
+        total_harga: paymentMethod === 'free' ? 0 : totalLembar * 5000,
         customer_name: customerName.trim() || undefined,
         customer_phone: customerPhone.trim() || undefined,
         payment_method: paymentMethod,

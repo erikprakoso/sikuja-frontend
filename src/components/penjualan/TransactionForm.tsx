@@ -7,13 +7,13 @@ import { checkCodeAvailable } from '@/lib/services/voucher';
 interface TransactionFormProps {
   qtyFisik: number;
   qtyNonFisik: number;
-  paymentMethod: 'cash' | 'qris';
+  paymentMethod: 'cash' | 'qris' | 'free';
   isLoading?: boolean;
   conflictCode?: string;
   onClearConflict?: () => void;
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
-  setPaymentMethod: (method: 'cash' | 'qris') => void;
+  setPaymentMethod: (method: 'cash' | 'qris' | 'free') => void;
   onSubmit: (e: React.FormEvent, customCodes?: string[], customerName?: string, customerPhone?: string) => void;
 }
 
@@ -32,7 +32,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   onSubmit,
 }) => {
   const totalLembar = qtyFisik + qtyNonFisik;
-  const totalHarga = totalLembar * 5000;
+  const totalHarga = paymentMethod === 'free' ? 0 : totalLembar * 5000;
   const [qrisDataUrl, setQrisDataUrl] = useState<string>('');
 
   const [codeMode, setCodeMode] = useState<'auto' | 'custom'>('auto');
@@ -423,6 +423,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               <span className="text-sm font-black mt-1">QRIS Digital</span>
               <span className="text-[11px] opacity-80">Scan via QRIS</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setPaymentMethod('free')}
+              disabled={isLoading}
+              className={`p-4 rounded-2xl border text-left flex flex-col gap-1 transition-all cursor-pointer active:scale-98 disabled:opacity-50 sm:col-span-2 ${
+                paymentMethod === 'free'
+                  ? 'bg-[#E70013] border-[#E70013] text-white shadow-md font-bold'
+                  : 'bg-white border-slate-200 text-slate-800 hover:border-[#E70013]/40 font-medium'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xl">🎁</span>
+                {paymentMethod === 'free' && <span className="text-[10px] font-bold uppercase text-white bg-white/20 px-2 py-0.5 rounded-full">Dipilih</span>}
+              </div>
+              <span className="text-sm font-black mt-1">Gratis / Donasi</span>
+              <span className="text-[11px] opacity-80">Kupon untuk donatur — tanpa bayar</span>
+            </button>
           </div>
 
           {/* QRIS Code Display */}
@@ -476,7 +494,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             <div className="flex justify-between pt-2 border-t border-slate-150 font-bold uppercase">
               <span className="text-slate-500">Metode Pembayaran:</span>
               <span className="text-slate-900">
-                {paymentMethod === 'cash' ? 'Tunai / Cash' : 'QRIS Digital'}
+                {paymentMethod === 'cash' ? 'Tunai / Cash' : paymentMethod === 'qris' ? 'QRIS Digital' : 'Gratis / Donasi'}
               </span>
             </div>
           </div>
@@ -506,7 +524,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               ? 'Memproses Transaksi...'
               : paymentMethod === 'cash'
               ? 'Proses Pembayaran Tunai'
-              : 'Proses Pembayaran QRIS'}
+              : paymentMethod === 'qris'
+              ? 'Proses Pembayaran QRIS'
+              : 'Terbitkan Kupon Gratis'}
           </span>
         </button>
       </div>
