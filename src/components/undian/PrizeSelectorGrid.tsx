@@ -37,7 +37,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
         <Star className="w-4 h-4 text-[#E70013]" />
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 xl:grid-cols-8 gap-3 max-h-64 sm:max-h-72 lg:max-h-56 xl:max-h-48 overflow-y-auto pr-1 pb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-10 2xl:grid-cols-12 gap-2 max-h-64 sm:max-h-72 lg:max-h-56 xl:max-h-48 overflow-y-auto pr-1 pb-2">
         {sortedPrizes.map((p) => {
           const isAvailable = p.drawn_count < p.stock;
           const isSelected = isAvailable && p.id === selectedPrizeId;
@@ -46,20 +46,20 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
             return (
               <div
                 key={p.id}
-                className="p-3 rounded-2xl text-left border-2 border-slate-200 bg-slate-100 text-slate-400 relative overflow-hidden"
+                className="p-2.5 rounded-xl text-left border-2 border-slate-200 bg-slate-100 text-slate-400 relative overflow-hidden"
               >
-                <div className="flex justify-between items-start">
-                  <span className="text-[10px] uppercase font-black text-slate-400">
-                    Kategori #{p.order_num}
+                <div className="flex justify-between items-start gap-1">
+                  <span className="text-[9px] uppercase font-black text-slate-400">
+                    #{p.order_num}
                   </span>
-                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-500">
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded border border-slate-300 bg-white text-slate-500">
                     {p.drawn_count}/{p.stock}
                   </span>
                 </div>
-                <p className="text-xs font-black truncate mt-1">{p.name}</p>
+                <p className="text-[11px] font-black truncate mt-1">{p.name}</p>
                 <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-200 text-slate-500">
                   <XCircle className="w-3 h-3" />
-                  Stok Habis
+                  Habis
                 </span>
               </div>
             );
@@ -70,21 +70,21 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               key={p.id}
               disabled={isRolling}
               onClick={() => onSelectPrize(p.id)}
-              className={`p-3 rounded-2xl text-left border-2 transition-all relative overflow-hidden cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
+              className={`p-2.5 rounded-xl text-left border-2 transition-all relative overflow-hidden cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
                 isSelected
                   ? 'bg-[#E70013] border-[#E70013] text-white shadow-lg font-black'
                   : 'bg-white border-[#E70013] text-[#E70013] hover:bg-[#E70013]/10 font-bold'
               }`}
             >
-              <div className="flex justify-between items-start">
-                <span className={`text-[10px] uppercase font-black ${isSelected ? 'text-white' : 'text-[#E70013]'}`}>
-                  Kategori #{p.order_num}
+              <div className="flex justify-between items-start gap-1">
+                <span className={`text-[9px] uppercase font-black ${isSelected ? 'text-white' : 'text-[#E70013]'}`}>
+                  #{p.order_num}
                 </span>
-                <span className={`text-[10px] font-black px-1.5 py-0.5 rounded border ${isSelected ? 'bg-white text-[#E70013] border-white' : 'bg-[#E70013] text-white border-[#E70013]'}`}>
+                <span className={`text-[9px] font-black px-1.5 py-0.5 rounded border ${isSelected ? 'bg-white text-[#E70013] border-white' : 'bg-[#E70013] text-white border-[#E70013]'}`}>
                   {p.drawn_count}/{p.stock}
                 </span>
               </div>
-              <p className="text-xs font-black truncate mt-1">{p.name}</p>
+              <p className="text-[11px] font-black truncate mt-1">{p.name}</p>
             </button>
           );
         })}
