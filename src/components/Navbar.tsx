@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [session, setSession] = useState<UserSession | null>(() => getCurrentSession());
+  const [session, setSession] = useState<UserSession | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isOnline, setIsOnline] = useState<boolean>(
     () => typeof navigator !== 'undefined' ? navigator.onLine : true
@@ -61,6 +61,9 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    const s = getCurrentSession();
+    if (s) setSession(s);
+
     refreshSession().then((s) => {
       if (s) setSession(s);
     });
