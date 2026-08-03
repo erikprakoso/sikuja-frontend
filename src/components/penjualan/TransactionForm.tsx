@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
-import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 import { checkCodeAvailable } from '@/lib/services/voucher';
 
@@ -40,6 +40,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customCodeStatuses, setCustomCodeStatuses] = useState<{ [key: number]: { available: boolean; formatted: string } }>({});
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
@@ -125,8 +126,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowConfirmModal(true);
+  };
+
+  const confirmPayment = () => {
     const activeCustomCodes = activeCodeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
-    onSubmit(e, activeCustomCodes, customerName, customerPhone);
+    setShowConfirmModal(false);
+    onSubmit({ preventDefault: () => {} } as React.FormEvent, activeCustomCodes, customerName, customerPhone);
   };
 
   return (
@@ -510,7 +516,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
         </div>
 
         <button
-          type="submit"
+          type="button"
+          onClick={() => setShowConfirmModal(true)}
           disabled={totalLembar <= 0 || isLoading || hasCustomCodeError || hasServerConflict || (paymentMethod === 'qris' && qrisNotConfigured)}
           className="w-full py-4 px-6 rounded-2xl font-black text-base shadow-md bg-[#E70013] hover:bg-[#E70013]/90 text-white cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2 border border-[#E70013] disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -530,6 +537,78 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           </span>
         </button>
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                {paymentMethod === 'cash' ? (
+                  <Banknote className="w-4 h-4 text-[#E70013]" />
+                ) : paymentMethod === 'qris' ? (
+                  <QrCode className="w-4 h-4 text-[#E70013]" />
+                ) : (
+                  <Gift className="w-4 h-4 text-[#E70013]" />
+                )}
+                Konfirmasi Pembayaran
+              </h3>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-semibold text-slate-700">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Jumlah Voucher</span>
+                <span className="font-bold text-slate-900">{totalLembar} lembar</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Metode</span>
+                <span className="font-bold text-slate-900 uppercase">
+                  {paymentMethod === 'cash'
+                    ? 'Tunai / Cash'
+                    : paymentMethod === 'qris'
+                    ? 'QRIS Digital'
+                    : 'Gratis / Donasi'}
+                </span>
+              </div>
+              <div className="flex justify-between pt-1 border-t border-slate-200">
+                <span className="text-slate-500 font-bold uppercase">Total</span>
+                <span className="font-black text-[#E70013]">
+                  Rp {totalHarga.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm font-bold text-slate-800">
+              {paymentMethod === 'free'
+                ? 'Yakin terbitkan kupon gratis ini untuk donatur?'
+                : paymentMethod === 'qris'
+                ? 'Apakah pembayaran QRIS sudah masuk?'
+                : 'Apakah uang sudah diterima kasir?'}
+            </p>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer active:scale-95"
+              >
+                Belum / Batal
+              </button>
+              <button
+                onClick={confirmPayment}
+                className="flex-1 py-2.5 rounded-xl bg-[#E70013] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer active:scale-95 border border-[#E70013]"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                {paymentMethod === 'free' ? 'Ya, Terbitkan Kupon' : 'Ya, Sudah Diterima'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 };
