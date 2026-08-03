@@ -37,7 +37,7 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
         <Star className="w-4 h-4 text-[#E70013]" />
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-10 2xl:grid-cols-12 gap-2 max-h-64 sm:max-h-72 lg:max-h-56 xl:max-h-48 overflow-y-auto pr-1 pb-2">
+      <div className="grid grid-cols-2 @sm:grid-cols-3 @xl:grid-cols-4 @3xl:grid-cols-5 @5xl:grid-cols-6 gap-2 max-h-64 sm:max-h-72 lg:max-h-[calc(100vh-7rem)] overflow-y-auto pr-1 pb-2">
         {sortedPrizes.map((p) => {
           const isAvailable = p.drawn_count < p.stock;
           const isSelected = isAvailable && p.id === selectedPrizeId;

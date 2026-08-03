@@ -241,7 +241,7 @@ export default function LayarUndianPage() {
 
   return (
     <RequireAuth roles={['mc', 'admin']}>
-    <div className="space-y-8 py-4 max-w-6xl mx-auto">
+    <div className="space-y-8 py-4 max-w-7xl mx-auto">
       {/* Top Controls Bar */}
       <UndianHeader
         eligibleCount={eligibleCount}
@@ -249,20 +249,23 @@ export default function LayarUndianPage() {
         onToggleFullscreen={toggleFullscreen}
       />
 
-      {/* Prize Selector Grid */}
-      <PrizeSelectorGrid
-        prizes={prizes}
-        selectedPrizeId={selectedPrizeId}
-        isRolling={isRolling}
-        onSelectPrize={(id) => {
-          setSelectedPrizeId(id);
-          setCandidateVoucher(null);
-          setIsConfirmedWinner(false);
-        }}
-      />
+      <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <aside className="lg:sticky lg:top-16 @container">
+          {/* Prize Selector Grid */}
+          <PrizeSelectorGrid
+            prizes={prizes}
+            selectedPrizeId={selectedPrizeId}
+            isRolling={isRolling}
+            onSelectPrize={(id) => {
+              setSelectedPrizeId(id);
+              setCandidateVoucher(null);
+              setIsConfirmedWinner(false);
+            }}
+          />
+        </aside>
 
-      {/* BIG STAGE SCREEN (PROYEKTOR MODE) */}
-      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
+        {/* BIG STAGE SCREEN (PROYEKTOR MODE) */}
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
         {/* Selected Prize Badge */}
         {currentPrize && (
           <div className="space-y-2">
@@ -311,6 +314,7 @@ export default function LayarUndianPage() {
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />
+        </div>
       </div>
     </div>
     </RequireAuth>

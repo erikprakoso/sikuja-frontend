@@ -215,25 +215,28 @@ export default function DrawPage() {
 
   return (
     <RequireAuth roles={['mc', 'admin']}>
-    <div className="space-y-8 py-4 max-w-6xl mx-auto">
+    <div className="space-y-8 py-4 max-w-7xl mx-auto">
       <UndianHeader
         eligibleCount={eligibleCount}
         poolSize={lastPoolSize}
         onToggleFullscreen={toggleFullscreen}
       />
 
-      <PrizeSelectorGrid
-        prizes={prizes}
-        selectedPrizeId={selectedPrizeId}
-        isRolling={isRolling}
-        onSelectPrize={(id) => {
-          setSelectedPrizeId(id);
-          setCandidateVoucher(null);
-          setIsConfirmedWinner(false);
-        }}
-      />
+      <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
+        <aside className="lg:sticky lg:top-16 @container">
+          <PrizeSelectorGrid
+            prizes={prizes}
+            selectedPrizeId={selectedPrizeId}
+            isRolling={isRolling}
+            onSelectPrize={(id) => {
+              setSelectedPrizeId(id);
+              setCandidateVoucher(null);
+              setIsConfirmedWinner(false);
+            }}
+          />
+        </aside>
 
-      <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-8 sm:p-14 text-center space-y-8 shadow-xl">
         {currentPrize && (
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
@@ -278,6 +281,7 @@ export default function DrawPage() {
           onConfirmWinner={handleConfirmWinner}
           onForfeitAndRedraw={handleForfeitAndRedraw}
         />
+        </div>
       </div>
     </div>
     </RequireAuth>
