@@ -81,17 +81,28 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     setPrintMsg('');
 
     if (printerStatus !== 'connected') {
-      // Coba sambung ulang senyap di dalam klik: Chrome lebih mengizinkan
-      // gatt.connect() di user gesture daripada di useEffect.
-      setPrintMsg('Menghubungkan printer otomatis...');
+      // Android: coba sambung ulang senyap dulu (tanpa dialog).
       const reconnected = await tryReconnectLastPrinter();
-      if (!reconnected) {
-        setPrintMsg('');
-        setPrinterError('Printer belum terhubung. Tekan Hubungkan (sekali per sesi buka Chrome), lalu Cetak Struk.');
-        return;
+      if (reconnected) {
+        setPrinterName(getPrinterLastConnectedName());
+        setPrinterStatus('connected');
+      } else {
+        // Desktop: wajib dialog pilih perangkat (requestDevice). Sekalian saja
+        // biar cukup sekali klik "Cetak Struk" = pilih printer + cetak.
+        setPrintMsg('Pilih printer thermal di dialog Bluetooth...');
+        try {
+          const name = await connectPrinter();
+          setPrinterName(name);
+          setPrinterStatus('connected');
+        } catch (err) {
+          setPrinterStatus('idle');
+          setPrintMsg('');
+          setPrinterError(
+            `Printer tidak dipilih: ${err instanceof Error ? err.message : 'dialog dibatalkan'}. Coba lagi dengan menekan Cetak Struk.`
+          );
+          return;
+        }
       }
-      setPrinterName(getPrinterLastConnectedName());
-      setPrinterStatus('connected');
     }
 
     try {
