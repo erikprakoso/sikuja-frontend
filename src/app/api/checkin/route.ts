@@ -37,10 +37,12 @@ async function findTransactionByPhone(phone: string): Promise<Transaction | null
 }
 
 async function findTransactionByName(name: string): Promise<Transaction | null> {
+  // customer_name kini berformat concat "Nama - Anak/Suami/Istri - RT - RW",
+  // sehingga nama dicocokkan sebagian (contains) agar tetap ketemu.
   const { data } = await serverSupabase
     .from('transactions')
     .select('*')
-    .ilike('customer_name', name.trim())
+    .ilike('customer_name', `%${name.trim()}%`)
     .limit(1)
     .maybeSingle();
   return (data as Transaction) || null;

@@ -119,11 +119,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 5. Nama pemilik — cocok EKSAK (case-insensitive, tanpa wildcard)
+    // 5. Nama pemilik — cocok SEBAGIAN (case-insensitive) karena customer_name kini
+    //    berformat concat "Nama - Anak/Suami/Istri - RT - RW". No. HP tetap eksak
+    //    (tanpa wildcard) agar token tidak bisa di-enumerasi dari potongan nomor.
     const { data: byName } = await serverSupabase
       .from('transactions')
       .select('token')
-      .ilike('customer_name', q)
+      .ilike('customer_name', `%${q}%`)
       .limit(1)
       .maybeSingle();
     if (byName?.token) {

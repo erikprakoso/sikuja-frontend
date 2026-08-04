@@ -228,8 +228,9 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
   }
 
   if (!tx) {
+    const lowerInput = input.toLowerCase();
     tx = transactions.find(
-      (t) => t.customer_name && t.customer_name.trim().toLowerCase() === input.toLowerCase()
+      (t) => t.customer_name && t.customer_name.trim().toLowerCase().includes(lowerInput)
     );
   }
 

@@ -39,10 +39,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customCodes, setCustomCodes] = useState<string[]>([]);
   const [customCodeStatuses, setCustomCodeStatuses] = useState<{ [key: number]: { available: boolean; formatted: string } }>({});
   const [customerName, setCustomerName] = useState<string>('');
+  const [secondaryName, setSecondaryName] = useState<string>('');
+  const [rt, setRt] = useState<string>('');
+  const [rw, setRw] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [nameError, setNameError] = useState<string>('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const conflictBannerRef = useRef<HTMLDivElement>(null);
   const codeInputRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
@@ -149,13 +154,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customerName.trim()) {
+      setNameError('Nama Pembeli wajib diisi');
+      nameInputRef.current?.focus();
+      return;
+    }
+    setNameError('');
     setShowConfirmModal(true);
+  };
+
+  const buildCustomerName = () => {
+    return [customerName.trim(), secondaryName.trim(), rt.trim(), rw.trim()].filter(Boolean).join(' - ');
   };
 
   const confirmPayment = () => {
     const activeCustomCodes = activeCodeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
     setShowConfirmModal(false);
-    onSubmit({ preventDefault: () => {} } as React.FormEvent, activeCustomCodes, customerName, customerPhone);
+    onSubmit({ preventDefault: () => {} } as React.FormEvent, activeCustomCodes, buildCustomerName(), customerPhone);
   };
 
   return (
@@ -394,22 +409,78 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           )}
         </div>
 
-        {/* 3. Identitas Pemilik Kupon (Opsional) */}
+        {/* 3. Identitas Pemilik Kupon */}
         <div className="space-y-3 p-5 rounded-2xl border border-slate-200 bg-white">
           <label className="text-xs font-bold text-slate-900 block">
-            3. Identitas Pemilik Kupon (Opsional):
+            3. Identitas Pemilik Kupon:
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-[11px] text-slate-500 font-semibold mb-1 block">Nama Pembeli / Pemilik:</label>
+            <div className="sm:col-span-2">
+              <label className="text-[11px] text-slate-500 font-semibold mb-1 block">
+                Nama Pembeli / Pemilik: <span className="text-[#E70013]">*</span>
+              </label>
               <input
+                ref={nameInputRef}
                 type="text"
                 placeholder="Contoh: Pak Budi / Bu Ani"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  if (nameError) setNameError('');
+                }}
+                disabled={isLoading}
+                aria-invalid={!!nameError}
+                className={`w-full px-3.5 py-2 bg-white border rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 ${
+                  nameError ? 'border-[#E70013] bg-red-50' : 'border-slate-300'
+                }`}
+              />
+              {nameError && (
+                <p className="mt-1 text-[10px] font-bold text-[#E70013] flex items-center gap-1 pl-1 animate-fade-in">
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                  {nameError}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-500 font-semibold mb-1 block">
+                Nama Anak / Suami / Istri:
+              </label>
+              <input
+                type="text"
+                placeholder="Contoh: Diandra"
+                value={secondaryName}
+                onChange={(e) => setSecondaryName(e.target.value)}
                 disabled={isLoading}
                 className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] text-slate-500 font-semibold mb-1 block">RT:</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
+                  placeholder="01"
+                  value={rt}
+                  onChange={(e) => setRt(e.target.value.replace(/\D/g, ''))}
+                  disabled={isLoading}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-500 font-semibold mb-1 block">RW:</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={3}
+                  placeholder="05"
+                  value={rw}
+                  onChange={(e) => setRw(e.target.value.replace(/\D/g, ''))}
+                  disabled={isLoading}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
+                />
+              </div>
             </div>
             <div>
               <label className="text-[11px] text-slate-500 font-semibold mb-1 block">No. WhatsApp / HP:</label>
@@ -424,7 +495,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           <p className="text-[10px] text-slate-500 font-medium">
-            🔒 Identitas ini memudahkan pencarian Kupon jika pembeli lupa token transaksi.
+            🔒 Nama pemilik wajib diisi. Isi identitas lain agar kupon mudah dibedakan saat pencarian jika lupa token.
           </p>
         </div>
       </div>
@@ -559,7 +630,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
         <button
           type="button"
-          onClick={() => setShowConfirmModal(true)}
+          onClick={handleSubmitForm}
           disabled={totalLembar <= 0 || isLoading || hasCustomCodeError || hasServerConflict || (paymentMethod === 'qris' && qrisNotConfigured)}
           className="w-full py-4 px-6 rounded-2xl font-black text-base shadow-md bg-[#E70013] hover:bg-[#E70013]/90 text-white cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2 border border-[#E70013] disabled:opacity-50 disabled:cursor-not-allowed"
         >
