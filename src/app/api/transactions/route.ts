@@ -9,6 +9,42 @@ import { requireAuth } from '@/lib/server-auth';
 const MAX_VOUCHERS_PER_SALE = 200;
 const MAX_CODE_GEN_ATTEMPTS = 5;
 
+/**
+ * GET /api/transactions?q=nama — Cari riwayat transaksi pembeli berdasarkan
+ * potongan nama (customer_name berformat concat "Nama - Anak - RT - RW").
+ * Dipakai form kasir untuk mendeteksi nama kembar & menjaga konsistensi identitas.
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['penjual', 'admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    const q = (request.nextUrl.searchParams.get('q') || '').trim();
+    if (!q) {
+      return NextResponse.json({ error: 'Parameter q (nama) wajib diisi' }, { status: 400 });
+    }
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json({ success: true, transactions: [] });
+    }
+
+    const { data, error } = await serverSupabase
+      .from('transactions')
+      .select('id, customer_name, customer_phone, created_at, qty_fisik, qty_non_fisik, total_harga')
+      .ilike('customer_name', `%${q}%`)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, transactions: data || [] });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /transactions GET error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['penjual', 'admin']);

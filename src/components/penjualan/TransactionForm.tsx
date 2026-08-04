@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X, Users, Search } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 import { checkCodeAvailable } from '@/lib/services/voucher';
+import { Transaction } from '@/types';
 
 interface TransactionFormProps {
   qtyFisik: number;
@@ -44,6 +45,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [rw, setRw] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [nameError, setNameError] = useState<string>('');
+  const [historyQuery, setHistoryQuery] = useState<string>('');
+  const [historyResults, setHistoryResults] = useState<Transaction[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const conflictBannerRef = useRef<HTMLDivElement>(null);
   const codeInputRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -133,6 +138,40 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       conflictBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [conflictCode]);
+
+  useEffect(() => {
+    const q = historyQuery.trim();
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      if (q.length < 3) {
+        setHistoryResults([]);
+        setHistoryError('');
+        setHistoryLoading(false);
+        return;
+      }
+      setHistoryLoading(true);
+      setHistoryError('');
+      try {
+        const res = await fetch(`/api/transactions?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+        const data = await res.json();
+        if (!res.ok) {
+          setHistoryError(data.error || 'Gagal memuat riwayat.');
+        } else {
+          setHistoryResults(data.transactions || []);
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setHistoryError('Gagal terhubung ke server.');
+        }
+      } finally {
+        if (!controller.signal.aborted) setHistoryLoading(false);
+      }
+    }, 400);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [historyQuery]);
 
   const hasCustomCodeError = Object.values(customCodeStatuses).some((s) => s.formatted && !s.available);
   const hasServerConflict = conflictCode !== '';
@@ -414,6 +453,63 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <label className="text-xs font-bold text-slate-900 block">
             3. Identitas Pemilik Kupon:
           </label>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <label className="text-[11px] text-slate-500 font-semibold mb-1 flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              Cek Riwayat Nama (deteksi nama kembar):
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Ketik minimal 3 huruf nama..."
+                value={historyQuery}
+                onChange={(e) => setHistoryQuery(e.target.value)}
+                disabled={isLoading}
+                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
+              />
+              <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
+              {historyLoading && (
+                <Loader2 className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#E70013] animate-spin" />
+              )}
+            </div>
+
+            {historyError && (
+              <p className="mt-1.5 text-[10px] font-bold text-[#E70013] flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                {historyError}
+              </p>
+            )}
+
+            {!historyLoading && historyQuery.trim().length >= 3 && historyResults.length === 0 && !historyError && (
+              <p className="mt-1.5 text-[10px] font-medium text-slate-500">
+                Tidak ada transaksi dengan nama &ldquo;{historyQuery.trim()}&rdquo;.
+              </p>
+            )}
+
+            {historyResults.length > 0 && (
+              <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                {historyResults.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold text-slate-900 truncate">{tx.customer_name || 'Tanpa nama'}</p>
+                      <p className="text-[10px] text-slate-500 font-medium">
+                        {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        {tx.customer_phone ? ` · ${tx.customer_phone}` : ''}
+                      </p>
+                    </div>
+                    <span className="flex-shrink-0 text-[10px] font-black text-[#E70013]">
+                      {(tx.qty_fisik || 0) + (tx.qty_non_fisik || 0)} lembar
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="text-[11px] text-slate-500 font-semibold mb-1 block">
