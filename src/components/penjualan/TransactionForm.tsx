@@ -176,11 +176,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
       {/* Left Input Options */}
       <div className="space-y-6 bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm">
-        <h2 className="text-lg font-black text-slate-900">1. Pilih Jenis & Jumlah Voucher</h2>
+        <h2 className="text-lg font-black text-slate-900">1. Pilih Jenis & Jumlah Kupon</h2>
 
         {/* 1. Select Voucher Type */}
         <div className="space-y-2">
-          <label className="text-xs font-semibold text-slate-600">Jenis Voucher:</label>
+          <label className="text-xs font-semibold text-slate-600">Jenis Kupon:</label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
@@ -196,7 +196,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <span className="text-xl">📜</span>
                 {activeType === 'fisik' && <span className="text-[10px] font-bold uppercase text-white bg-white/20 px-2 py-0.5 rounded-full">Dipilih</span>}
               </div>
-              <span className="text-sm font-black mt-1">Voucher Fisik</span>
+              <span className="text-sm font-black mt-1">Kupon Fisik</span>
               <span className="text-[11px] opacity-80">Kupon cetak langsung</span>
             </button>
 
@@ -214,7 +214,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                 <span className="text-xl">📱</span>
                 {activeType === 'non_fisik' && <span className="text-[10px] font-bold uppercase text-white bg-white/20 px-2 py-0.5 rounded-full">Dipilih</span>}
               </div>
-              <span className="text-sm font-black mt-1">E-Voucher Digital</span>
+              <span className="text-sm font-black mt-1">Kupon Digital</span>
               <span className="text-[11px] opacity-80">Kupon tautan digital</span>
             </button>
           </div>
@@ -225,7 +225,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Jumlah {activeType === 'fisik' ? 'Voucher Fisik' : 'E-Voucher Digital'}
+                Jumlah {activeType === 'fisik' ? 'Kupon Fisik' : 'Kupon Digital'}
               </h3>
               <p className="text-[11px] font-semibold text-slate-500">Harga: Rp5.000 / lembar</p>
             </div>
@@ -424,7 +424,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
           <p className="text-[10px] text-slate-500 font-medium">
-            🔒 Identitas ini memudahkan pencarian E-Voucher jika pembeli lupa token transaksi.
+            🔒 Identitas ini memudahkan pencarian Kupon jika pembeli lupa token transaksi.
           </p>
         </div>
       </div>
@@ -528,9 +528,9 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           {/* Summary Box */}
           <div className="space-y-2 border-y border-slate-200 py-3 text-xs font-semibold text-slate-700">
             <div className="flex justify-between">
-              <span className="text-slate-500">Jumlah Voucher:</span>
+              <span className="text-slate-500">Jumlah Kupon:</span>
               <span className="font-bold text-slate-900">
-                {activeType === 'fisik' ? `Voucher Fisik (${qtyFisik} Lembar)` : `E-Voucher Digital (${qtyNonFisik} Lembar)`}
+                {activeType === 'fisik' ? `Kupon Fisik (${qtyFisik} Lembar)` : `Kupon Digital (${qtyNonFisik} Lembar)`}
               </span>
             </div>
             <div className="flex justify-between pt-1">
@@ -604,7 +604,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2 text-xs font-semibold text-slate-700">
               <div className="flex justify-between">
-                <span className="text-slate-500">Jumlah Voucher</span>
+                <span className="text-slate-500">Jumlah Kupon</span>
                 <span className="font-bold text-slate-900">{totalLembar} lembar</span>
               </div>
               <div className="flex justify-between">
