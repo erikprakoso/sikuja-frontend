@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X, Users, Search } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X, Users, Search, ArrowRight } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 import { checkCodeAvailable } from '@/lib/services/voucher';
 import { Transaction } from '@/types';
@@ -714,8 +714,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-[#E70013] text-white text-center space-y-0.5 shadow-md">
-            <span className="text-[11px] uppercase font-bold tracking-wider opacity-90">
+          <div className="p-4 rounded-2xl bg-slate-900 text-white text-center space-y-0.5 shadow-md">
+            <span className="text-[11px] uppercase font-bold tracking-wider opacity-70">
               Total Pembayaran
             </span>
             <p className="text-3xl font-black font-mono">
@@ -728,7 +728,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
           type="button"
           onClick={handleSubmitForm}
           disabled={totalLembar <= 0 || isLoading || hasCustomCodeError || hasServerConflict || (paymentMethod === 'qris' && qrisNotConfigured)}
-          className="w-full py-4 px-6 rounded-2xl font-black text-base shadow-md bg-[#E70013] hover:bg-[#E70013]/90 text-white cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2 border border-[#E70013] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-4 px-6 rounded-2xl font-black text-base shadow-lg shadow-[#E70013]/30 bg-gradient-to-b from-[#FF4D5E] to-[#E70013] hover:from-[#E70013] hover:to-[#C20010] hover:shadow-xl hover:shadow-[#E70013]/40 active:scale-[0.98] text-white cursor-pointer transition-all flex items-center justify-center gap-2 border border-[#E70013] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin text-white flex-shrink-0" />
@@ -744,6 +744,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               ? 'Proses Pembayaran QRIS'
               : 'Terbitkan Kupon Gratis'}
           </span>
+          {!isLoading && <ArrowRight className="w-4 h-4 flex-shrink-0" />}
         </button>
       </div>
 
