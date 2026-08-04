@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
 import { playSuccessFeedback, playErrorFeedback } from '@/lib/services/feedback';
 import { getStoredVouchers, getOfflineQueue, saveOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
@@ -212,7 +212,12 @@ export default function CheckinPosPage() {
         scannerRef.current = new Html5Qrcode(scannerContainerId);
       }
 
-      const qrConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+      const qrConfig = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+        experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+      };
       const onScanSuccess = (decodedText: string) => {
         // Mode kontinu: kamera tetap menyala, cukup guard anti-trigger ganda.
         const now = Date.now();

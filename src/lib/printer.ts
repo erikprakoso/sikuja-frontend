@@ -113,25 +113,33 @@ function emitLineRow(
  *    akibatnya URL tercetak sebagai teks dan QR yang terbentuk beda struktur.
  *  - Raster memakai library `qrcode` yang SAMA dengan tampilan di app, sehingga
  *    QR di kertas terjamin identik dengan QR di layar (matriks modulnya sama).
+ *
+ * Ukuran & quiet zone:
+ *  - QR_MODULE_DOTS = 6 -> ~0,75mm per modul di printer 203dpi. Terlalu kecil
+ *    (4 dot) membuat decoder ZXing gagal mengunci QR hasil cetak thermal.
+ *  - Quiet zone (ruang putih ~4 modul di sekeliling) WAJIB ada agar scan sukses.
  */
-const QR_MODULE_DOTS = 4;
+const QR_MODULE_DOTS = 6;
+const QR_QUIET_ZONE_DOTS = 4 * QR_MODULE_DOTS;
 
 function buildQrRasterBytes(qrText: string): number[] {
   const qr = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
   const size = qr.modules.size;
   const data = qr.modules.data;
 
-  const w = size * QR_MODULE_DOTS;
-  const h = size * QR_MODULE_DOTS;
+  const w = size * QR_MODULE_DOTS + QR_QUIET_ZONE_DOTS * 2;
+  const h = size * QR_MODULE_DOTS + QR_QUIET_ZONE_DOTS * 2;
   const xBytes = Math.ceil(w / 8);
   const pixels: number[] = [];
 
   for (let y = 0; y < h; y++) {
     let byte = 0;
     let bit = 0;
-    const srcY = Math.floor(y / QR_MODULE_DOTS);
+    const inQuietZoneY = y < QR_QUIET_ZONE_DOTS || y >= h - QR_QUIET_ZONE_DOTS;
+    const srcY = Math.floor((y - QR_QUIET_ZONE_DOTS) / QR_MODULE_DOTS);
     for (let x = 0; x < w; x++) {
-      const on = data[srcY * size + Math.floor(x / QR_MODULE_DOTS)] === 1;
+      const inQuietZoneX = x < QR_QUIET_ZONE_DOTS || x >= w - QR_QUIET_ZONE_DOTS;
+      const on = !inQuietZoneX && !inQuietZoneY && data[srcY * size + Math.floor((x - QR_QUIET_ZONE_DOTS) / QR_MODULE_DOTS)] === 1;
       if (on) byte |= 0x80 >> bit;
       bit++;
       if (bit === 8) {
@@ -256,12 +264,13 @@ export async function buildReceiptBytes(
         emitLineRow(out, row.left, row.right ?? '', { bold: row.bold, double: row.double });
         break;
       case 'qr':
+        out.push(...ESC.LF); // quiet zone atas (teks tidak menempel QR)
         try {
           out.push(...buildQrRasterBytes(row.text));
         } catch {
           // QR gagal dibuat — lewati, struk tetap dicetak.
         }
-        out.push(...ESC.LF);
+        out.push(...ESC.LF, ...ESC.LF); // quiet zone bawah
         break;
     }
   }
@@ -381,7 +390,7 @@ async function writeChunked(data: Uint8Array<ArrayBuffer>): Promise<void> {
     } catch {
       await writeChar.writeValue(chunk);
     }
-    await new Promise((r) => setTimeout(r, 30));
+    await new Promise((r) => setTimeout(r, 10));
   }
 }
 
