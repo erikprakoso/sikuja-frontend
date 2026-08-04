@@ -1,4 +1,3 @@
-import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
 import { buildReceiptModel, RECEIPT_LINE_WIDTH } from '@/lib/receipt';
 
@@ -107,58 +106,38 @@ function emitLineRow(
 }
 
 /**
- * QR check-in dicetak sebagai raster bitmap (GS v 0) — BUKAN perintah QR
- * ESC/POS (GS ( k). Alasan:
- *  - Banyak printer thermal murah tidak mendukung / salah parse GS ( k,
- *    akibatnya URL tercetak sebagai teks dan QR yang terbentuk beda struktur.
- *  - Raster memakai library `qrcode` yang SAMA dengan tampilan di app, sehingga
- *    QR di kertas terjamin identik dengan QR di layar (matriks modulnya sama).
+ * QR check-in dicetak dengan perintah QR native ESC/POS `GS ( k`.
+ * Alasan memakai GS ( k BUKAN raster bitmap (GS v 0):
+ *  - Raster QR besar membuat print head thermal kepanasan -> hasil cetak ada
+ *    "bayang-bayang" (modul putih keabu-abuan) dan "garis putus" (streak),
+ *    sehingga scanner tidak bisa membaca. GS ( k dirender INTERNAL oleh printer
+ *    (data kecil, cepat) -> QR tajam, tanpa ghosting.
+ *  - Versi lama GS ( k gagal karena format store-data cacat: byte jumlah data
+ *    (`30`/n) tidak dikirim dan pL salah, akibatnya URL tercetak sebagai teks
+ *    dan QR terbentuk acak. Di bawah ini format yang sudah dibenahi.
  *
- * Ukuran & quiet zone:
- *  - QR_MODULE_DOTS = 6 -> ~0,75mm per modul di printer 203dpi. Terlalu kecil
- *    (4 dot) membuat decoder ZXing gagal mengunci QR hasil cetak thermal.
- *  - Quiet zone (ruang putih ~4 modul di sekeliling) WAJIB ada agar scan sukses.
+ * Format (umum dipakai, node-thermal-printer):
+ *  GS ( k 04 00 31 41 32 00            -> pilih model 2
+ *  GS ( k 03 00 31 43 08               -> ukuran modul 8 (~1mm di 203dpi)
+ *  GS ( k 03 00 31 45 31               -> ECC 'M' (49)
+ *  GS ( k (k+3) 00 31 50 30 <data>     -> simpan data (pL = k+3)
+ *  GS ( k 03 00 31 51 30               -> cetak
  */
-const QR_MODULE_DOTS = 6;
-const QR_QUIET_ZONE_DOTS = 4 * QR_MODULE_DOTS;
+const QR_MODULE_SIZE = 8;
+const QR_ERROR_CORRECTION = 0x31; // 'M'
 
-function buildQrRasterBytes(qrText: string): number[] {
-  const qr = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
-  const size = qr.modules.size;
-  const data = qr.modules.data;
+function emitQr(out: number[], qrText: string): void {
+  const data = encode(qrText);
+  const k = data.length;
 
-  const w = size * QR_MODULE_DOTS + QR_QUIET_ZONE_DOTS * 2;
-  const h = size * QR_MODULE_DOTS + QR_QUIET_ZONE_DOTS * 2;
-  const xBytes = Math.ceil(w / 8);
-  const pixels: number[] = [];
+  out.push(0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00); // model 2
+  out.push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, QR_MODULE_SIZE); // module size
+  out.push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, QR_ERROR_CORRECTION); // ECC
 
-  for (let y = 0; y < h; y++) {
-    let byte = 0;
-    let bit = 0;
-    const inQuietZoneY = y < QR_QUIET_ZONE_DOTS || y >= h - QR_QUIET_ZONE_DOTS;
-    const srcY = Math.floor((y - QR_QUIET_ZONE_DOTS) / QR_MODULE_DOTS);
-    for (let x = 0; x < w; x++) {
-      const inQuietZoneX = x < QR_QUIET_ZONE_DOTS || x >= w - QR_QUIET_ZONE_DOTS;
-      const on = !inQuietZoneX && !inQuietZoneY && data[srcY * size + Math.floor((x - QR_QUIET_ZONE_DOTS) / QR_MODULE_DOTS)] === 1;
-      if (on) byte |= 0x80 >> bit;
-      bit++;
-      if (bit === 8) {
-        pixels.push(byte);
-        byte = 0;
-        bit = 0;
-      }
-    }
-    if (bit > 0) pixels.push(byte);
-  }
-
-  return [
-    0x1d, 0x76, 0x30, 0x00, // GS v 0 (raster bit image, normal)
-    xBytes & 0xff,
-    (xBytes >> 8) & 0xff,
-    h & 0xff,
-    (h >> 8) & 0xff,
-    ...pixels,
-  ];
+  const storeLen = k + 3;
+  out.push(0x1d, 0x28, 0x6b, storeLen & 0xff, (storeLen >> 8) & 0xff, 0x31, 0x50, 0x30, ...data); // store
+  out.push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30); // print
+  out.push(...ESC.LF);
 }
 
 /**
@@ -265,12 +244,10 @@ export async function buildReceiptBytes(
         break;
       case 'qr':
         out.push(...ESC.LF); // quiet zone atas (teks tidak menempel QR)
-        try {
-          out.push(...buildQrRasterBytes(row.text));
-        } catch {
-          // QR gagal dibuat — lewati, struk tetap dicetak.
-        }
-        out.push(...ESC.LF, ...ESC.LF); // quiet zone bawah
+        out.push(...ESC.CENTER); // beberapa printer hanya tengahkan QR dgn ESC a 1
+        emitQr(out, row.text);
+        out.push(...ESC.LEFT);
+        out.push(...ESC.LF); // quiet zone bawah
         break;
     }
   }
