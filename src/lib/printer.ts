@@ -35,6 +35,17 @@ export function isPrinterConnected(): boolean {
   return !!writeChar;
 }
 
+/**
+ * Apakah browser mendukung sambung-ulang otomatis (tanpa dialog) ke printer
+ * yang pernah terhubung? Hanya Chrome Android/ChromeOS lewat getDevices().
+ * Di Chrome desktop getDevices() tidak ada -> WAJIB klik + dialog tiap sesi.
+ */
+export function canAutoReconnect(): boolean {
+  if (typeof navigator === 'undefined' || !navigator.bluetooth) return false;
+  const bt = navigator.bluetooth as typeof navigator.bluetooth & { getDevices?: unknown };
+  return typeof bt.getDevices === 'function';
+}
+
 export function getPrinterLastConnectedName(): string | null {
   if (typeof window === 'undefined') return null;
   return window.localStorage.getItem(PRINTER_NAME_KEY);
@@ -328,6 +339,9 @@ export async function connectPrinter(): Promise<string> {
 
 export async function tryReconnectLastPrinter(): Promise<boolean> {
   if (!isBluetoothSupported()) return false;
+  // Masih nyambung dari sesi sebelumnya -> tidak perlu apa-apa.
+  if (isPrinterConnected()) return true;
+
   const bt = navigator.bluetooth as typeof navigator.bluetooth & {
     getDevices?: () => Promise<BluetoothDevice[]>;
   };

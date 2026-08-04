@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Transaction, Voucher } from '@/types';
 import {
   isBluetoothSupported,
+  canAutoReconnect,
+  isPrinterConnected,
   connectPrinter,
   tryReconnectLastPrinter,
   onPrinterDisconnect,
@@ -25,7 +27,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   onClose,
 }) => {
   const [printerStatus, setPrinterStatus] = useState<PrinterStatus>(() =>
-    typeof window !== 'undefined' && isBluetoothSupported() ? 'idle' : 'unsupported'
+    typeof window !== 'undefined' && isBluetoothSupported()
+      ? isPrinterConnected()
+        ? 'connected'
+        : 'idle'
+      : 'unsupported'
   );
   const [printerName, setPrinterName] = useState<string | null>(() =>
     typeof window !== 'undefined' ? getPrinterLastConnectedName() : null
@@ -40,6 +46,9 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       setPrinterStatus('idle');
       setPrintMsg('');
     });
+
+    // Sudah connected ditangani di inisialisasi state awal.
+    if (printerStatus === 'connected') return;
 
     void tryReconnectLastPrinter().then((ok) => {
       if (ok) {
@@ -70,10 +79,21 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   const handlePrint = async () => {
     setPrinterError('');
     setPrintMsg('');
+
     if (printerStatus !== 'connected') {
-      setPrinterError('Hubungkan printer thermal terlebih dahulu agar struk langsung tercetak.');
-      return;
+      // Coba sambung ulang senyap di dalam klik: Chrome lebih mengizinkan
+      // gatt.connect() di user gesture daripada di useEffect.
+      setPrintMsg('Menghubungkan printer otomatis...');
+      const reconnected = await tryReconnectLastPrinter();
+      if (!reconnected) {
+        setPrintMsg('');
+        setPrinterError('Printer belum terhubung. Tekan Hubungkan (sekali per sesi buka Chrome), lalu Cetak Struk.');
+        return;
+      }
+      setPrinterName(getPrinterLastConnectedName());
+      setPrinterStatus('connected');
     }
+
     try {
       setPrintMsg('Mencetak struk...');
       await printThermalReceipt(transaction, vouchers);
@@ -113,7 +133,9 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
       case 'connected':
         return 'Cetak Struk akan langsung dikirim ke printer, tanpa preview.';
       default:
-        return 'Hubungkan sekali, lalu Cetak Struk langsung ke printer.';
+        return canAutoReconnect()
+          ? 'Sambungan mati saat halaman dimuat ulang — coba sambung otomatis lalu cetak.'
+          : 'Chrome desktop tidak bisa sambung otomatis. Hubungkan sekali per sesi, lalu cetak.';
     }
   };
 
