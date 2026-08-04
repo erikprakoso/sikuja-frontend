@@ -1,3 +1,4 @@
+import QRCode from 'qrcode';
 import { Transaction, Voucher } from '@/types';
 import { buildReceiptModel, RECEIPT_LINE_WIDTH } from '@/lib/receipt';
 
@@ -105,15 +106,51 @@ function emitLineRow(
   emitLine(out, left + ' '.repeat(pad) + right, { align: 'left', bold: opts.bold, double: opts.double });
 }
 
-function emitQr(out: number[], qrText: string): void {
-  out.push(...[0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00]); // model 2
-  out.push(...[0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, 0x06]); // module size 6
-  out.push(...[0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x48]); // ECC level H
-  const data = encode(qrText);
-  const len = data.length + 2;
-  out.push(0x1d, 0x28, 0x6b, len & 0xff, (len >> 8) & 0xff, 0x31, 0x50, ...data); // store
-  out.push(...[0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30]); // print
-  out.push(...ESC.LF);
+/**
+ * QR check-in dicetak sebagai raster bitmap (GS v 0) — BUKAN perintah QR
+ * ESC/POS (GS ( k). Alasan:
+ *  - Banyak printer thermal murah tidak mendukung / salah parse GS ( k,
+ *    akibatnya URL tercetak sebagai teks dan QR yang terbentuk beda struktur.
+ *  - Raster memakai library `qrcode` yang SAMA dengan tampilan di app, sehingga
+ *    QR di kertas terjamin identik dengan QR di layar (matriks modulnya sama).
+ */
+const QR_MODULE_DOTS = 4;
+
+function buildQrRasterBytes(qrText: string): number[] {
+  const qr = QRCode.create(qrText, { errorCorrectionLevel: 'M' });
+  const size = qr.modules.size;
+  const data = qr.modules.data;
+
+  const w = size * QR_MODULE_DOTS;
+  const h = size * QR_MODULE_DOTS;
+  const xBytes = Math.ceil(w / 8);
+  const pixels: number[] = [];
+
+  for (let y = 0; y < h; y++) {
+    let byte = 0;
+    let bit = 0;
+    const srcY = Math.floor(y / QR_MODULE_DOTS);
+    for (let x = 0; x < w; x++) {
+      const on = data[srcY * size + Math.floor(x / QR_MODULE_DOTS)] === 1;
+      if (on) byte |= 0x80 >> bit;
+      bit++;
+      if (bit === 8) {
+        pixels.push(byte);
+        byte = 0;
+        bit = 0;
+      }
+    }
+    if (bit > 0) pixels.push(byte);
+  }
+
+  return [
+    0x1d, 0x76, 0x30, 0x00, // GS v 0 (raster bit image, normal)
+    xBytes & 0xff,
+    (xBytes >> 8) & 0xff,
+    h & 0xff,
+    (h >> 8) & 0xff,
+    ...pixels,
+  ];
 }
 
 /**
@@ -219,7 +256,12 @@ export async function buildReceiptBytes(
         emitLineRow(out, row.left, row.right ?? '', { bold: row.bold, double: row.double });
         break;
       case 'qr':
-        emitQr(out, row.text);
+        try {
+          out.push(...buildQrRasterBytes(row.text));
+        } catch {
+          // QR gagal dibuat — lewati, struk tetap dicetak.
+        }
+        out.push(...ESC.LF);
         break;
     }
   }
