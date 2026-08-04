@@ -119,11 +119,14 @@ export async function POST(request: NextRequest) {
 
           // Kupon yang digugurkan dianggap HANGUS: ubah status voucher sehingga
           // tidak lagi masuk pool undian mana pun (pool hanya mengambil status 'checkin').
-          await serverSupabase
+          const { error: forfeitErr } = await serverSupabase
             .from('vouchers')
             .update({ status: 'forfeited' })
             .eq('code', excludeCode)
             .eq('status', 'checkin');
+          if (forfeitErr) {
+            console.error('API /draw: gagal menandai voucher gugur:', forfeitErr.message);
+          }
 
           pool = eligibleVouchers.filter((v) => v.transaction_id !== forfeitedVoucher.transaction_id);
         }

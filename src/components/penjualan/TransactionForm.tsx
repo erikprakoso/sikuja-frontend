@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
@@ -41,6 +41,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const conflictBannerRef = useRef<HTMLDivElement>(null);
+  const codeInputRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
@@ -121,8 +123,29 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
   }, [paymentMethod, totalHarga, qrisPayload]);
 
+  useEffect(() => {
+    if (conflictCode) {
+      conflictBannerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [conflictCode]);
+
   const hasCustomCodeError = Object.values(customCodeStatuses).some((s) => s.formatted && !s.available);
   const hasServerConflict = conflictCode !== '';
+
+  useEffect(() => {
+    if (hasCustomCodeError && !conflictCode) {
+      const firstBadIdx = Object.keys(customCodeStatuses)
+        .filter((idx) => {
+          const s = customCodeStatuses[Number(idx)];
+          return s.formatted && !s.available;
+        })
+        .map(Number)
+        .sort((a, b) => a - b)[0];
+      if (firstBadIdx !== undefined) {
+        codeInputRefs.current.get(firstBadIdx)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [hasCustomCodeError, conflictCode, customCodeStatuses]);
 
   const handleSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +160,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
 
   return (
     <form onSubmit={handleSubmitForm} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {conflictCode && (
+        <div
+          ref={conflictBannerRef}
+          className="lg:col-span-2 flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#E70013] text-white text-sm font-black shadow-lg border-2 border-[#E70013] animate-fade-in"
+          role="alert"
+        >
+          <AlertCircle className="w-5 h-5 flex-shrink-0 animate-pulse" />
+          <span>
+            Kode <span className="font-mono tracking-widest">{conflictCode}</span> ditolak server karena sudah terbit
+            oleh kasir lain. Silakan ganti dengan angka lain.
+          </span>
+        </div>
+      )}
+
       {/* Left Input Options */}
       <div className="space-y-6 bg-white border border-[#E70013]/20 rounded-3xl p-6 sm:p-8 shadow-sm">
         <h2 className="text-lg font-black text-slate-900">1. Pilih Jenis & Jumlah Voucher</h2>
@@ -296,58 +333,63 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   const isFilled = val.length > 0;
 
                   return (
-                    <div key={idx} className="relative flex items-center">
-                      <span className="absolute left-3 text-[10px] font-mono font-bold text-slate-400">
-                        #{idx + 1}
-                      </span>
-                      <input
-                        type="text"
-                        maxLength={5}
-                        placeholder="Nomor Hoki"
-                        value={val}
-                        onChange={(e) => handleCustomCodeInputChange(idx, e.target.value)}
-                        disabled={isLoading}
-                        className={`w-full pl-9 pr-8 py-2 bg-white border rounded-xl font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 transition-all ${
-                          isFilled
-                            ? isAvailable
-                              ? 'border-[#E70013] bg-white'
-                              : 'border-[#E70013] bg-[#E70013] text-white'
-                            : 'border-slate-200'
-                        }`}
-                      />
-                      {isFilled && (
-                        <div className="absolute right-2.5">
-                          {isConflictSlot ? (
-                            <span title="🔴 Ditolak server (sudah terbit oleh kasir lain)">
-                              <AlertCircle className="w-4 h-4 text-white animate-pulse" />
-                            </span>
-                          ) : isAvailable ? (
-                            <span title="🟢 Kode Tersedia">
-                              <CheckCircle className="w-4 h-4 text-emerald-600" />
-                            </span>
-                          ) : (
-                            <span title="🔴 Kode Sudah Terbit">
-                              <AlertCircle className="w-4 h-4 text-white" />
-                            </span>
-                          )}
-                        </div>
+                    <div
+                      key={idx}
+                      ref={(el) => {
+                        if (el) codeInputRefs.current.set(idx, el);
+                        else codeInputRefs.current.delete(idx);
+                      }}
+                      className="relative"
+                    >
+                      <div className="relative flex items-center">
+                        <span className="absolute left-3 text-[10px] font-mono font-bold text-slate-400">
+                          #{idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={5}
+                          placeholder="Nomor Hoki"
+                          value={val}
+                          onChange={(e) => handleCustomCodeInputChange(idx, e.target.value)}
+                          disabled={isLoading}
+                          className={`w-full pl-9 pr-8 py-2 bg-white border rounded-xl font-mono text-xs text-slate-900 font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 transition-all ${
+                            isFilled
+                              ? isAvailable
+                                ? 'border-[#E70013] bg-white'
+                                : 'border-[#E70013] bg-red-50'
+                              : 'border-slate-200'
+                          }`}
+                        />
+                        {isFilled && (
+                          <div className="absolute right-2.5">
+                            {isConflictSlot ? (
+                              <span title="🔴 Ditolak server (sudah terbit oleh kasir lain)">
+                                <AlertCircle className="w-4 h-4 text-[#E70013] animate-pulse" />
+                              </span>
+                            ) : isAvailable ? (
+                              <span title="🟢 Kode Tersedia">
+                                <CheckCircle className="w-4 h-4 text-emerald-600" />
+                              </span>
+                            ) : (
+                              <span title="🔴 Kode Sudah Terbit">
+                                <AlertCircle className="w-4 h-4 text-[#E70013]" />
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {isFilled && !isAvailable && (
+                        <p className="mt-1 text-[10px] font-bold text-[#E70013] flex items-center gap-1 pl-3 animate-fade-in">
+                          <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                          {isConflictSlot
+                            ? 'Ditolak server — sudah terbit kasir lain'
+                            : 'Sudah pernah terbit'}
+                        </p>
                       )}
                     </div>
                   );
                 })}
               </div>
-              {conflictCode && (
-                <p className="text-[11px] text-white bg-[#E70013] p-2.5 rounded-xl font-bold flex items-center gap-1.5 mt-1 animate-fade-in">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  Kode {conflictCode} ditolak server karena sudah terbit oleh kasir lain. Silakan ganti dengan angka lain.
-                </p>
-              )}
-              {hasCustomCodeError && !conflictCode && (
-                <p className="text-[11px] text-white bg-[#E70013] p-2.5 rounded-xl font-bold flex items-center gap-1.5 mt-1">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  Beberapa nomor hoki sudah pernah terbit/terpakai. Mohon ganti dengan angka lain.
-                </p>
-              )}
             </div>
           )}
         </div>

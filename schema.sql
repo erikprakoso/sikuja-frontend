@@ -23,7 +23,7 @@ ALTER TABLE public.transactions ADD COLUMN IF NOT EXISTS customer_phone TEXT;
 CREATE TABLE IF NOT EXISTS public.vouchers (
   code VARCHAR(5) PRIMARY KEY,
   type TEXT NOT NULL CHECK (type IN ('fisik', 'non-fisik')),
-  status TEXT NOT NULL DEFAULT 'terbit' CHECK (status IN ('terbit', 'checkin', 'menang', 'diklaim')),
+  status TEXT NOT NULL DEFAULT 'terbit' CHECK (status IN ('terbit', 'checkin', 'menang', 'diklaim', 'forfeited')),
   transaction_id TEXT NOT NULL REFERENCES public.transactions(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   checkin_at TIMESTAMPTZ,
