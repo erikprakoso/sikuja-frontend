@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serverSupabase, isServerSupabaseConfigured, isServiceRoleConfigured } from '@/lib/supabase-server';
 import { requireAuth } from '@/lib/server-auth';
+import { SIKUJA_MAX_PRIZES_PER_PERSON } from '@/lib/storage';
 
 /**
  * POST /api/draw/confirm — Confirm the drawn candidate as the actual winner.
@@ -75,6 +76,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         error: `Kode ${code} sudah berstatus "${voucher.status}" — tidak bisa dikonfirmasi ulang.`,
       }, { status: 400 });
+    }
+
+    // 2b. Kebijakan undian: tolak konfirmasi bila pembeli yang sama (transaksi
+    //     yang sama) sudah memenangkan maksimal N doorprize.
+    const { data: existingWinners, error: siblingErr } = await serverSupabase
+      .from('vouchers')
+      .select('code')
+      .eq('transaction_id', voucher.transaction_id)
+      .neq('code', code)
+      .in('status', ['menang', 'diklaim']);
+    if (siblingErr) throw siblingErr;
+    if ((existingWinners || []).length >= SIKUJA_MAX_PRIZES_PER_PERSON) {
+      await serverSupabase.from('pending_draws').update({ status: 'pending' }).eq('id', pending.id);
+      return NextResponse.json({
+        error: `Pembeli ini sudah mencapai batas maksimal ${SIKUJA_MAX_PRIZES_PER_PERSON} doorprize — kebijakan undian (maks ${SIKUJA_MAX_PRIZES_PER_PERSON} hadiah per orang).`,
+      }, { status: 409 });
     }
 
     // 3. Validasi hadiah dari pengadaan purchases

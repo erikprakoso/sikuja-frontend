@@ -11,6 +11,14 @@ const STORAGE_KEYS = {
 
 export const SIKUJA_EVENT_NAME = 'sikuja_data_changed';
 
+/**
+ * Kebijakan undian: maksimal hadiah yang boleh dimenangkan oleh SATU orang
+ * (dihitung per transaksi = satu pembeli). Beli banyak kupon tetap
+ * memperbesar peluang, tapi dibatasi agar tidak menyapu semua doorprize.
+ * Ubah angka ini untuk menyesuaikan kebijakan panitia (0 = tanpa batas).
+ */
+export const SIKUJA_MAX_PRIZES_PER_PERSON = 2;
+
 export function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {
     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');

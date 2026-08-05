@@ -3,6 +3,7 @@ import { randomInt } from 'crypto';
 import { serverSupabase, isServerSupabaseConfigured, isServiceRoleConfigured } from '@/lib/supabase-server';
 import { drawWinnerForPrize } from '@/lib/services/voucher';
 import { requireAuth } from '@/lib/server-auth';
+import { SIKUJA_MAX_PRIZES_PER_PERSON } from '@/lib/storage';
 
 /**
  * Cryptographically Secure Random Index Generator
@@ -97,10 +98,27 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
 
-      // 3. Undian ulang setelah gugur: kecualikan SEMUA kupon milik pembeli yang
+      // 3. Kebijakan undian: maksimal N hadiah per orang. Pembeli yang sudah
+      //    memenangkan N doorprize (status 'menang'/'diklaim') seluruh kuponnya
+      //    dikeluarkan dari pool undian berikutnya — beli banyak tetap
+      //    memperbesar peluang, tapi tidak bisa menyapu semua hadiah.
+      const { data: existingWinners, error: winnersErr } = await serverSupabase
+        .from('vouchers')
+        .select('transaction_id')
+        .in('status', ['menang', 'diklaim']);
+      if (winnersErr) throw winnersErr;
+
+      const winCountByTx = new Map<string, number>();
+      (existingWinners || []).forEach((w) => {
+        winCountByTx.set(w.transaction_id, (winCountByTx.get(w.transaction_id) || 0) + 1);
+      });
+      let pool = eligibleVouchers.filter(
+        (v) => (winCountByTx.get(v.transaction_id) || 0) < SIKUJA_MAX_PRIZES_PER_PERSON
+      );
+
+      // 4. Undian ulang setelah gugur: kecualikan SEMUA kupon milik pembeli yang
       //    baru gugur (satu transaksi = satu pembeli), agar orang yang sama
       //    tidak langsung terpilih lagi pada undian berikutnya.
-      let pool = eligibleVouchers;
       if (excludeCode) {
         const { data: forfeitedVoucher } = await serverSupabase
           .from('vouchers')
@@ -128,7 +146,7 @@ export async function POST(request: NextRequest) {
             console.error('API /draw: gagal menandai voucher gugur:', forfeitErr.message);
           }
 
-          pool = eligibleVouchers.filter((v) => v.transaction_id !== forfeitedVoucher.transaction_id);
+          pool = pool.filter((v) => v.transaction_id !== forfeitedVoucher.transaction_id);
         }
       }
 

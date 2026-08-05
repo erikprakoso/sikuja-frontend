@@ -27,10 +27,13 @@ export default function LayarUndianPage() {
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
+  const [lastAudit, setLastAudit] = useState<{ pool_size: number; selected_index: number } | null>(null);
   const [winners, setWinners] = useState<Voucher[]>([]);
 
   const rollIntervalRef = useRef<number | null>(null);
   const candidateRef = useRef<Voucher | null>(null);
+  const excludeCodeRef = useRef<string | undefined>(undefined);
+  const resolvingRef = useRef(false);
 
   // Reads doorprize & eligible count from SERVER first (same source as admin),
   // falls back to local data so the stage always shows the latest prizes
@@ -116,22 +119,45 @@ export default function LayarUndianPage() {
   };
 
   const handleStartDraw = async (excludeCode?: unknown) => {
-    if (isRolling || !selectedPrizeId) return;
+    if (isRolling || resolvingRef.current || !selectedPrizeId) return;
     setIsRolling(true);
     setErrorMsg('');
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
+    setLastAudit(null);
 
     // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
-    const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
+    excludeCodeRef.current = typeof excludeCode === 'string' ? excludeCode : undefined;
 
+    soundManager.startDrumroll();
+
+    // Animasi angka berputar. Hasil undian BELUM ditentukan di sini — server
+    // baru mengambil pemenang saat MC menekan Stop (lihat stopRoll di bawah),
+    // sehingga angka benar-benar berputar dulu sebelum hasil dibuka.
+    rollIntervalRef.current = window.setInterval(() => {
+      const random5Digit = Math.floor(Math.random() * 100000)
+        .toString()
+        .padStart(5, '0');
+      setDisplayDigits(random5Digit);
+      soundManager.playTick();
+    }, 85);
+  };
+
+  const stopRoll = async () => {
+    if (!isRolling || resolvingRef.current) return;
+    resolvingRef.current = true;
+    setErrorMsg('');
+
+    // Angka TETAP berputar selama server mengambil hasil (tidak ada jeda
+    // "memproses" yang terlihat penonton). Saat respons tiba, angka berhenti
+    // langsung di kode pemenang — seolah roll yang mendarat menunjuknya.
     try {
       const res = await fetch('/api/draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prizeId: selectedPrizeId,
-          ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}),
+          ...(excludeCodeRef.current ? { excludeCode: excludeCodeRef.current } : {}),
         }),
       });
       const data = await res.json();
@@ -140,7 +166,7 @@ export default function LayarUndianPage() {
         const rawErr = data.error || 'Gagal memproses pengundian.';
         const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
         setErrorMsg(errStr);
-        setIsRolling(false);
+        setLastAudit(null);
         return;
       }
 
@@ -148,43 +174,35 @@ export default function LayarUndianPage() {
       candidateRef.current = candidate;
       if (typeof data.audit?.pool_size === 'number') {
         setLastPoolSize(data.audit.pool_size);
+        setLastAudit({
+          pool_size: data.audit.pool_size,
+          selected_index: typeof data.audit.selected_index === 'number' ? data.audit.selected_index : 0,
+        });
       }
 
-      soundManager.startDrumroll();
-
-      // Roll angka berjalan terus — berhenti hanya saat MC menekan Spasi
-      // (atau tombol Stop). Kandidat pemenang sudah diambil server di atas.
-      rollIntervalRef.current = window.setInterval(() => {
-        const random5Digit = Math.floor(Math.random() * 100000)
-          .toString()
-          .padStart(5, '0');
-        setDisplayDigits(random5Digit);
-        soundManager.playTick();
-      }, 85);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('Draw error message:', msg);
-      setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
-      setIsRolling(false);
-    }
-  };
-
-  const stopRoll = () => {
-    if (!isRolling) return;
-    if (rollIntervalRef.current !== null) {
-      clearInterval(rollIntervalRef.current);
-      rollIntervalRef.current = null;
-    }
-    soundManager.stopDrumroll();
-
-    const candidate = candidateRef.current;
-    if (candidate) {
+      if (rollIntervalRef.current !== null) {
+        clearInterval(rollIntervalRef.current);
+        rollIntervalRef.current = null;
+      }
+      soundManager.stopDrumroll();
       soundManager.playVictoryFanfare();
       triggerConfetti();
       setDisplayDigits(candidate.code);
       setCandidateVoucher(candidate);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Draw error message:', msg);
+      setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
+      setLastAudit(null);
+    } finally {
+      if (rollIntervalRef.current !== null) {
+        clearInterval(rollIntervalRef.current);
+        rollIntervalRef.current = null;
+      }
+      soundManager.stopDrumroll();
+      setIsRolling(false);
+      resolvingRef.current = false;
     }
-    setIsRolling(false);
   };
 
   const handleConfirmWinner = async () => {
@@ -325,6 +343,7 @@ export default function LayarUndianPage() {
           displayDigits={displayDigits}
           isRolling={isRolling}
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
+          audit={lastAudit}
         />
 
         {errorMsg && (

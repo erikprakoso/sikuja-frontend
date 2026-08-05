@@ -49,7 +49,7 @@ export const UndianHeader: React.FC<UndianHeaderProps> = ({
           className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 text-center sm:text-right shadow-xs flex items-center gap-3"
           title={
             poolSize !== null && poolSize !== undefined
-              ? `Pool undian terakhir: ${poolSize} kupon dipilih secara acak terenkripsi.`
+              ? `Pool undian terakhir: ${poolSize} kupon dipilih secara acak aman di server (crypto.randomInt).`
               : 'Pool undian akan tampil saat pertama kali menarik kupon.'
           }
         >

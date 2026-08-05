@@ -8,6 +8,7 @@ import {
   getStoredDrawResults,
   saveDrawResults,
   addToOfflineQueue,
+  SIKUJA_MAX_PRIZES_PER_PERSON,
 } from '@/lib/storage';
 
 // Format input into pure 5-digit code string e.g. "77" -> "00077"
@@ -309,6 +310,19 @@ export function drawWinner(prizeId: string, excludeCode?: string): {
   }
 
   let eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
+
+  // Kebijakan undian: pembeli yang sudah memenangkan maksimal N doorprize
+  // (status 'menang'/'diklaim') seluruh kuponnya keluar dari pool undian —
+  // beli banyak tetap memperbesar peluang, tapi tidak bisa menyapu semua hadiah.
+  const winCountByTx = new Map<string, number>();
+  vouchers.forEach((v) => {
+    if (v.status === 'menang' || v.status === 'diklaim') {
+      winCountByTx.set(v.transaction_id, (winCountByTx.get(v.transaction_id) || 0) + 1);
+    }
+  });
+  eligibleVouchers = eligibleVouchers.filter(
+    (v) => (winCountByTx.get(v.transaction_id) || 0) < SIKUJA_MAX_PRIZES_PER_PERSON
+  );
 
   // Undian ulang setelah gugur: kupon yang digugurkan dianggap HANGUS (status
   // diubah 'forfeited' agar tidak pernah masuk pool lagi), dan semua kupon milik
