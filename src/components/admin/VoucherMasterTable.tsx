@@ -54,7 +54,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const filteredVouchers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    return vouchers.filter((v) => {
+    const filtered = vouchers.filter((v) => {
       const matchesStatus = statusFilter === 'all' || v.status === statusFilter;
       if (!matchesStatus) return false;
       if (!q) return true;
@@ -71,6 +71,10 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
         prizeName.includes(q)
       );
     });
+
+    return filtered.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }, [vouchers, txMap, statusFilter, searchQuery]);
 
   const totalVouchers = filteredVouchers.length;
