@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Voucher, Transaction } from '@/types';
-import { Ticket, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Ticket, Search, ChevronLeft, ChevronRight, Printer } from 'lucide-react';
+import { ThermalReceiptModal } from '@/components/penjualan/ThermalReceiptModal';
+import { ThermalReceiptPrint } from '@/components/penjualan/ThermalReceiptPrint';
 
 interface VoucherMasterTableProps {
   vouchers: Voucher[];
@@ -21,6 +23,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [reprintTx, setReprintTx] = useState<Transaction | null>(null);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
@@ -42,6 +45,11 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
     transactions.forEach((tx) => map.set(tx.id, tx));
     return map;
   }, [transactions]);
+
+  const reprintVouchers = useMemo(
+    () => (reprintTx ? vouchers.filter((v) => v.transaction_id === reprintTx.id) : []),
+    [reprintTx, vouchers]
+  );
 
   const filteredVouchers = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -134,6 +142,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               <th className="p-3">Status</th>
               <th className="p-3">Hadiah</th>
               <th className="p-3">Waktu Transaksi</th>
+              <th className="p-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-sans">
@@ -184,12 +193,23 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                     <td className="p-3 text-[11px] font-mono font-semibold text-slate-500">
                       {new Date(v.created_at).toLocaleTimeString('id-ID')}
                     </td>
+                    <td className="p-3">
+                      {tx && (
+                        <button
+                          onClick={() => setReprintTx(tx)}
+                          title="Cetak Ulang Struk"
+                          className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })
             ) : (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-slate-500 font-semibold font-sans">
+                <td colSpan={7} className="p-6 text-center text-slate-500 font-semibold font-sans">
                   Tidak ada data kupon yang sesuai.
                 </td>
               </tr>
@@ -252,6 +272,19 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* Modal Cetak Ulang Struk */}
+      {reprintTx && (
+        <>
+          <ThermalReceiptModal
+            transaction={reprintTx}
+            vouchers={reprintVouchers}
+            onClose={() => setReprintTx(null)}
+          />
+          {/* Area print fallback browser (58mm) */}
+          <ThermalReceiptPrint transaction={reprintTx} vouchers={reprintVouchers} />
+        </>
       )}
     </div>
   );

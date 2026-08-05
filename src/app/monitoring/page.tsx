@@ -51,7 +51,7 @@ export default function MonitoringPage() {
 
   return (
     <RequireAuth roles={['admin']}>
-    <div className="space-y-8 py-4 max-w-6xl mx-auto">
+    <div className="no-print space-y-8 py-4 max-w-6xl mx-auto">
       {/* Header Title & Export Buttons */}
       <AdminHeader />
 
