@@ -14,7 +14,7 @@ export const EVoucherCheckinNotice: React.FC<EVoucherCheckinNoticeProps> = ({
   }
 
   return (
-    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs space-y-1 font-medium shadow-xs">
+    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-800 text-xs space-y-0.5 font-medium shadow-xs">
       <p className="font-bold flex items-center gap-1.5 text-slate-900">
         📍 Petunjuk Verifikasi Peserta:
       </p>

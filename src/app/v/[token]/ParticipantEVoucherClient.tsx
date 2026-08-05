@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import QRCode from 'qrcode';
 import { getStoredTransactions, getStoredVouchers, getAppBaseUrl, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { Transaction, Voucher } from '@/types';
-import { Loader2, Ticket } from 'lucide-react';
+import { Loader2, Ticket, MessageSquare, Share2 } from 'lucide-react';
 
 import { EVoucherNotFound } from '@/components/evoucher/EVoucherNotFound';
 import { EVoucherHeader } from '@/components/evoucher/EVoucherHeader';
@@ -121,6 +121,13 @@ export default function ParticipantEVoucherClient({
     }
   };
 
+  const handleWhatsAppShare = () => {
+    if (typeof window !== 'undefined') {
+      const text = encodeURIComponent(`Kartu E-Voucher Jalan Sehat 2026 Saya: ${window.location.href}`);
+      window.open(`https://wa.me/?text=${text}`, '_blank');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-md mx-auto py-20 text-center space-y-4 animate-fade-in">
@@ -145,22 +152,41 @@ export default function ParticipantEVoucherClient({
   }
 
   const checkinCount = vouchers.filter((v) => v.status !== 'terbit' && v.status !== 'forfeited').length;
+  const isFullyCheckedIn = vouchers.length > 0 && checkinCount >= vouchers.length;
 
   return (
-    <div className="max-w-xl mx-auto space-y-6 py-4 animate-fade-in">
-      <EVoucherHeader
-        totalVouchers={vouchers.length}
-        checkinCount={checkinCount}
-        qrDataUrl={txQrDataUrl}
-        customerName={transaction.customer_name}
-        customerPhone={transaction.customer_phone}
-        copied={copied}
-        onShare={handleShare}
-      />
+    <div className="max-w-xl mx-auto space-y-3 py-3 animate-fade-in">
+      {!isFullyCheckedIn && (
+        <EVoucherHeader
+          totalVouchers={vouchers.length}
+          checkinCount={checkinCount}
+          qrDataUrl={txQrDataUrl}
+          customerName={transaction.customer_name}
+          customerPhone={transaction.customer_phone}
+        />
+      )}
 
       <EVoucherCheckinNotice totalVouchers={vouchers.length} checkinCount={checkinCount} />
 
       <EVoucherCardList vouchers={vouchers} />
+
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+        <button
+          onClick={handleWhatsAppShare}
+          className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 border border-emerald-600"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Simpan Ke WhatsApp Saya
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold inline-flex items-center gap-2 transition-all shadow-xs cursor-pointer active:scale-95 border border-slate-900"
+        >
+          <Share2 className="w-4 h-4" />
+          {copied ? 'Tautan Tersalin!' : 'Bagikan / Salin Tautan'}
+        </button>
+      </div>
     </div>
   );
 }
