@@ -96,12 +96,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { donor_name, donor_phone, amount, note } = body;
 
-    if (!donor_name || !amount) {
+    if (!donor_name || typeof amount !== 'number') {
       return NextResponse.json({ error: 'Nama donatur dan jumlah wajib diisi' }, { status: 400 });
     }
 
-    if (typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ error: 'Jumlah donasi harus angka positif' }, { status: 400 });
+    if (amount < 0) {
+      return NextResponse.json({ error: 'Jumlah donasi tidak boleh negatif' }, { status: 400 });
     }
 
     const now = new Date().toISOString();
@@ -150,12 +150,12 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { id, donor_name, donor_phone, amount, note } = body;
 
-    if (!id || !donor_name || !amount) {
+    if (!id || !donor_name || typeof amount !== 'number') {
       return NextResponse.json({ error: 'ID, nama donatur, dan jumlah wajib diisi' }, { status: 400 });
     }
 
-    if (typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ error: 'Jumlah donasi harus angka positif' }, { status: 400 });
+    if (amount < 0) {
+      return NextResponse.json({ error: 'Jumlah donasi tidak boleh negatif' }, { status: 400 });
     }
 
     // Jangan biarkan pengurangan nominal membuat saldo donasi negatif

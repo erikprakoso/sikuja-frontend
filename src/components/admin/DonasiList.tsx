@@ -170,10 +170,6 @@ export const DonasiList = () => {
   const handleSaveDonation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDonorName.trim() || !newAmount) return;
-    if (Number(newAmount) <= 0) {
-      alert('Nominal donasi harus lebih dari Rp 0.');
-      return;
-    }
 
     setIsLoading(true);
     try {
@@ -548,7 +544,7 @@ export const DonasiList = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isLoading || !newDonorName.trim() || !newAmount || Number(newAmount) <= 0}
+                  disabled={isLoading || !newDonorName.trim() || !newAmount}
                   className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
