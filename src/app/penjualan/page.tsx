@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import { getAppBaseUrl } from '@/lib/storage';
 import { playSuccessFeedback, playErrorFeedback } from '@/lib/services/feedback';
 import { Transaction, Voucher } from '@/types';
-import { ShoppingBag, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { TransactionForm } from '@/components/penjualan/TransactionForm';
@@ -139,18 +139,6 @@ export default function PenjualanPage() {
     <div className="max-w-4xl mx-auto py-4">
       {/* Screen Interactive UI (Hidden during print) */}
       <div className="no-print space-y-8">
-        {/* Header Title */}
-        <div className="pb-4 border-b border-[#E70013]/20">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#E70013] text-white text-xs font-bold uppercase tracking-wider mb-2">
-            <ShoppingBag className="w-3.5 h-3.5" />
-            Kasir Penjualan Voucher
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Transaksi Penjualan Voucher</h1>
-          <p className="text-xs text-slate-600 font-medium mt-0.5">
-            Layanan penerbitan kupon fisik dan e-voucher digital peserta Jalan Sehat.
-          </p>
-        </div>
-
         {/* Main Content Layout */}
         {submitError && (
           <div className="flex items-start gap-2.5 p-4 rounded-2xl bg-[#E70013] text-white text-sm font-bold shadow-md animate-fade-in">

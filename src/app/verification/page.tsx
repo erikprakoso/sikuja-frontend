@@ -5,7 +5,6 @@ import { getStoredDrawResults, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT
 import { DrawResult, Voucher } from '@/types';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { VerifikasiHeader } from '@/components/verifikasi/VerifikasiHeader';
 import { VerifikasiForm } from '@/components/verifikasi/VerifikasiForm';
 import { UnclaimedWinnersList } from '@/components/verifikasi/UnclaimedWinnersList';
 
@@ -115,8 +114,6 @@ export default function VerificationPage() {
       )}
       
       <div className="space-y-6">
-        <VerifikasiHeader />
-
         <VerifikasiForm
           code={code}
           setCode={setCode}

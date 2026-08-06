@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { DonasiHeader } from '@/components/admin/DonasiHeader';
 import { DonasiList } from '@/components/admin/DonasiList';
 
 export default function DonasiPage() {
@@ -19,8 +18,6 @@ export default function DonasiPage() {
   return (
     <RequireAuth roles={['admin']}>
     <div className="space-y-8 py-4 max-w-7xl mx-auto">
-      <DonasiHeader />
-
       {isLoaded ? (
         <DonasiList />
       ) : (

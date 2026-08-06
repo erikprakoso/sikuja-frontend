@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { PembelianHeader } from '@/components/admin/PembelianHeader';
 import { PembelianList } from '@/components/admin/PembelianList';
 
 export default function ExpensesPage() {
@@ -19,8 +18,6 @@ export default function ExpensesPage() {
   return (
     <RequireAuth roles={['admin']}>
     <div className="space-y-8 py-4 max-w-7xl mx-auto">
-      <PembelianHeader />
-
       {isLoaded ? (
         <PembelianList />
       ) : (
