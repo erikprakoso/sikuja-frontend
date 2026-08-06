@@ -101,24 +101,31 @@ async function singleVoucherCheckin(code: string, userId?: string | null) {
   });
 }
 
-async function batchCheckinFromTransaction(tx: Transaction, userId?: string | null) {
+async function batchCheckinFromTransaction(
+  tx: Transaction,
+  userId?: string | null,
+  options: { exact?: boolean } = {}
+) {
   const now = new Date().toISOString();
 
   // Kumpulkan SEMUA transaksi milik pembeli yang sama (prioritas: no. HP, lalu nama).
   // Contoh: user A beli 10 kupon lalu beli lagi 5 kupon → input 1 kode memverifikasi 15 kupon.
+  // options.exact=true (dari hasil pencarian yang dipilih) → hanya transaksi tersebut.
   let allTx: { id: string }[] = [tx];
-  if (tx.customer_phone && tx.customer_phone.trim()) {
-    const { data: phoneTxs } = await serverSupabase
-      .from('transactions')
-      .select('id')
-      .eq('customer_phone', tx.customer_phone.trim());
-    if (phoneTxs && phoneTxs.length > 0) allTx = phoneTxs;
-  } else if (tx.customer_name && tx.customer_name.trim()) {
-    const { data: nameTxs } = await serverSupabase
-      .from('transactions')
-      .select('id')
-      .eq('customer_name', tx.customer_name.trim());
-    if (nameTxs && nameTxs.length > 0) allTx = nameTxs;
+  if (!options.exact) {
+    if (tx.customer_phone && tx.customer_phone.trim()) {
+      const { data: phoneTxs } = await serverSupabase
+        .from('transactions')
+        .select('id')
+        .eq('customer_phone', tx.customer_phone.trim());
+      if (phoneTxs && phoneTxs.length > 0) allTx = phoneTxs;
+    } else if (tx.customer_name && tx.customer_name.trim()) {
+      const { data: nameTxs } = await serverSupabase
+        .from('transactions')
+        .select('id')
+        .eq('customer_name', tx.customer_name.trim());
+      if (nameTxs && nameTxs.length > 0) allTx = nameTxs;
+    }
   }
 
   const txIds = allTx.map((t) => t.id);
@@ -171,8 +178,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     let input = (body.codeOrToken || body.code || '').trim();
+    const exactId = (body.transactionId || '').toString();
 
-    if (!input) {
+    if (!input && !exactId) {
       return NextResponse.json({ error: 'Kode voucher atau token transaksi wajib diisi' }, { status: 400 });
     }
 
@@ -182,7 +190,7 @@ export async function POST(request: NextRequest) {
 
     if (!isServerSupabaseConfigured()) {
       // Local fallback (demo/offline): batch mencakup token, id, kode, HP, & nama.
-      const batchRes = checkInTransactionBatch(input);
+      const batchRes = checkInTransactionBatch(input, 'pos-device-1', { exact: exactId ? true : false });
       if (batchRes.success && batchRes.count > 0) {
         return NextResponse.json(batchRes);
       }
@@ -192,6 +200,15 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: singleRes.message }, { status: 400 });
       }
       return NextResponse.json(singleRes);
+    }
+
+    // 0) transactionId dari hasil pencarian → verifikasi transaksi TERSEBUT saja.
+    if (exactId) {
+      const exactTx = await findTransactionByTokenOrId(exactId);
+      if (!exactTx) {
+        return NextResponse.json({ error: 'Transaksi tidak ditemukan dalam sistem!' }, { status: 404 });
+      }
+      return batchCheckinFromTransaction(exactTx, auth.userId, { exact: true });
     }
 
     // 1) Token / ID transaksi → batch

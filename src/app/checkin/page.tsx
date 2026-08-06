@@ -2,19 +2,25 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { checkInVoucher, checkInTransactionBatch } from '@/lib/services/voucher';
+import {
+  checkInVoucher,
+  checkInTransactionBatch,
+  searchTransactions,
+  TransactionMatch,
+} from '@/lib/services/voucher';
 import { playSuccessFeedback, playErrorFeedback } from '@/lib/services/feedback';
 import { getStoredVouchers, getOfflineQueue, saveOfflineQueue, syncFromSupabase, SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { PosCheckin } from '@/types';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { CheckinHeader } from '@/components/checkin/CheckinHeader';
 import { OfflineQueueBanner } from '@/components/checkin/OfflineQueueBanner';
+import { CheckinSearch } from '@/components/checkin/CheckinSearch';
 import { CheckinScanner } from '@/components/checkin/CheckinScanner';
 import { CheckinOperatorTips } from '@/components/checkin/CheckinOperatorTips';
 
 export default function CheckinPosPage() {
-  const [inputCode, setInputCode] = useState('');
   const [resultMessage, setResultMessage] = useState<{ success: boolean; text: string } | null>(null);
   const [resultKey, setResultKey] = useState(0);
   const [isScanning, setIsScanning] = useState(false);
@@ -22,6 +28,14 @@ export default function CheckinPosPage() {
   const [offlineQueue, setOfflineQueue] = useState<PosCheckin[]>([]);
   const [totalCheckinCount, setTotalCheckinCount] = useState(0);
   const [totalVoucherCount, setTotalVoucherCount] = useState(0);
+
+  // Alur pencarian pembeli → pilih transaksi → verifikasi.
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTxId, setSelectedTxId] = useState<string | null>(null);
+  const matches = searchTransactions(searchQuery);
+  const selectedMatch: TransactionMatch | null = selectedTxId
+    ? matches.find((m) => m.tx.id === selectedTxId) ?? null
+    : null;
   
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-reader-pos';
@@ -72,13 +86,8 @@ export default function CheckinPosPage() {
     const raw = scannedText.trim();
     if (!raw) return;
 
-    // Dukung paste beberapa kode 5-digit sekaligus (pisah spasi/koma/baris baru)
-    // untuk kupon fisik tanpa QR. Satu entri tunggal = jalur lama (kode / token / URL).
-    const tokens = raw.split(/[\s,;]+/).filter(Boolean);
-    if (tokens.length > 1) {
-      await processMultipleCodes(tokens);
-      return;
-    }
+    // Jalur scan/QR independen dari alur pencarian.
+    setSelectedTxId(null);
 
     await processSingleEntry(raw);
   };
@@ -127,7 +136,6 @@ export default function CheckinPosPage() {
 
       setResultMessage(feedback);
       setResultKey((k) => k + 1);
-      setInputCode('');
       refreshStats();
 
       if (feedback.success) {
@@ -142,62 +150,50 @@ export default function CheckinPosPage() {
     }
   };
 
-  const processMultipleCodes = async (tokens: string[]) => {
+  // Verifikasi transaksi yang dipilih dari hasil pencarian (HANYA transaksi tsb,
+  // bukan seluruh transaksi dengan no. HP / nama yang sama).
+  const handleVerifySelected = async () => {
+    if (!selectedTxId) return;
     setIsProcessing(true);
     setResultMessage(null);
 
-    let ok = 0;
-    let already = 0;
-    let failed = 0;
-    const failedCodes: string[] = [];
+    try {
+      let feedback: { success: boolean; text: string } | null = null;
 
-    for (const rawCode of tokens) {
-      const code = rawCode.trim();
       try {
         const res = await fetch('/api/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codeOrToken: code }),
+          body: JSON.stringify({ transactionId: selectedTxId }),
         });
         const data = await res.json();
         if (res.ok && data.success) {
-          if (data.count === 0) already += 1;
-          else ok += 1;
-        } else {
-          failed += 1;
-          failedCodes.push(code);
+          feedback = { success: true, text: data.message };
+        } else if (data.error) {
+          feedback = { success: false, text: data.error };
         }
       } catch (err) {
-        console.warn('API /checkin unreachable for multi-code, offline fallback...', err);
-        const singleRes = checkInVoucher(code);
-        if (singleRes.success) ok += 1;
-        else {
-          failed += 1;
-          failedCodes.push(code);
-        }
+        console.warn('API /checkin unreachable for selected transaction, offline fallback...', err);
       }
+
+      if (!feedback) {
+        const batchRes = checkInTransactionBatch(selectedTxId, 'pos-device-1', { exact: true });
+        feedback = { success: batchRes.success, text: batchRes.message };
+      }
+
+      setResultMessage(feedback);
+      setResultKey((k) => k + 1);
+      refreshStats();
+
+      if (feedback.success) {
+        playSuccessFeedback();
+        scheduleAutoClearSuccess();
+      } else {
+        playErrorFeedback();
+      }
+    } finally {
+      setIsProcessing(false);
     }
-
-    setInputCode('');
-    refreshStats();
-    setResultKey((k) => k + 1);
-    setResultMessage({
-      success: failed === 0,
-      text:
-        `Berhasil verifikasi ${ok} kupon` +
-        (already > 0 ? `, ${already} sudah terverifikasi sebelumnya` : '') +
-        (failed > 0 ? `, ${failed} gagal: ${failedCodes.join(', ')}` : '') +
-        '.',
-    });
-
-    if (failed === 0) {
-      playSuccessFeedback();
-      scheduleAutoClearSuccess();
-    } else {
-      playErrorFeedback();
-    }
-
-    setIsProcessing(false);
   };
 
   const startCamera = async () => {
@@ -338,7 +334,7 @@ export default function CheckinPosPage() {
 
   return (
     <RequireAuth roles={['pos', 'admin']}>
-    <div className="max-w-2xl mx-auto space-y-6 py-4">
+    <div className="max-w-2xl mx-auto space-y-4 py-4">
       {/* Header Banner */}
       <CheckinHeader
         totalCheckinCount={totalCheckinCount}
@@ -351,18 +347,51 @@ export default function CheckinPosPage() {
         onSync={handleSyncOffline}
       />
 
-      {/* Scanner & Code Input Box */}
+      {/* Pencarian Pembeli (prioritas utama) */}
+      <CheckinSearch
+        query={searchQuery}
+        setQuery={(q) => {
+          setSearchQuery(q);
+          setSelectedTxId(null);
+        }}
+        matches={matches}
+        selected={selectedMatch}
+        isProcessing={isProcessing}
+        onSelect={(m) => setSelectedTxId(m.tx.id)}
+        onBack={() => setSelectedTxId(null)}
+        onVerify={handleVerifySelected}
+      />
+
+      {/* Result Alert Box (dipakai jalur pencarian & scan) */}
+      {!isProcessing && resultMessage && (
+        <div
+          key={resultKey}
+          role="status"
+          aria-live="polite"
+          className={`p-4 rounded-2xl border text-sm font-bold flex items-start gap-3 animate-fade-in ${
+            resultMessage.success
+              ? 'bg-emerald-900 text-white border-emerald-900 shadow-md'
+              : 'bg-red-50 border-red-200 text-red-700 shadow-xs'
+          }`}
+        >
+          {resultMessage.success ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-300 flex-shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          )}
+          <div>
+            <p className="font-bold">{resultMessage.text}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Scanner & Kode Manual (sekunder) */}
       <CheckinScanner
         scannerContainerId={scannerContainerId}
         isScanning={isScanning}
         isProcessing={isProcessing}
-        inputCode={inputCode}
-        setInputCode={setInputCode}
-        resultMessage={resultMessage}
-        resultKey={resultKey}
         onStartCamera={startCamera}
         onStopCamera={stopCamera}
-        onSubmitCode={handleProcessCode}
       />
 
       {/* POS Operator Tips */}

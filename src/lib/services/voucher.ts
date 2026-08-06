@@ -196,9 +196,61 @@ export function checkInVoucher(code: string, scannerId: string = 'pos-device-1')
   };
 }
 
+export interface TransactionMatch {
+  tx: Transaction;
+  vouchers: Voucher[];
+  totalVouchers: number;
+  pendingVouchers: number;
+}
+
+// Cari transaksi berdasarkan nama / no. HP / token untuk alur validasi berbasis
+// pencarian. Hasil diurutkan: yang masih butuh verifikasi duluan, lalu terbaru.
+export function searchTransactions(query: string, limit = 30): TransactionMatch[] {
+  const q = query.trim();
+  if (!q) return [];
+
+  const transactions = getStoredTransactions();
+  const vouchers = getStoredVouchers();
+  const lower = q.toLowerCase();
+  const digits = q.replace(/\D/g, '');
+
+  const matched = transactions.filter((t) => {
+    if (t.customer_name && t.customer_name.toLowerCase().includes(lower)) return true;
+    if (digits && t.customer_phone) {
+      const phoneDigits = t.customer_phone.replace(/\D/g, '');
+      if (phoneDigits.includes(digits) || digits.includes(phoneDigits)) return true;
+    }
+    if (t.token && t.token.toLowerCase().includes(lower)) return true;
+    return false;
+  });
+
+  const withCounts: TransactionMatch[] = matched.map((tx) => {
+    const txVouchers = vouchers.filter((v) => v.transaction_id === tx.id);
+    return {
+      tx,
+      vouchers: txVouchers,
+      totalVouchers: txVouchers.length,
+      pendingVouchers: txVouchers.filter((v) => v.status === 'terbit').length,
+    };
+  });
+
+  withCounts.sort((a, b) => {
+    if (a.pendingVouchers > 0 && b.pendingVouchers === 0) return -1;
+    if (a.pendingVouchers === 0 && b.pendingVouchers > 0) return 1;
+    return new Date(b.tx.created_at).getTime() - new Date(a.tx.created_at).getTime();
+  });
+
+  return withCounts.slice(0, limit);
+}
+
 // 3. Batch Check-in via 1 Transaction QR Code (Check-in ALL vouchers of 1 transaction or customer)
 //    Input bisa: token / tx id / 1 kode 5-digit (→ transaksi terkait) / no. HP / nama pemilik.
-export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string = 'pos-device-1'): {
+//    options.exact=true → hanya transaksi tersebut yang diverifikasi (tanpa pengelompokan no. HP / nama).
+export function checkInTransactionBatch(
+  tokenOrTxId: string,
+  scannerId: string = 'pos-device-1',
+  options: { exact?: boolean } = {}
+): {
   success: boolean;
   message: string;
   count: number;
@@ -244,12 +296,14 @@ export function checkInTransactionBatch(tokenOrTxId: string, scannerId: string =
   }
 
   let allCustomerTxs = [tx];
-  if (tx.customer_phone && tx.customer_phone.trim()) {
-    const phoneTxs = transactions.filter((t) => t.customer_phone === tx.customer_phone);
-    if (phoneTxs.length > 0) allCustomerTxs = phoneTxs;
-  } else if (tx.customer_name && tx.customer_name.trim()) {
-    const nameTxs = transactions.filter((t) => t.customer_name === tx.customer_name);
-    if (nameTxs.length > 0) allCustomerTxs = nameTxs;
+  if (!options.exact) {
+    if (tx.customer_phone && tx.customer_phone.trim()) {
+      const phoneTxs = transactions.filter((t) => t.customer_phone === tx.customer_phone);
+      if (phoneTxs.length > 0) allCustomerTxs = phoneTxs;
+    } else if (tx.customer_name && tx.customer_name.trim()) {
+      const nameTxs = transactions.filter((t) => t.customer_name === tx.customer_name);
+      if (nameTxs.length > 0) allCustomerTxs = nameTxs;
+    }
   }
 
   const txIds = new Set(allCustomerTxs.map((t) => t.id));
