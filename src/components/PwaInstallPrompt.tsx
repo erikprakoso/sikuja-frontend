@@ -83,7 +83,7 @@ export const PwaInstallPrompt: React.FC = () => {
               <Smartphone className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-black text-white leading-tight">Pasang Aplikasi SIKUJA</h4>
+              <h4 className="text-sm font-black text-white leading-tight">Pasang Aplikasi Jalan Sehat 2026</h4>
               <p className="text-xs text-slate-300 font-medium mt-0.5 leading-relaxed">
                 Tambah ke layar utama HP untuk akses cepat layaknya aplikasi native.
               </p>

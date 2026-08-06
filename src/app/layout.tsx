@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan',
+  title: 'Jalan Sehat 2026',
   description: 'Aplikasi Digital Penjualan Kupon, Check-in Pos, dan Pengocokan Undian Agustusan Transparan & Realtime.',
   manifest: '/manifest.json',
   icons: {
@@ -50,7 +50,7 @@ export default function RootLayout({
         <PwaInstallPrompt />
         <footer className="border-t border-[#E70013]/20 bg-white py-6 text-center text-xs text-slate-600 font-medium">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>© 2026 SIKUJA — Sistem Kupon & Undian Jalan Sehat Agustusan 🇮🇩</p>
+            <p>© 2026 Jalan Sehat 2026 🇮🇩</p>
             <p className="text-slate-500 font-semibold">Aplikasi Web PWA • Bebas Kecurangan • Transparan</p>
           </div>
         </footer>

@@ -1,6 +1,6 @@
 {
-  "name": "SIKUJA — Jalan Sehat 2026",
-  "short_name": "SIKUJA",
+  "name": "Jalan Sehat 2026",
+  "short_name": "Jalan Sehat",
   "description": "Sistem Kupon & Undian Jalan Sehat Agustusan",
   "start_url": "/",
   "display": "standalone",

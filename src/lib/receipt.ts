@@ -41,7 +41,7 @@ export type ReceiptRow =
   | ReceiptSpacerRow;
 
 const EVENT_HEADER = 'PANITIA JALAN SEHAT';
-const EVENT_SUB = 'SIKUJA 2026';
+const EVENT_SUB = 'JALAN SEHAT 2026';
 const EVENT_TAGLINE = process.env.NEXT_PUBLIC_EVENT_TAGLINE || 'Jalan Sehat, Doorprize & UMKM';
 const EVENT_DATE = process.env.NEXT_PUBLIC_EVENT_DATE || '';
 
