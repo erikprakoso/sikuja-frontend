@@ -22,6 +22,9 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   forfeited: { label: 'Gugur', cls: 'bg-red-100 text-red-800 border border-red-300' },
 };
 
+const formatRupiah = (amount: number) =>
+  new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
+
 export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   vouchers,
   transactions = [],
@@ -438,6 +441,14 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                   </div>
                 </div>
 
+                {/* Total harga */}
+                <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-50 border border-slate-100 px-3 py-1.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Total Harga</span>
+                  <strong className="text-sm font-black text-slate-900 font-mono">
+                    {formatRupiah(tx?.total_harga || 0)}
+                  </strong>
+                </div>
+
                 {/* Action footer */}
                 <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
                   {tx && (
@@ -489,6 +500,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               <th className="p-3">Waktu Transaksi</th>
               <th className="p-3">Pembeli</th>
               <th className="p-3">Voucher</th>
+              <th className="p-3">Total Harga</th>
               <th className="p-3">Status</th>
               <th className="p-3">Aksi</th>
             </tr>
@@ -557,6 +569,11 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                       <span className="font-black text-slate-900">{vs.length}</span>
                     </td>
                     <td className="p-3">
+                      <span className="font-black text-slate-900 font-mono whitespace-nowrap">
+                        {formatRupiah(tx?.total_harga || 0)}
+                      </span>
+                    </td>
+                    <td className="p-3">
                       <div className="flex flex-wrap gap-1">
                         {statusList.map((meta) => (
                           <span
@@ -600,7 +617,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={5} className="p-6 text-center text-slate-500 font-semibold font-sans">
+                <td colSpan={6} className="p-6 text-center text-slate-500 font-semibold font-sans">
                   Tidak ada transaksi yang sesuai.
                 </td>
               </tr>
