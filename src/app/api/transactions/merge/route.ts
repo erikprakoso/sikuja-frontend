@@ -4,9 +4,9 @@ import { requireAuth } from '@/lib/server-auth';
 
 /**
  * POST /api/transactions/merge
- * Menggabungkan satu transaksi (source) ke transaksi lain (target).
+ * Menggabungkan satu atau lebih transaksi source ke satu transaksi target (base).
  * - Semua voucher milik source dipindah ke target (transaction_id diubah).
- * - qty_fisik, qty_non_fisik, total_harga target dijumlahkan dari source.
+ * - qty_fisik, qty_non_fisik, total_harga target dijumlahkan dari semua source.
  * - Transaksi source dihapus; id yang dipakai adalah id target.
  * Lokal mode (tanpa Supabase): dikerjakan di sisi klien, endpoint mengembalikan sukses.
  */
@@ -16,19 +16,24 @@ export async function POST(request: NextRequest) {
     if (auth instanceof NextResponse) return auth;
 
     const body = await request.json();
-    const sourceId = (body.sourceId || '').toString();
     const targetId = (body.targetId || '').toString();
+    let sourceIds: string[] = [];
+    if (Array.isArray(body.sourceIds)) {
+      sourceIds = body.sourceIds.map((id: unknown) => String(id));
+    } else if (body.sourceId) {
+      sourceIds = [body.sourceId.toString()];
+    }
 
-    if (!sourceId || !targetId) {
+    if (!targetId || sourceIds.length === 0) {
       return NextResponse.json(
-        { error: 'ID transaksi source dan target wajib diisi.' },
+        { error: 'ID transaksi target dan source wajib diisi.' },
         { status: 400 }
       );
     }
 
-    if (sourceId === targetId) {
+    if (sourceIds.includes(targetId)) {
       return NextResponse.json(
-        { error: 'Transaksi source dan target tidak boleh sama.' },
+        { error: 'Transaksi target dan source tidak boleh sama.' },
         { status: 400 }
       );
     }
@@ -44,29 +49,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ambil kedua transaksi untuk dihitung total baru.
+    // Ambil transaksi target dan semua source untuk dihitung total baru.
     const { data: txs, error: fetchErr } = await serverSupabase
       .from('transactions')
       .select('id, qty_fisik, qty_non_fisik, total_harga')
-      .in('id', [sourceId, targetId]);
+      .in('id', [targetId, ...sourceIds]);
 
     if (fetchErr) throw fetchErr;
 
-    const source = (txs || []).find((t) => t.id === sourceId);
     const target = (txs || []).find((t) => t.id === targetId);
+    const sources = (txs || []).filter((t) => sourceIds.includes(t.id));
 
-    if (!source || !target) {
+    if (!target) {
       return NextResponse.json(
-        { error: 'Salah satu transaksi tidak ditemukan.' },
+        { error: 'Transaksi target tidak ditemukan.' },
         { status: 404 }
       );
     }
 
-    // 1. Pindahkan semua voucher source ke target.
+    if (sources.length !== sourceIds.length) {
+      return NextResponse.json(
+        { error: 'Salah satu transaksi source tidak ditemukan.' },
+        { status: 404 }
+      );
+    }
+
+    const sumQtyFisik = sources.reduce((acc, s) => acc + (s.qty_fisik || 0), 0);
+    const sumQtyNonFisik = sources.reduce((acc, s) => acc + (s.qty_non_fisik || 0), 0);
+    const sumTotalHarga = sources.reduce((acc, s) => acc + (s.total_harga || 0), 0);
+
+    // 1. Pindahkan semua voucher milik source ke target.
     const { error: voucherErr } = await serverSupabase
       .from('vouchers')
       .update({ transaction_id: targetId })
-      .eq('transaction_id', sourceId);
+      .in('transaction_id', sourceIds);
 
     if (voucherErr) throw voucherErr;
 
@@ -74,19 +90,19 @@ export async function POST(request: NextRequest) {
     const { error: updateErr } = await serverSupabase
       .from('transactions')
       .update({
-        qty_fisik: (target.qty_fisik || 0) + (source.qty_fisik || 0),
-        qty_non_fisik: (target.qty_non_fisik || 0) + (source.qty_non_fisik || 0),
-        total_harga: (target.total_harga || 0) + (source.total_harga || 0),
+        qty_fisik: (target.qty_fisik || 0) + sumQtyFisik,
+        qty_non_fisik: (target.qty_non_fisik || 0) + sumQtyNonFisik,
+        total_harga: (target.total_harga || 0) + sumTotalHarga,
       })
       .eq('id', targetId);
 
     if (updateErr) throw updateErr;
 
-    // 3. Hapus transaksi source.
+    // 3. Hapus semua transaksi source.
     const { error: deleteErr } = await serverSupabase
       .from('transactions')
       .delete()
-      .eq('id', sourceId);
+      .in('id', sourceIds);
 
     if (deleteErr) throw deleteErr;
 

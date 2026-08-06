@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { startTransition, useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { getCurrentSession, refreshSession } from '@/lib/services/auth';
 import { Loader2 } from 'lucide-react';
@@ -10,7 +10,7 @@ interface RequireAuthProps {
   children: React.ReactNode;
 }
 
-type GuardState = 'checking' | 'denied' | 'ok';
+type GuardState = 'checking' | 'ok';
 
 /**
  * Client-side route guard.
@@ -36,7 +36,9 @@ export function RequireAuth({ roles, children }: RequireAuthProps) {
       if (cancelled) return;
 
       if (!session || (rolesKey && !rolesKey.split(',').includes(session.role))) {
-        setState('denied');
+        // Panggil notFound() lewat startTransition setelah router terinisialisasi
+        // (memanggil saat render → "Router action dispatched before initialization").
+        startTransition(() => notFound());
         return;
       }
 
@@ -47,8 +49,6 @@ export function RequireAuth({ roles, children }: RequireAuthProps) {
       cancelled = true;
     };
   }, [rolesKey]);
-
-  if (state === 'denied') notFound();
 
   if (state !== 'ok') {
     return (

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Voucher, Transaction } from '@/types';
-import { Ticket, Search, ChevronLeft, ChevronRight, ChevronDown, Printer, Pencil, Check, X, Combine, AlertTriangle, Clock, Phone } from 'lucide-react';
+import { Ticket, Search, ChevronLeft, ChevronRight, Printer, Pencil, Check, X, Combine, Clock, Phone } from 'lucide-react';
 import { ThermalReceiptModal } from '@/components/penjualan/ThermalReceiptModal';
 import { ThermalReceiptPrint } from '@/components/penjualan/ThermalReceiptPrint';
 import { getStoredTransactions, saveTransactions, getStoredVouchers, saveVouchers } from '@/lib/storage';
@@ -37,27 +37,34 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const [editName, setEditName] = useState<string>('');
   const [editError, setEditError] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [mergeSource, setMergeSource] = useState<Transaction | null>(null);
-  const [mergeTarget, setMergeTarget] = useState<Transaction | null>(null);
-  const [mergeConfirm, setMergeConfirm] = useState<Transaction | null>(null);
+  const [mergeBase, setMergeBase] = useState<Transaction | null>(null);
+  const [mergeSelected, setMergeSelected] = useState<string[]>([]);
+  const [mergeSearch, setMergeSearch] = useState<string>('');
   const [mergeError, setMergeError] = useState<string>('');
   const [isMerging, setIsMerging] = useState<boolean>(false);
 
-  const cancelMerge = () => {
-    setMergeSource(null);
-    setMergeTarget(null);
-    setMergeConfirm(null);
+  const openMergePicker = (tx: Transaction) => {
+    setMergeBase(tx);
+    setMergeSelected([]);
+    setMergeSearch('');
     setMergeError('');
   };
 
-  const startMergeTarget = (tx: Transaction) => {
-    if (!mergeSource) return;
-    setMergeTarget(tx);
-    setMergeConfirm(tx);
+  const closeMergePicker = () => {
+    setMergeBase(null);
+    setMergeSelected([]);
+    setMergeSearch('');
     setMergeError('');
   };
 
-  const handleMerge = async (source: Transaction, target: Transaction) => {
+  const toggleMergeSelect = (id: string) => {
+    setMergeSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const handleMerge = async () => {
+    if (!mergeBase || mergeSelected.length === 0) return;
     setIsMerging(true);
     setMergeError('');
 
@@ -65,7 +72,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
       const res = await fetch('/api/transactions/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sourceId: source.id, targetId: target.id }),
+        body: JSON.stringify({ targetId: mergeBase.id, sourceIds: mergeSelected }),
       });
       const data = await res.json();
 
@@ -77,37 +84,45 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
       // Update cache lokal agar UI langsung tercermin (event → halaman refresh).
       const allTxs = getStoredTransactions();
       const allVouchers = getStoredVouchers();
+      const selectedSet = new Set(mergeSelected);
 
       const updatedVouchers = allVouchers.map((v) =>
-        v.transaction_id === source.id ? { ...v, transaction_id: target.id } : v
+        selectedSet.has(v.transaction_id) ? { ...v, transaction_id: mergeBase.id } : v
       );
-      const targetMerged = allTxs.find((t) => t.id === target.id);
-      const updatedTxs = allTxs
-        .map((t) => {
-          if (t.id === target.id) {
-            return {
-              ...t,
-              qty_fisik: (t.qty_fisik || 0) + (source.qty_fisik || 0),
-              qty_non_fisik: (t.qty_non_fisik || 0) + (source.qty_non_fisik || 0),
-              total_harga: (t.total_harga || 0) + (source.total_harga || 0),
-            };
-          }
-          return t;
-        })
-        .filter((t) => t.id !== source.id);
 
-      if (!targetMerged) {
-        updatedTxs.push({
-          ...target,
-          qty_fisik: (target.qty_fisik || 0) + (source.qty_fisik || 0),
-          qty_non_fisik: (target.qty_non_fisik || 0) + (source.qty_non_fisik || 0),
-          total_harga: (target.total_harga || 0) + (source.total_harga || 0),
-        });
-      }
+      const sums = allTxs
+        .filter((t) => selectedSet.has(t.id))
+        .reduce(
+          (acc, s) => ({
+            qty_fisik: acc.qty_fisik + (s.qty_fisik || 0),
+            qty_non_fisik: acc.qty_non_fisik + (s.qty_non_fisik || 0),
+            total_harga: acc.total_harga + (s.total_harga || 0),
+          }),
+          { qty_fisik: 0, qty_non_fisik: 0, total_harga: 0 }
+        );
+
+      const baseInStore = allTxs.find((t) => t.id === mergeBase.id);
+      const updatedTxs = baseInStore
+        ? allTxs
+            .map((t) =>
+              t.id === mergeBase.id
+                ? {
+                    ...t,
+                    qty_fisik: (t.qty_fisik || 0) + sums.qty_fisik,
+                    qty_non_fisik: (t.qty_non_fisik || 0) + sums.qty_non_fisik,
+                    total_harga: (t.total_harga || 0) + sums.total_harga,
+                  }
+                : t
+            )
+            .filter((t) => !selectedSet.has(t.id))
+        : [
+            ...allTxs.filter((t) => !selectedSet.has(t.id)),
+            { ...mergeBase, ...sums },
+          ];
 
       await saveVouchers(updatedVouchers);
       await saveTransactions(updatedTxs);
-      cancelMerge();
+      closeMergePicker();
     } catch {
       setMergeError('Tidak dapat terhubung ke server. Coba lagi.');
     } finally {
@@ -238,6 +253,30 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const totalTransactions = filteredTransactions.length;
   const totalPages = Math.max(1, Math.ceil(totalTransactions / pageSize));
 
+  const mergeCandidates = useMemo(() => {
+    if (!mergeBase) return [];
+    const q = mergeSearch.trim().toLowerCase();
+
+    const out: Array<{ tx: Transaction; vouchers: Voucher[] }> = [];
+    txMap.forEach((tx) => {
+      if (tx.id === mergeBase.id) return;
+      const vs = groupedByTx.get(tx.id) || [];
+      if (q) {
+        const name = (tx.customer_name || '').toLowerCase();
+        const phone = (tx.customer_phone || '').toLowerCase();
+        const hasCodeMatch = vs.some((v) => v.code.toLowerCase().includes(q));
+        if (!name.includes(q) && !phone.includes(q) && !hasCodeMatch) return;
+      }
+      out.push({ tx, vouchers: vs });
+    });
+
+    return out.sort((a, b) => {
+      const da = a.tx.created_at || a.vouchers[0]?.created_at || '';
+      const db = b.tx.created_at || b.vouchers[0]?.created_at || '';
+      return new Date(db).getTime() - new Date(da).getTime();
+    });
+  }, [mergeBase, mergeSearch, txMap, groupedByTx]);
+
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalTransactions);
@@ -293,30 +332,6 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
         </div>
       </div>
 
-      {/* Merge Mode Banner */}
-      {mergeSource && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3">
-          <div className="flex items-start gap-2.5">
-            <Combine className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs font-semibold text-amber-900">
-              <p className="font-black">
-                Gabungkan: {mergeSource.customer_name || 'Tanpa Nama'} ({groupedByTx.get(mergeSource.id)?.length || 0} voucher)
-              </p>
-              <p className="mt-0.5">
-                Pilih baris transaksi tujuan di bawah, lalu konfirmasi. Voucher & jumlah akan dipindahkan ke tujuan, transaksi ini dihapus.
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={cancelMerge}
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition-colors cursor-pointer active:scale-95 shrink-0"
-          >
-            <X className="w-3.5 h-3.5" />
-            Batal
-          </button>
-        </div>
-      )}
-
       {/* Mobile Card List */}
       <div className="grid gap-3 md:hidden">
         {currentTransactions.length > 0 ? (
@@ -331,13 +346,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             return (
               <div
                 key={tx?.id || vs[0].transaction_id}
-                className={`w-full max-w-full overflow-hidden rounded-2xl border p-4 shadow-sm transition-colors ${
-                  mergeSource?.id === tx?.id
-                    ? 'border-amber-300 bg-amber-50'
-                    : mergeTarget?.id === tx?.id
-                      ? 'border-emerald-300 bg-emerald-50'
-                      : 'border-slate-200 bg-white'
-                }`}
+                className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
               >
                 {/* Header: avatar + nama */}
                 <div className="flex items-start justify-between gap-3 min-w-0">
@@ -421,13 +430,9 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                 <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
                   {tx && (
                     <button
-                      onClick={() => (mergeSource ? startMergeTarget(tx) : setMergeSource(tx))}
-                      title={mergeSource ? 'Pilih Transaksi Tujuan' : 'Gabungkan Transaksi'}
-                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer active:scale-95 ${
-                        mergeSource && mergeSource.id !== tx.id
-                          ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                          : 'border-slate-300 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700'
-                      }`}
+                      onClick={() => openMergePicker(tx)}
+                      title="Gabungkan Transaksi"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors cursor-pointer active:scale-95"
                     >
                       <Combine className="w-3.5 h-3.5" />
                       Gabung
@@ -488,13 +493,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                 );
 
                 return (
-                  <tr key={tx?.id || vs[0].transaction_id} className={`transition-colors ${
-                    mergeSource?.id === tx?.id
-                      ? 'bg-amber-50 hover:bg-amber-100/70'
-                      : mergeTarget?.id === tx?.id
-                        ? 'bg-emerald-50 hover:bg-emerald-100/70'
-                        : 'hover:bg-slate-50'
-                  }`}>
+                  <tr key={tx?.id || vs[0].transaction_id} className="transition-colors hover:bg-slate-50">
                     <td className="p-3 font-mono text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                       {new Date(txTime).toLocaleString('id-ID', {
                         day: '2-digit',
@@ -561,13 +560,9 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                       {tx && (
                         <div className="flex items-center gap-1.5">
                           <button
-                            onClick={() => (mergeSource ? startMergeTarget(tx) : setMergeSource(tx))}
-                            title={mergeSource ? 'Pilih Transaksi Tujuan' : 'Gabungkan Transaksi'}
-                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer active:scale-95 ${
-                              mergeSource && mergeSource.id !== tx.id
-                                ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
-                                : 'bg-white border-slate-300 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700'
-                            }`}
+                            onClick={() => openMergePicker(tx)}
+                            title="Gabungkan Transaksi"
+                            className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700 transition-colors cursor-pointer active:scale-95"
                           >
                             <Combine className="w-4 h-4" />
                           </button>
@@ -658,84 +653,124 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
         </div>
       )}
 
-      {/* Modal Konfirmasi Gabungkan Transaksi */}
-      {mergeConfirm && mergeSource && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 space-y-4 shadow-xl">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center">
+      {/* Modal Pilih Source untuk Digabung ke Base */}
+      {mergeBase && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40"
+          onClick={isMerging ? undefined : closeMergePicker}
+        >
+          <div
+            className="w-full max-w-md max-h-[85vh] flex flex-col rounded-3xl bg-white shadow-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 px-6 pt-6">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
                   <Combine className="w-5 h-5 text-amber-600" />
                 </div>
-                <h3 className="text-sm font-black text-slate-900">Konfirmasi Penggabungan</h3>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-black text-slate-900">Gabungkan ke Base</h3>
+                  <p className="truncate text-xs font-semibold text-slate-500">
+                    {mergeBase.customer_name || 'Tanpa Nama'} ({groupedByTx.get(mergeBase.id)?.length || 0} voucher)
+                  </p>
+                </div>
               </div>
               <button
-                onClick={cancelMerge}
-                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+                onClick={closeMergePicker}
+                disabled={isMerging}
+                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
                 title="Tutup"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-2 text-xs font-semibold text-slate-700">
-              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
-                <p className="font-black text-red-700">Sumber (akan dihapus)</p>
-                <p className="mt-0.5 text-red-600">
-                  {mergeSource.customer_name || 'Tanpa Nama'} · {groupedByTx.get(mergeSource.id)?.length || 0} voucher
-                </p>
-              </div>
-              <div className="flex justify-center">
-                <ChevronDown className="w-4 h-4 text-slate-400" />
-              </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
-                <p className="font-black text-emerald-700">Tujuan (id dipakai)</p>
-                <p className="mt-0.5 text-emerald-600">
-                  {mergeConfirm.customer_name || 'Tanpa Nama'} ·{' '}
-                  {groupedByTx.get(mergeConfirm.id)?.length || 0} voucher
-                </p>
-                <p className="mt-1.5 pt-1.5 border-t border-emerald-200 text-emerald-700">
-                  Setelah digabung:{' '}
-                  <strong className="font-black">
-                    {(mergeConfirm.qty_fisik || 0) + (mergeSource.qty_fisik || 0)} fisik ·{' '}
-                    {(mergeConfirm.qty_non_fisik || 0) + (mergeSource.qty_non_fisik || 0)} non-fisik
-                  </strong>{' '}
-                  · Rp{' '}
-                  <strong className="font-black">
-                    {((mergeConfirm.total_harga || 0) + (mergeSource.total_harga || 0)).toLocaleString('id-ID')}
-                  </strong>
-                </p>
+            {/* Pencarian source */}
+            <div className="px-6 pt-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={mergeSearch}
+                  onChange={(e) => setMergeSearch(e.target.value)}
+                  placeholder="Cari source: nama, no. HP, atau kode..."
+                  disabled={isMerging}
+                  className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
+                />
+                <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
               </div>
             </div>
 
-            <div className="flex items-start gap-2 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
-              <p>
-                Semua voucher milik <strong>{mergeSource.customer_name || 'transaksi sumber'}</strong> akan
-                dipindahkan ke <strong>{mergeConfirm.customer_name || 'transaksi tujuan'}</strong>, dan
-                transaksi sumber dihapus. Tindakan ini tidak dapat dibatalkan.
-              </p>
+            {/* Daftar source */}
+            <div className="flex-1 overflow-y-auto px-6 py-3 space-y-2">
+              {mergeCandidates.length > 0 ? (
+                mergeCandidates.map(({ tx, vouchers: vs }) => {
+                  const checked = mergeSelected.includes(tx.id);
+                  return (
+                    <button
+                      key={tx.id}
+                      onClick={() => toggleMergeSelect(tx.id)}
+                      disabled={isMerging}
+                      className={`w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors cursor-pointer active:scale-[0.99] disabled:opacity-60 ${
+                        checked
+                          ? 'border-[#E70013] bg-[#E70013]/5'
+                          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <span
+                        className={`w-5 h-5 shrink-0 rounded-md border flex items-center justify-center transition-colors ${
+                          checked ? 'bg-[#E70013] border-[#E70013] text-white' : 'border-slate-300 bg-white'
+                        }`}
+                      >
+                        {checked && <Check className="w-3.5 h-3.5" />}
+                      </span>
+                      <span className="w-9 h-9 shrink-0 rounded-full bg-linear-to-br from-slate-500 to-slate-700 text-white flex items-center justify-center text-xs font-black">
+                        {(tx.customer_name || '?').charAt(0).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-bold text-slate-900 text-xs truncate">
+                          {tx.customer_name || 'Tanpa Nama'}
+                        </span>
+                        <span className="block text-[11px] text-slate-500 font-mono font-semibold truncate">
+                          {vs.length} voucher ·{' '}
+                          {new Date(tx.created_at || vs[0]?.created_at || '').toLocaleString('id-ID', {
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="py-8 text-center text-xs font-semibold text-slate-400">
+                  Tidak ada transaksi lain untuk digabung.
+                </p>
+              )}
             </div>
 
-            {mergeError && (
-              <p className="text-xs font-bold text-red-600 text-center">{mergeError}</p>
-            )}
-
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                onClick={cancelMerge}
-                className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => handleMerge(mergeSource, mergeConfirm)}
-                disabled={isMerging}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E70013] text-white text-xs font-black hover:bg-[#C50010] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
-              >
-                <Combine className="w-3.5 h-3.5" />
-                {isMerging ? 'Menggabungkan...' : 'Ya, Gabungkan'}
-              </button>
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 space-y-3">
+              {mergeError && <p className="text-xs font-bold text-red-600 text-center">{mergeError}</p>}
+              <div className="flex items-center justify-between gap-2">
+                <button
+                  onClick={closeMergePicker}
+                  disabled={isMerging}
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleMerge}
+                  disabled={isMerging || mergeSelected.length === 0}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E70013] text-white text-xs font-black hover:bg-[#C50010] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+                >
+                  <Combine className="w-3.5 h-3.5" />
+                  {isMerging ? 'Menggabungkan...' : `Gabungkan ${mergeSelected.length} transaksi`}
+                </button>
+              </div>
             </div>
           </div>
         </div>
