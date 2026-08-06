@@ -9,6 +9,7 @@ import {
   Phone,
   Ticket,
   CheckCircle2,
+  AlertCircle,
   Loader2,
   Users,
 } from 'lucide-react';
@@ -34,6 +35,8 @@ interface CheckinSearchProps {
   matches: TransactionMatch[];
   selected: TransactionMatch | null;
   isProcessing: boolean;
+  resultMessage: { success: boolean; text: string } | null;
+  resultKey: number;
   onSelect: (match: TransactionMatch) => void;
   onBack: () => void;
   onVerify: () => void;
@@ -45,6 +48,8 @@ export const CheckinSearch: React.FC<CheckinSearchProps> = ({
   matches,
   selected,
   isProcessing,
+  resultMessage,
+  resultKey,
   onSelect,
   onBack,
   onVerify,
@@ -135,6 +140,27 @@ export const CheckinSearch: React.FC<CheckinSearchProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Hasil verifikasi langsung tampil di dalam kartu (tanpa scroll) */}
+          {resultMessage && (
+            <div
+              key={resultKey}
+              role="status"
+              aria-live="polite"
+              className={`px-4 py-3 text-sm font-bold flex items-start gap-2.5 animate-fade-in ${
+                resultMessage.success
+                  ? 'bg-emerald-900 text-white border-b border-emerald-800'
+                  : 'bg-red-50 border-b border-red-200 text-red-700'
+              }`}
+            >
+              {resultMessage.success ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-300 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              )}
+              <span>{resultMessage.text}</span>
+            </div>
+          )}
 
           {/* Daftar Voucher */}
           <div className="divide-y divide-slate-100 max-h-[42vh] overflow-y-auto">

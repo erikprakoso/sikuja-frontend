@@ -141,6 +141,9 @@ export default function CheckinPosPage() {
       if (feedback.success) {
         playSuccessFeedback();
         scheduleAutoClearSuccess();
+        // Refresh cache lokal dari server agar daftar hasil pencarian & detail
+        // langsung menampilkan status terbaru (tanpa menunggu auto-sync 30 detik).
+        void syncFromSupabase().then(() => refreshStats());
       } else {
         playErrorFeedback();
       }
@@ -188,6 +191,9 @@ export default function CheckinPosPage() {
       if (feedback.success) {
         playSuccessFeedback();
         scheduleAutoClearSuccess();
+        // Refresh cache lokal agar detail transaksi terpilih langsung menampilkan
+        // status "Sudah" dan tombol verifikasi nonaktif tanpa menunggu auto-sync.
+        void syncFromSupabase().then(() => refreshStats());
       } else {
         playErrorFeedback();
       }
@@ -357,13 +363,15 @@ export default function CheckinPosPage() {
         matches={matches}
         selected={selectedMatch}
         isProcessing={isProcessing}
+        resultMessage={resultMessage}
+        resultKey={resultKey}
         onSelect={(m) => setSelectedTxId(m.tx.id)}
         onBack={() => setSelectedTxId(null)}
         onVerify={handleVerifySelected}
       />
 
-      {/* Result Alert Box (dipakai jalur pencarian & scan) */}
-      {!isProcessing && resultMessage && (
+      {/* Result Alert Box (dipakai jalur scan; jalur pencarian tampil di dalam kartu detail) */}
+      {!isProcessing && resultMessage && !selectedMatch && (
         <div
           key={resultKey}
           role="status"
