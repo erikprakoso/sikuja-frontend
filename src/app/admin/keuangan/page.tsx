@@ -30,7 +30,7 @@ export default function KeuanganDashboardPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Link href="/admin/keuangan/donasi" className="group block">
-                <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-3xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
+                <div className="bg-linear-to-br from-emerald-500 to-emerald-600 text-white rounded-3xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
                   <h3 className="text-xl font-black mb-2">Pemasukan & Sponsor</h3>
                   <p className="text-emerald-100 mb-4">Kelola donasi, bantuan dana, serta sponsor acara</p>
                   <div className="flex items-center gap-2 font-semibold">
@@ -43,7 +43,7 @@ export default function KeuanganDashboardPage() {
               </Link>
 
               <Link href="/admin/keuangan/pembelian" className="group block">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-3xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
+                <div className="bg-linear-to-br from-blue-500 to-blue-600 text-white rounded-3xl p-8 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all">
                   <h3 className="text-xl font-black mb-2">Pengeluaran & Belanja</h3>
                   <p className="text-blue-100 mb-4">Catat belanja barang doorprize maupun operasional</p>
                   <div className="flex items-center gap-2 font-semibold">

@@ -253,7 +253,7 @@ export const DonasiList = () => {
       {/* Summary Stat Cards (Specific to Incomes & Donations) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {/* Total Pemasukan & Sponsor */}
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm border border-emerald-500/30 flex items-center justify-between">
+        <div className="bg-linear-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm border border-emerald-500/30 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Total Pemasukan & Sponsor</span>
             <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(totalDonations)}</p>
@@ -277,7 +277,7 @@ export const DonasiList = () => {
         </div>
 
         {/* Sisa Saldo Donasi & Sponsor */}
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-sm border border-blue-500/30 flex items-center justify-between">
+        <div className="bg-linear-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-sm border border-blue-500/30 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Donasi & Sponsor</span>
             <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(sisaDonasi)}</p>

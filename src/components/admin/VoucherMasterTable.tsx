@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Voucher, Transaction } from '@/types';
-import { Ticket, Search, ChevronLeft, ChevronRight, Printer, Pencil, Check, X } from 'lucide-react';
+import { Ticket, Search, ChevronLeft, ChevronRight, ChevronDown, Printer, Pencil, Check, X, Combine, AlertTriangle, Clock, Phone } from 'lucide-react';
 import { ThermalReceiptModal } from '@/components/penjualan/ThermalReceiptModal';
 import { ThermalReceiptPrint } from '@/components/penjualan/ThermalReceiptPrint';
-import { getStoredTransactions, saveTransactions } from '@/lib/storage';
+import { getStoredTransactions, saveTransactions, getStoredVouchers, saveVouchers } from '@/lib/storage';
 
 interface VoucherMasterTableProps {
   vouchers: Voucher[];
@@ -37,6 +37,83 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   const [editName, setEditName] = useState<string>('');
   const [editError, setEditError] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [mergeSource, setMergeSource] = useState<Transaction | null>(null);
+  const [mergeTarget, setMergeTarget] = useState<Transaction | null>(null);
+  const [mergeConfirm, setMergeConfirm] = useState<Transaction | null>(null);
+  const [mergeError, setMergeError] = useState<string>('');
+  const [isMerging, setIsMerging] = useState<boolean>(false);
+
+  const cancelMerge = () => {
+    setMergeSource(null);
+    setMergeTarget(null);
+    setMergeConfirm(null);
+    setMergeError('');
+  };
+
+  const startMergeTarget = (tx: Transaction) => {
+    if (!mergeSource) return;
+    setMergeTarget(tx);
+    setMergeConfirm(tx);
+    setMergeError('');
+  };
+
+  const handleMerge = async (source: Transaction, target: Transaction) => {
+    setIsMerging(true);
+    setMergeError('');
+
+    try {
+      const res = await fetch('/api/transactions/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceId: source.id, targetId: target.id }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setMergeError(data.error || 'Gagal menggabungkan transaksi.');
+        return;
+      }
+
+      // Update cache lokal agar UI langsung tercermin (event → halaman refresh).
+      const allTxs = getStoredTransactions();
+      const allVouchers = getStoredVouchers();
+
+      const updatedVouchers = allVouchers.map((v) =>
+        v.transaction_id === source.id ? { ...v, transaction_id: target.id } : v
+      );
+      const targetMerged = allTxs.find((t) => t.id === target.id);
+      const updatedTxs = allTxs
+        .map((t) => {
+          if (t.id === target.id) {
+            return {
+              ...t,
+              qty_fisik: (t.qty_fisik || 0) + (source.qty_fisik || 0),
+              qty_non_fisik: (t.qty_non_fisik || 0) + (source.qty_non_fisik || 0),
+              total_harga: (t.total_harga || 0) + (source.total_harga || 0),
+            };
+          }
+          return t;
+        })
+        .filter((t) => t.id !== source.id);
+
+      if (!targetMerged) {
+        updatedTxs.push({
+          ...target,
+          qty_fisik: (target.qty_fisik || 0) + (source.qty_fisik || 0),
+          qty_non_fisik: (target.qty_non_fisik || 0) + (source.qty_non_fisik || 0),
+          total_harga: (target.total_harga || 0) + (source.total_harga || 0),
+        });
+      }
+
+      await saveVouchers(updatedVouchers);
+      await saveTransactions(updatedTxs);
+      cancelMerge();
+    } catch {
+      setMergeError('Tidak dapat terhubung ke server. Coba lagi.');
+    } finally {
+      setIsMerging(false);
+    }
+  };
 
   const startEdit = (tx: Transaction) => {
     setEditingId(tx.id);
@@ -216,6 +293,30 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
         </div>
       </div>
 
+      {/* Merge Mode Banner */}
+      {mergeSource && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3">
+          <div className="flex items-start gap-2.5">
+            <Combine className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-xs font-semibold text-amber-900">
+              <p className="font-black">
+                Gabungkan: {mergeSource.customer_name || 'Tanpa Nama'} ({groupedByTx.get(mergeSource.id)?.length || 0} voucher)
+              </p>
+              <p className="mt-0.5">
+                Pilih baris transaksi tujuan di bawah, lalu konfirmasi. Voucher & jumlah akan dipindahkan ke tujuan, transaksi ini dihapus.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={cancelMerge}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition-colors cursor-pointer active:scale-95 shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+            Batal
+          </button>
+        </div>
+      )}
+
       {/* Mobile Card List */}
       <div className="grid gap-3 md:hidden">
         {currentTransactions.length > 0 ? (
@@ -230,91 +331,128 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             return (
               <div
                 key={tx?.id || vs[0].transaction_id}
-                className="rounded-2xl border border-slate-200 p-4 shadow-xs"
+                className={`w-full max-w-full overflow-hidden rounded-2xl border p-4 shadow-sm transition-colors ${
+                  mergeSource?.id === tx?.id
+                    ? 'border-amber-300 bg-amber-50'
+                    : mergeTarget?.id === tx?.id
+                      ? 'border-emerald-300 bg-emerald-50'
+                      : 'border-slate-200 bg-white'
+                }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    {editingId === tx?.id ? (
-                      <div className="space-y-1.5">
-                        <input
-                          type="text"
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          placeholder="Nama pembeli"
-                          autoFocus
-                          className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
-                        />
-                        {editError && <p className="text-[11px] font-bold text-red-600">{editError}</p>}
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleSaveName(tx)}
-                            disabled={isSaving}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#E70013] text-white text-[11px] font-bold hover:bg-[#C50010] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
-                          >
-                            <Check className="w-3 h-3" />
-                            {isSaving ? 'Menyimpan...' : 'Simpan'}
-                          </button>
-                          <button
-                            onClick={cancelEdit}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
-                          >
-                            <X className="w-3 h-3" />
-                            Batal
-                          </button>
+                {/* Header: avatar + nama */}
+                <div className="flex items-start justify-between gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-[#E70013] to-rose-400 text-white flex items-center justify-center text-sm font-black shrink-0">
+                      {(custName || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      {editingId === tx?.id ? (
+                        <div className="space-y-1.5">
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            placeholder="Nama pembeli"
+                            autoFocus
+                            className="w-full px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
+                          />
+                          {editError && <p className="text-[11px] font-bold text-red-600">{editError}</p>}
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleSaveName(tx)}
+                              disabled={isSaving}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-[#E70013] text-white text-[11px] font-bold hover:bg-[#C50010] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+                            >
+                              <Check className="w-3 h-3" />
+                              {isSaving ? 'Menyimpan...' : 'Simpan'}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+                            >
+                              <X className="w-3 h-3" />
+                              Batal
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ) : (
-                      <>
-                        <p className="font-bold text-slate-900 truncate">{custName}</p>
-                        {custPhone ? (
-                          <span className="text-[11px] text-slate-500 font-mono font-semibold">{custPhone}</span>
-                        ) : null}
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <p className="font-bold text-slate-900 leading-snug break-words">{custName}</p>
+                          {custPhone ? (
+                            <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono font-semibold break-all">
+                              <Phone className="w-3 h-3 shrink-0 text-slate-400" />
+                              {custPhone}
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    {tx && (
-                      <button
-                        onClick={() => startEdit(tx)}
-                        title="Ubah Nama"
-                        className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                    )}
-                    {tx && (
-                      <button
-                        onClick={() => setReprintTx(tx)}
-                        title="Cetak Ulang Struk"
-                        className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95"
-                      >
-                        <Printer className="w-4 h-4" />
-                      </button>
-                    )}
+
+                  {/* Total voucher */}
+                  <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-slate-50 border border-slate-200 px-2.5 py-1.5">
+                    <strong className="text-sm font-black text-[#E70013] leading-none">{vs.length}</strong>
+                    <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">Voucher</span>
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {statusList.map((meta) => (
-                    <span key={meta.label} className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.cls}`}>
-                      {meta.label}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-slate-600 border-t border-slate-100 pt-2">
-                  <span className="font-mono">
+                {/* Status badges (kiri) + waktu (kanan) */}
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                    {statusList.map((meta) => (
+                      <span key={meta.label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.cls}`}>
+                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                        {meta.label}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
                     {new Date(txTime).toLocaleString('id-ID', {
                       day: '2-digit',
                       month: 'short',
                       hour: '2-digit',
                       minute: '2-digit',
                     })}
-                  </span>
-                  <span>
-                    <strong className="font-black text-slate-900">{vs.length}</strong>{' '}
-                    <span className="text-slate-500">voucher</span>
-                  </span>
+                  </div>
+                </div>
+
+                {/* Action footer */}
+                <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
+                  {tx && (
+                    <button
+                      onClick={() => (mergeSource ? startMergeTarget(tx) : setMergeSource(tx))}
+                      title={mergeSource ? 'Pilih Transaksi Tujuan' : 'Gabungkan Transaksi'}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer active:scale-95 ${
+                        mergeSource && mergeSource.id !== tx.id
+                          ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                          : 'border-slate-300 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700'
+                      }`}
+                    >
+                      <Combine className="w-3.5 h-3.5" />
+                      Gabung
+                    </button>
+                  )}
+                  {tx && (
+                    <button
+                      onClick={() => startEdit(tx)}
+                      title="Ubah Nama"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
+                  )}
+                  {tx && (
+                    <button
+                      onClick={() => setReprintTx(tx)}
+                      title="Cetak Ulang Struk"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Cetak
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -350,7 +488,13 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                 );
 
                 return (
-                  <tr key={tx?.id || vs[0].transaction_id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={tx?.id || vs[0].transaction_id} className={`transition-colors ${
+                    mergeSource?.id === tx?.id
+                      ? 'bg-amber-50 hover:bg-amber-100/70'
+                      : mergeTarget?.id === tx?.id
+                        ? 'bg-emerald-50 hover:bg-emerald-100/70'
+                        : 'hover:bg-slate-50'
+                  }`}>
                     <td className="p-3 font-mono text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                       {new Date(txTime).toLocaleString('id-ID', {
                         day: '2-digit',
@@ -416,6 +560,17 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                     <td className="p-3">
                       {tx && (
                         <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => (mergeSource ? startMergeTarget(tx) : setMergeSource(tx))}
+                            title={mergeSource ? 'Pilih Transaksi Tujuan' : 'Gabungkan Transaksi'}
+                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer active:scale-95 ${
+                              mergeSource && mergeSource.id !== tx.id
+                                ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                : 'bg-white border-slate-300 text-slate-600 hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700'
+                            }`}
+                          >
+                            <Combine className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => startEdit(tx)}
                             title="Ubah Nama"
@@ -499,6 +654,89 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Gabungkan Transaksi */}
+      {mergeConfirm && mergeSource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 space-y-4 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center">
+                  <Combine className="w-5 h-5 text-amber-600" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900">Konfirmasi Penggabungan</h3>
+              </div>
+              <button
+                onClick={cancelMerge}
+                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+                title="Tutup"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs font-semibold text-slate-700">
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+                <p className="font-black text-red-700">Sumber (akan dihapus)</p>
+                <p className="mt-0.5 text-red-600">
+                  {mergeSource.customer_name || 'Tanpa Nama'} · {groupedByTx.get(mergeSource.id)?.length || 0} voucher
+                </p>
+              </div>
+              <div className="flex justify-center">
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </div>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5">
+                <p className="font-black text-emerald-700">Tujuan (id dipakai)</p>
+                <p className="mt-0.5 text-emerald-600">
+                  {mergeConfirm.customer_name || 'Tanpa Nama'} ·{' '}
+                  {groupedByTx.get(mergeConfirm.id)?.length || 0} voucher
+                </p>
+                <p className="mt-1.5 pt-1.5 border-t border-emerald-200 text-emerald-700">
+                  Setelah digabung:{' '}
+                  <strong className="font-black">
+                    {(mergeConfirm.qty_fisik || 0) + (mergeSource.qty_fisik || 0)} fisik ·{' '}
+                    {(mergeConfirm.qty_non_fisik || 0) + (mergeSource.qty_non_fisik || 0)} non-fisik
+                  </strong>{' '}
+                  · Rp{' '}
+                  <strong className="font-black">
+                    {((mergeConfirm.total_harga || 0) + (mergeSource.total_harga || 0)).toLocaleString('id-ID')}
+                  </strong>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600" />
+              <p>
+                Semua voucher milik <strong>{mergeSource.customer_name || 'transaksi sumber'}</strong> akan
+                dipindahkan ke <strong>{mergeConfirm.customer_name || 'transaksi tujuan'}</strong>, dan
+                transaksi sumber dihapus. Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+
+            {mergeError && (
+              <p className="text-xs font-bold text-red-600 text-center">{mergeError}</p>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={cancelMerge}
+                className="px-4 py-2 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => handleMerge(mergeSource, mergeConfirm)}
+                disabled={isMerging}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E70013] text-white text-xs font-black hover:bg-[#C50010] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                <Combine className="w-3.5 h-3.5" />
+                {isMerging ? 'Menggabungkan...' : 'Ya, Gabungkan'}
+              </button>
+            </div>
           </div>
         </div>
       )}
