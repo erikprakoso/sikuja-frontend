@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X, Users, Search, ArrowRight } from 'lucide-react';
+import { Minus, Plus, CheckCircle2, Banknote, QrCode, Loader2, Dices, Hash, AlertCircle, CheckCircle, Gift, X, ArrowRight } from 'lucide-react';
 import { generateDynamicQris, getSavedStaticQris } from '@/lib/services/qris';
 import { checkCodeAvailable } from '@/lib/services/voucher';
 import { Transaction } from '@/types';
@@ -45,7 +45,6 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [rw, setRw] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [nameError, setNameError] = useState<string>('');
-  const [historyQuery, setHistoryQuery] = useState<string>('');
   const [historyResults, setHistoryResults] = useState<Transaction[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
@@ -53,6 +52,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const conflictBannerRef = useRef<HTMLDivElement>(null);
   const codeInputRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const lastAutofilledNameRef = useRef('');
 
   const activeType: 'fisik' | 'non_fisik' = qtyNonFisik > 0 && qtyFisik === 0 ? 'non_fisik' : 'fisik';
   const currentQty = activeType === 'fisik' ? qtyFisik : qtyNonFisik;
@@ -140,15 +140,15 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   }, [conflictCode]);
 
   useEffect(() => {
-    const q = historyQuery.trim();
+    const q = customerName.trim();
+    if (q.length < 3 || q === lastAutofilledNameRef.current) {
+      setHistoryResults([]);
+      setHistoryError('');
+      setHistoryLoading(false);
+      return;
+    }
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
-      if (q.length < 3) {
-        setHistoryResults([]);
-        setHistoryError('');
-        setHistoryLoading(false);
-        return;
-      }
       setHistoryLoading(true);
       setHistoryError('');
       try {
@@ -171,7 +171,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [historyQuery]);
+  }, [customerName]);
 
   const hasCustomCodeError = Object.values(customCodeStatuses).some((s) => s.formatted && !s.available);
   const hasServerConflict = conflictCode !== '';
@@ -200,6 +200,32 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     }
     setNameError('');
     setShowConfirmModal(true);
+  };
+
+  const handleSelectHistory = (tx: Transaction) => {
+    const parts = (tx.customer_name || '').split(' - ').map((s) => s.trim()).filter(Boolean);
+    if (parts.length === 0) return;
+    const [firstName, ...rest] = parts;
+    let nextSecondary = '';
+    let nextRt = '';
+    let nextRw = '';
+    for (const part of rest) {
+      if (/^\d{1,3}$/.test(part)) {
+        if (!nextRt) nextRt = part;
+        else if (!nextRw) nextRw = part;
+      } else {
+        nextSecondary = nextSecondary ? `${nextSecondary} - ${part}` : part;
+      }
+    }
+    lastAutofilledNameRef.current = firstName;
+    setCustomerName(firstName);
+    setSecondaryName(nextSecondary);
+    setRt(nextRt);
+    setRw(nextRw);
+    if (tx.customer_phone) setCustomerPhone(tx.customer_phone);
+    setNameError('');
+    setHistoryResults([]);
+    nameInputRef.current?.focus();
   };
 
   const buildCustomerName = () => {
@@ -454,87 +480,88 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             3. Identitas Pemilik Kupon:
           </label>
 
-          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-            <label className="text-[11px] text-slate-500 font-semibold mb-1 flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              Cek Riwayat Nama (deteksi nama kembar):
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ketik minimal 3 huruf nama..."
-                value={historyQuery}
-                onChange={(e) => setHistoryQuery(e.target.value)}
-                disabled={isLoading}
-                className="w-full pl-9 pr-8 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20"
-              />
-              <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
-              {historyLoading && (
-                <Loader2 className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#E70013] animate-spin" />
-              )}
-            </div>
-
-            {historyError && (
-              <p className="mt-1.5 text-[10px] font-bold text-[#E70013] flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                {historyError}
-              </p>
-            )}
-
-            {!historyLoading && historyQuery.trim().length >= 3 && historyResults.length === 0 && !historyError && (
-              <p className="mt-1.5 text-[10px] font-medium text-slate-500">
-                Tidak ada transaksi dengan nama &ldquo;{historyQuery.trim()}&rdquo;.
-              </p>
-            )}
-
-            {historyResults.length > 0 && (
-              <div className="mt-2 space-y-1.5 max-h-40 overflow-y-auto pr-1">
-                {historyResults.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-[11px] font-bold text-slate-900 truncate">{tx.customer_name || 'Tanpa nama'}</p>
-                      <p className="text-[10px] text-slate-500 font-medium">
-                        {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                        {tx.customer_phone ? ` · ${tx.customer_phone}` : ''}
-                      </p>
-                    </div>
-                    <span className="flex-shrink-0 text-[10px] font-black text-[#E70013]">
-                      {(tx.qty_fisik || 0) + (tx.qty_non_fisik || 0)} lembar
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="text-[11px] text-slate-500 font-semibold mb-1 block">
                 Nama Pembeli / Pemilik: <span className="text-[#E70013]">*</span>
               </label>
-              <input
-                ref={nameInputRef}
-                type="text"
-                placeholder="Contoh: Pak Budi / Bu Ani"
-                value={customerName}
-                onChange={(e) => {
-                  setCustomerName(e.target.value);
-                  if (nameError) setNameError('');
-                }}
-                disabled={isLoading}
-                aria-invalid={!!nameError}
-                className={`w-full px-3.5 py-2 bg-white border rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 ${
-                  nameError ? 'border-[#E70013] bg-red-50' : 'border-slate-300'
-                }`}
-              />
+              <div className="relative">
+                <input
+                  ref={nameInputRef}
+                  type="text"
+                  placeholder="Contoh: Pak Budi / Bu Ani"
+                  value={customerName}
+                  onChange={(e) => {
+                    lastAutofilledNameRef.current = '';
+                    setCustomerName(e.target.value);
+                    if (nameError) setNameError('');
+                  }}
+                  disabled={isLoading}
+                  aria-invalid={!!nameError}
+                  className={`w-full px-3.5 py-2 bg-white border rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 ${
+                    nameError ? 'border-[#E70013] bg-red-50' : 'border-slate-300'
+                  }`}
+                />
+                {historyLoading && customerName.trim().length >= 3 && (
+                  <Loader2 className="absolute right-3 top-2.5 w-3.5 h-3.5 text-[#E70013] animate-spin" />
+                )}
+              </div>
+
               {nameError && (
                 <p className="mt-1 text-[10px] font-bold text-[#E70013] flex items-center gap-1 pl-1 animate-fade-in">
                   <AlertCircle className="w-3 h-3 flex-shrink-0" />
                   {nameError}
                 </p>
+              )}
+
+              {historyError && (
+                <p className="mt-1.5 text-[10px] font-bold text-[#E70013] flex items-center gap-1 pl-1">
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                  {historyError}
+                </p>
+              )}
+
+              {!historyLoading && customerName.trim().length >= 3 && historyResults.length === 0 && !historyError && (
+                <p className="mt-1.5 text-[10px] font-medium text-emerald-600 flex items-center gap-1 pl-1">
+                  <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                  Tidak ada nama kembar untuk &ldquo;{customerName.trim()}&rdquo;.
+                </p>
+              )}
+
+              {!historyLoading && historyResults.length > 0 && (
+                <div className="mt-2 p-3 rounded-xl bg-amber-50 border border-amber-200">
+                  <p className="text-[10px] font-black text-amber-800 uppercase tracking-wide flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    Nama ini sudah pernah terbit — klik untuk isi otomatis
+                  </p>
+                  <div className="mt-1.5 space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    {historyResults.map((tx) => (
+                      <button
+                        key={tx.id}
+                        type="button"
+                        onClick={() => handleSelectHistory(tx)}
+                        disabled={isLoading}
+                        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-amber-200 hover:border-[#E70013] hover:shadow-sm transition-all cursor-pointer active:scale-[0.99] text-left disabled:opacity-50"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold text-slate-900 truncate">{tx.customer_name || 'Tanpa nama'}</p>
+                          <p className="text-[10px] text-slate-500 font-medium">
+                            {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {tx.customer_phone ? ` · ${tx.customer_phone}` : ''}
+                          </p>
+                        </div>
+                        <span className="flex-shrink-0 flex items-center gap-2">
+                          <span className="text-[10px] font-black text-[#E70013]">
+                            {(tx.qty_fisik || 0) + (tx.qty_non_fisik || 0)} lembar
+                          </span>
+                          <span className="text-[10px] font-black text-[#E70013] bg-red-50 border border-red-100 rounded-full px-2 py-0.5 whitespace-nowrap">
+                            Isi Otomatis
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
             <div>
