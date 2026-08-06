@@ -15,7 +15,7 @@ import {
 
 const NAV_ITEMS = [
   { href: '/sales', label: 'Sales', roles: ['penjual', 'admin'] },
-  { href: '/checkin', label: 'Check-In', roles: ['pos', 'admin'] },
+  { href: '/checkin', label: 'Checkpoint', roles: ['pos', 'admin'] },
   { href: '/draw', label: 'Draw', roles: ['mc', 'admin'] },
   { href: '/verification', label: 'Verification', roles: ['verifikator', 'admin'] },
   { href: '/monitoring', label: 'Monitoring', roles: ['admin'] },
