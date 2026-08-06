@@ -10,7 +10,6 @@ import {
 import { Voucher, Transaction, DrawResult } from '@/types';
 
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 
@@ -46,9 +45,6 @@ export default function MonitoringPage() {
   return (
     <RequireAuth roles={['admin']}>
     <div className="no-print space-y-8 py-4 max-w-6xl mx-auto">
-      {/* Header Title & Export Buttons */}
-      <AdminHeader />
-
       {/* Summary Stat Cards */}
       <AdminStatCards
         totalSales={totalSales}

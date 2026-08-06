@@ -285,50 +285,62 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
       {/* Top Filter Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="space-y-3">
         <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
           <Ticket className="w-5 h-5 text-[#E70013]" />
           Data Transaksi ({totalTransactions})
         </h2>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-end">
           {/* Search Input */}
-          <div className="relative flex-1 sm:w-64">
+          <div className="relative flex-1 lg:max-w-xs">
             <input
               type="text"
               placeholder="Cari kode, nama, atau no. HP..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
+              className="w-full pl-8 pr-9 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
             />
-            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+            {searchQuery && (
+              <button
+                onClick={() => handleSearchChange('')}
+                aria-label="Hapus pencarian"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => handleStatusFilterChange(e.target.value)}
-            className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-          >
-            <option value="all">Semua Status</option>
-            <option value="terbit">Terbit (Belum Verifikasi)</option>
-            <option value="checkin">Terverifikasi Pos</option>
-            <option value="menang">Pemenang Undian</option>
-            <option value="diklaim">Hadiah Diserahkan</option>
-            <option value="forfeited">Gugur (Hangus)</option>
-          </select>
+          <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center lg:gap-2">
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 cursor-pointer"
+            >
+              <option value="all">Semua Status</option>
+              <option value="terbit">Terbit (Belum Verifikasi)</option>
+              <option value="checkin">Terverifikasi Pos</option>
+              <option value="menang">Pemenang Undian</option>
+              <option value="diklaim">Hadiah Diserahkan</option>
+              <option value="forfeited">Gugur (Hangus)</option>
+            </select>
 
-          {/* Page Size Select */}
-          <select
-            value={pageSize}
-            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-            className="px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-          >
-            <option value={10}>10 / hlm</option>
-            <option value={25}>25 / hlm</option>
-            <option value={50}>50 / hlm</option>
-            <option value={100}>100 / hlm</option>
-          </select>
+            {/* Page Size Select */}
+            <select
+              value={pageSize}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              aria-label="Jumlah data per halaman"
+              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 cursor-pointer"
+            >
+              <option value={10}>10 / hlm</option>
+              <option value={25}>25 / hlm</option>
+              <option value={50}>50 / hlm</option>
+              <option value={100}>100 / hlm</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -599,8 +611,8 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 
       {/* Pagination Footer Controls */}
       {totalTransactions > 0 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs font-semibold text-slate-600">
-          <span className="text-[11px]">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2 text-xs font-semibold text-slate-600">
+          <span className="text-[11px] text-center">
             Menampilkan <strong className="font-black text-slate-900">{startIndex + 1}</strong>–
             <strong className="font-black text-slate-900">{endIndex}</strong> dari{' '}
             <strong className="font-black text-slate-900">{totalTransactions}</strong> data transaksi
