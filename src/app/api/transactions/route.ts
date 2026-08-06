@@ -45,6 +45,54 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const auth = requireAuth(request, ['admin']);
+    if (auth instanceof NextResponse) return auth;
+
+    if (isServerSupabaseConfigured() && !isServiceRoleConfigured()) {
+      return NextResponse.json(
+        { error: 'Server belum dikonfigurasi: tambahkan SUPABASE_SERVICE_ROLE_KEY di environment.' },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json();
+    const id = (body.id || '').toString();
+    const customerName = (body.customerName || '').toString().trim();
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID transaksi wajib diisi.' }, { status: 400 });
+    }
+
+    if (!customerName) {
+      return NextResponse.json({ error: 'Nama pembeli wajib diisi.' }, { status: 400 });
+    }
+
+    if (!isServerSupabaseConfigured()) {
+      return NextResponse.json({
+        success: true,
+        transaction: { id, customer_name: customerName },
+      });
+    }
+
+    const { data: updatedTx, error: updateErr } = await serverSupabase
+      .from('transactions')
+      .update({ customer_name: customerName })
+      .eq('id', id)
+      .select('id, token, qty_fisik, qty_non_fisik, total_harga, customer_name, customer_phone, payment_method, created_at')
+      .single();
+
+    if (updateErr) throw updateErr;
+
+    return NextResponse.json({ success: true, transaction: updatedTx });
+  } catch (err: unknown) {
+    const error = err as Error;
+    console.error('API /transactions PATCH error:', error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const auth = requireAuth(request, ['penjual', 'admin']);

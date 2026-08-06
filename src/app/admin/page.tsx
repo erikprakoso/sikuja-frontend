@@ -5,7 +5,6 @@ import {
   getStoredVouchers,
   getStoredTransactions,
   getStoredDrawResults,
-  syncFromSupabase,
   SIKUJA_EVENT_NAME,
 } from '@/lib/storage';
 import { Voucher, Transaction, DrawResult } from '@/types';
@@ -16,30 +15,25 @@ import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 
 export default function AdminDashboardPage() {
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>(() => getStoredVouchers());
+  const [transactions, setTransactions] = useState<Transaction[]>(() => getStoredTransactions());
+  const [drawResults, setDrawResults] = useState<DrawResult[]>(() => getStoredDrawResults());
   
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const loadData = () => {
-    setVouchers(getStoredVouchers());
-    setTransactions(getStoredTransactions());
-    setDrawResults(getStoredDrawResults());
-  };
-
   useEffect(() => {
-    syncFromSupabase().then(() => {
-      loadData();
-    });
-    if (typeof window !== 'undefined') {
-      window.addEventListener(SIKUJA_EVENT_NAME, loadData);
-    }
+    // Data ditarik secara global oleh SyncProvider (layout); halaman cukup
+    // mendengarkan event `sikuja_data_changed` untuk refresh tanpa reload ganda.
+    if (typeof window === 'undefined') return;
+    const handleDataChanged = () => {
+      setVouchers(getStoredVouchers());
+      setTransactions(getStoredTransactions());
+      setDrawResults(getStoredDrawResults());
+    };
+    window.addEventListener(SIKUJA_EVENT_NAME, handleDataChanged);
     return () => {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener(SIKUJA_EVENT_NAME, loadData);
-      }
+      window.removeEventListener(SIKUJA_EVENT_NAME, handleDataChanged);
     };
   }, []);
 
@@ -63,6 +57,7 @@ export default function AdminDashboardPage() {
         totalCheckin={totalCheckin}
         drawResults={drawResults}
         totalOmzet={totalOmzet}
+        totalTransactions={transactions.length}
       />
 
       {/* Vouchers Master Table */}

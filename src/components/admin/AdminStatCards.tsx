@@ -1,6 +1,6 @@
 import React from 'react';
 import { DrawResult } from '@/types';
-import { Ticket, Banknote, QrCode, Trophy } from 'lucide-react';
+import { Ticket, Banknote, QrCode, Trophy, Receipt } from 'lucide-react';
 
 interface AdminStatCardsProps {
   totalSales: number;
@@ -9,6 +9,7 @@ interface AdminStatCardsProps {
   totalCheckin: number;
   drawResults: DrawResult[];
   totalOmzet: number;
+  totalTransactions: number;
 }
 
 const formatRupiah = (amount: number) => {
@@ -22,13 +23,28 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
   totalCheckin,
   drawResults,
   totalOmzet,
+  totalTransactions,
 }) => {
   const participationRate = totalSales > 0 ? ((totalCheckin / totalSales) * 100).toFixed(0) : '0';
   const totalClaimed = drawResults.filter((r) => r.claimed).length;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* 1. Total Penerbitan */}
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* 1. Total Transaksi */}
+      <div className="bg-sky-50/50 border border-sky-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Transaksi</span>
+          <div className="p-2 rounded-xl bg-sky-600 text-white">
+            <Receipt className="w-4 h-4" />
+          </div>
+        </div>
+        <p className="text-2xl sm:text-3xl font-black text-slate-900 mt-1.5">
+          {totalTransactions} <span className="text-sm font-semibold text-slate-500">Transaksi</span>
+        </p>
+        <span className="text-[11px] font-semibold text-slate-500 block mt-1">Seluruh transaksi penjualan</span>
+      </div>
+
+      {/* 2. Total Penerbitan */}
       <div className="bg-[#E70013]/5 border border-[#E70013]/20 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Penerbitan</span>
@@ -44,7 +60,7 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
         </span>
       </div>
 
-      {/* 2. Hasil Penjualan */}
+      {/* 3. Hasil Penjualan */}
       <div className="bg-emerald-50/50 border border-emerald-200 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Hasil Penjualan</span>
@@ -60,7 +76,7 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
         </span>
       </div>
 
-      {/* 3. Kehadiran Peserta */}
+      {/* 4. Kehadiran Peserta */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kehadiran Peserta</span>
@@ -74,7 +90,7 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
         <span className="text-[11px] font-semibold text-slate-500 block mt-1">Kehadiran {participationRate}%</span>
       </div>
 
-      {/* 4. Kupon Terundi */}
+      {/* 5. Kupon Terundi */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Kupon Terundi</span>
