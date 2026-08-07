@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactCompiler: true,
+  // React Compiler menambah pass transformasi Babel yang membuat dev (Turbopack)
+  // sangat lambat (request bisa 12-50 detik). Aktifkan hanya saat production build.
+  reactCompiler: process.env.NODE_ENV === 'production',
 
   // Anti-cache headers: memastikan browser HP selalu memeriksa versi terbaru
   // setelah deploy, tanpa perlu clear cache manual.

@@ -14,9 +14,9 @@ import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 
 export default function MonitoringPage() {
-  const [vouchers, setVouchers] = useState<Voucher[]>(() => getStoredVouchers());
-  const [transactions, setTransactions] = useState<Transaction[]>(() => getStoredTransactions());
-  const [drawResults, setDrawResults] = useState<DrawResult[]>(() => getStoredDrawResults());
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
   
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -25,6 +25,9 @@ export default function MonitoringPage() {
     // Data ditarik secara global oleh SyncProvider (layout); halaman cukup
     // mendengarkan event `sikuja_data_changed` untuk refresh tanpa reload ganda.
     if (typeof window === 'undefined') return;
+    setVouchers(getStoredVouchers());
+    setTransactions(getStoredTransactions());
+    setDrawResults(getStoredDrawResults());
     const handleDataChanged = () => {
       setVouchers(getStoredVouchers());
       setTransactions(getStoredTransactions());

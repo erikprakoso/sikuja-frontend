@@ -15,9 +15,10 @@ import { HomeRecentWinners } from '@/components/home/HomeRecentWinners';
 const SYNC_INTERVAL_MS = 30000;
 
 export default function HomePage() {
-  const [vouchers, setVouchers] = useState<Voucher[]>(() => getStoredVouchers());
-  const [winners, setWinners] = useState<DrawResult[]>(() => getStoredDrawResults());
-  const [session, setSession] = useState<UserSession | null>(() => getCurrentSession());
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [winners, setWinners] = useState<DrawResult[]>([]);
+  const [session, setSession] = useState<UserSession | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
@@ -49,6 +50,7 @@ export default function HomePage() {
   }, [loadData]);
 
   useEffect(() => {
+    setMounted(true);
     refreshSession().then(() => loadData());
 
     const syncTimer = window.setTimeout(() => {
@@ -141,10 +143,10 @@ export default function HomePage() {
       <HomeHeroBanner />
 
       {/* Cara Beli Kupon (publik, untuk peserta jalan sehat) */}
-      {!session && <HomeBuyCoupons />}
+      {mounted && !session && <HomeBuyCoupons />}
 
       {/* Live Stat Summary Section (hanya untuk panitia yang login) */}
-      {session && (
+      {mounted && session && (
         <HomeStatCards
           totalTerjual={totalTerjual}
           totalFisik={totalFisik}
@@ -156,10 +158,10 @@ export default function HomePage() {
       )}
 
       {/* Role-Based Module Cards Section */}
-      {session && <HomeModuleCards session={session} />}
+      {mounted && session && <HomeModuleCards session={session} />}
 
       {/* Live Recent Winners Section (hanya untuk panitia yang login) */}
-      {session && <HomeRecentWinners winners={winners} lastSyncedAt={lastSyncedAt} />}
+      {mounted && session && <HomeRecentWinners winners={winners} lastSyncedAt={lastSyncedAt} />}
     </div>
   );
 }

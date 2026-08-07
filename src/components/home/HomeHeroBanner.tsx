@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Search, ArrowRight, Smartphone, Loader2 } from 'lucide-react';
@@ -10,12 +10,11 @@ export const HomeHeroBanner: React.FC = () => {
   const [searchToken, setSearchToken] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
-  const [savedToken] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('sikuja_last_token');
-    }
-    return null;
-  });
+  const [savedToken, setSavedToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSavedToken(localStorage.getItem('sikuja_last_token'));
+  }, []);
 
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
