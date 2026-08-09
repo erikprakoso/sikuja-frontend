@@ -237,7 +237,11 @@ export function appendVouchersToTransaction(
   saveTransactions(allTransactions.map((t) => (t.id === txId ? updatedTx : t)));
   saveVouchers([...newVouchers, ...allVouchers]);
 
-  return { transaction: updatedTx, vouchers: newVouchers };
+  // Kembalikan SELURUH voucher milik transaksi (lama + baru) agar hasil akhir
+  // konsisten dengan qty kumulatif yang ditampilkan di TransactionResult / struk.
+  const allOfTx = getStoredVouchers().filter((v) => v.transaction_id === txId);
+
+  return { transaction: updatedTx, vouchers: allOfTx };
 }
 
 // 2. Single Voucher Check-in

@@ -71,7 +71,7 @@ export async function POST(
     // Ambil transaksi tujuan (harus ada).
     const { data: existing, error: fetchErr } = await serverSupabase
       .from('transactions')
-      .select('id, token, qty_fisik, qty_non_fisik, total_harga, customer_name, customer_phone, payment_method, created_at')
+      .select('id, token, qty_fisik, qty_non_fisik, total_harga, customer_name, customer_phone, payment_method, created_by, created_at')
       .eq('id', id)
       .maybeSingle();
 
@@ -177,7 +177,21 @@ export async function POST(
 
     if (updateErr) throw updateErr;
 
-    return NextResponse.json({ success: true, transaction: updatedTx, vouchers: insertedVouchers });
+    // Kembalikan SELURUH voucher milik transaksi (lama + baru) agar hasil akhir
+    // konsisten dengan qty kumulatif yang ditampilkan di TransactionResult / struk.
+    const { data: allVouchers, error: allErr } = await serverSupabase
+      .from('vouchers')
+      .select('*')
+      .eq('transaction_id', id)
+      .order('code', { ascending: true });
+
+    if (allErr) throw allErr;
+
+    return NextResponse.json({
+      success: true,
+      transaction: updatedTx,
+      vouchers: (allVouchers as Voucher[]) || [],
+    });
   } catch (err: unknown) {
     const error = err as Error;
     console.error('API /transactions/[id]/vouchers error:', error);
