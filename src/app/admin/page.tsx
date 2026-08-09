@@ -18,7 +18,6 @@ export default function AdminDashboardPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [drawResults, setDrawResults] = useState<DrawResult[]>([]);
   
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
@@ -61,12 +60,9 @@ export default function AdminDashboardPage() {
 
       {/* Vouchers Master Table */}
       <VoucherMasterTable
-        vouchers={vouchers}
         transactions={transactions}
         searchQuery={searchQuery}
-        statusFilter={statusFilter}
         setSearchQuery={setSearchQuery}
-        setStatusFilter={setStatusFilter}
       />
     </div>
     </RequireAuth>

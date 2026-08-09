@@ -1,41 +1,29 @@
 import React, { useState, useMemo } from 'react';
-import { Voucher, Transaction } from '@/types';
+import { Transaction } from '@/types';
 import { Ticket, Search, ChevronLeft, ChevronRight, Printer, Pencil, Check, X, Combine, Clock, Phone } from 'lucide-react';
 import { ThermalReceiptModal } from '@/components/penjualan/ThermalReceiptModal';
 import { ThermalReceiptPrint } from '@/components/penjualan/ThermalReceiptPrint';
 import { getStoredTransactions, saveTransactions, getStoredVouchers, saveVouchers } from '@/lib/storage';
 
 interface VoucherMasterTableProps {
-  vouchers: Voucher[];
   transactions?: Transaction[];
   searchQuery: string;
-  statusFilter: string;
   setSearchQuery: (query: string) => void;
-  setStatusFilter: (filter: string) => void;
 }
-
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-  terbit: { label: 'Terbit', cls: 'bg-slate-100 text-slate-600 border border-slate-300' },
-  checkin: { label: 'Terverifikasi', cls: 'bg-emerald-100 text-emerald-800 border border-emerald-300' },
-  menang: { label: 'Pemenang', cls: 'bg-amber-100 text-amber-800 border border-amber-300' },
-  diklaim: { label: 'Diserahkan', cls: 'bg-purple-100 text-purple-800 border border-purple-300' },
-  forfeited: { label: 'Gugur', cls: 'bg-red-100 text-red-800 border border-red-300' },
-};
 
 const formatRupiah = (amount: number) =>
   new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(amount);
 
 export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
-  vouchers,
   transactions = [],
   searchQuery,
-  statusFilter,
   setSearchQuery,
-  setStatusFilter,
 }) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [reprintTx, setReprintTx] = useState<Transaction | null>(null);
+  const [reprintVouchers, setReprintVouchers] = useState<ReturnType<typeof getStoredVouchers>>([]);
+  const [isReprintLoading, setIsReprintLoading] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState<string>('');
   const [editError, setEditError] = useState<string>('');
@@ -187,13 +175,26 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
     }
   };
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    setCurrentPage(1);
+  const handleReprint = async (tx: Transaction) => {
+    setIsReprintLoading(true);
+    try {
+      const res = await fetch(`/api/vouchers/by-transaction/${encodeURIComponent(tx.id)}`);
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setReprintTx(null);
+        return;
+      }
+      setReprintVouchers(data.vouchers || []);
+      setReprintTx(tx);
+    } catch {
+      setReprintTx(null);
+    } finally {
+      setIsReprintLoading(false);
+    }
   };
 
-  const handleStatusFilterChange = (filter: string) => {
-    setStatusFilter(filter);
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
   };
 
@@ -202,56 +203,27 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
     setCurrentPage(1);
   };
 
-  const txMap = useMemo(() => {
-    const map = new Map<string, Transaction>();
-    transactions.forEach((tx) => map.set(tx.id, tx));
-    return map;
-  }, [transactions]);
-
-  const groupedByTx = useMemo(() => {
-    const map = new Map<string, Voucher[]>();
-    vouchers.forEach((v) => {
-      const arr = map.get(v.transaction_id) || [];
-      arr.push(v);
-      map.set(v.transaction_id, arr);
-    });
-    return map;
-  }, [vouchers]);
-
-  const reprintVouchers = useMemo(
-    () => (reprintTx ? vouchers.filter((v) => v.transaction_id === reprintTx.id) : []),
-    [reprintTx, vouchers]
-  );
-
   const filteredTransactions = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
-    const entries: Array<{ tx?: Transaction; vouchers: Voucher[] }> = [];
+    const entries = [...transactions];
 
-    groupedByTx.forEach((vs, txId) => {
-      const tx = txMap.get(txId);
-
-      if (statusFilter !== 'all' && !vs.some((v) => v.status === statusFilter)) return;
-
-      if (q) {
-        const custName = (tx?.customer_name || '').toLowerCase();
-        const custPhone = (tx?.customer_phone || '').toLowerCase();
-        const token = (tx?.token || '').toLowerCase();
-        const hasCodeMatch = vs.some((v) => v.code.toLowerCase().includes(q));
-        if (!hasCodeMatch && !custName.includes(q) && !custPhone.includes(q) && !token.includes(q)) {
-          return;
-        }
-      }
-
-      entries.push({ tx, vouchers: vs });
-    });
+    if (q) {
+      const matched = entries.filter((tx) => {
+        const custName = (tx.customer_name || '').toLowerCase();
+        const custPhone = (tx.customer_phone || '').toLowerCase();
+        const token = (tx.token || '').toLowerCase();
+        return custName.includes(q) || custPhone.includes(q) || token.includes(q);
+      });
+      return matched.sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+    }
 
     return entries.sort((a, b) => {
-      const da = a.tx?.created_at || a.vouchers[0]?.created_at || '';
-      const db = b.tx?.created_at || b.vouchers[0]?.created_at || '';
-      return new Date(db).getTime() - new Date(da).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
-  }, [groupedByTx, txMap, statusFilter, searchQuery]);
+  }, [transactions, searchQuery]);
 
   const totalTransactions = filteredTransactions.length;
   const totalPages = Math.max(1, Math.ceil(totalTransactions / pageSize));
@@ -260,25 +232,20 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
     if (!mergeBase) return [];
     const q = mergeSearch.trim().toLowerCase();
 
-    const out: Array<{ tx: Transaction; vouchers: Voucher[] }> = [];
-    txMap.forEach((tx) => {
-      if (tx.id === mergeBase.id) return;
-      const vs = groupedByTx.get(tx.id) || [];
-      if (q) {
-        const name = (tx.customer_name || '').toLowerCase();
-        const phone = (tx.customer_phone || '').toLowerCase();
-        const hasCodeMatch = vs.some((v) => v.code.toLowerCase().includes(q));
-        if (!name.includes(q) && !phone.includes(q) && !hasCodeMatch) return;
-      }
-      out.push({ tx, vouchers: vs });
-    });
+    const out = transactions.filter((tx) => tx.id !== mergeBase.id);
+    if (q) {
+      return out
+        .filter((tx) => {
+          const name = (tx.customer_name || '').toLowerCase();
+          const phone = (tx.customer_phone || '').toLowerCase();
+          return name.includes(q) || phone.includes(q);
+        })
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [mergeBase, mergeSearch, transactions]);
 
-    return out.sort((a, b) => {
-      const da = a.tx.created_at || a.vouchers[0]?.created_at || '';
-      const db = b.tx.created_at || b.vouchers[0]?.created_at || '';
-      return new Date(db).getTime() - new Date(da).getTime();
-    });
-  }, [mergeBase, mergeSearch, txMap, groupedByTx]);
+  const voucherCount = (tx: Transaction) => (tx.qty_fisik || 0) + (tx.qty_non_fisik || 0);
 
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
@@ -299,7 +266,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
           <div className="relative flex-1 lg:max-w-xs">
             <input
               type="text"
-              placeholder="Cari kode, nama, atau no. HP..."
+              placeholder="Cari nama atau no. HP..."
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-8 pr-9 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
@@ -316,22 +283,8 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-2 lg:flex lg:items-center lg:gap-2">
-            {/* Status Filter */}
-            <select
-              value={statusFilter}
-              onChange={(e) => handleStatusFilterChange(e.target.value)}
-              className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 cursor-pointer"
-            >
-              <option value="all">Semua Status</option>
-              <option value="terbit">Terbit (Belum Verifikasi)</option>
-              <option value="checkin">Terverifikasi Pos</option>
-              <option value="menang">Pemenang Undian</option>
-              <option value="diklaim">Hadiah Diserahkan</option>
-              <option value="forfeited">Gugur (Hangus)</option>
-            </select>
-
-            {/* Page Size Select */}
+          {/* Page Size Select */}
+          <div>
             <select
               value={pageSize}
               onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -350,17 +303,14 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
       {/* Mobile Card List */}
       <div className="grid gap-3 md:hidden">
         {currentTransactions.length > 0 ? (
-          currentTransactions.map(({ tx, vouchers: vs }) => {
+          currentTransactions.map((tx) => {
             const custName = tx?.customer_name || '-';
             const custPhone = tx?.customer_phone || '';
-            const txTime = tx?.created_at || vs[0]?.created_at || '';
-            const statusList = [...new Set(vs.map((v) => v.status))].map(
-              (status) => STATUS_META[status]
-            );
+            const txTime = tx?.created_at || '';
 
             return (
               <div
-                key={tx?.id || vs[0].transaction_id}
+                key={tx.id}
                 className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
               >
                 {/* Header: avatar + nama */}
@@ -415,30 +365,20 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
 
                   {/* Total voucher */}
                   <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-slate-50 border border-slate-200 px-2.5 py-1.5">
-                    <strong className="text-sm font-black text-[#E70013] leading-none">{vs.length}</strong>
+                    <strong className="text-sm font-black text-[#E70013] leading-none">{voucherCount(tx)}</strong>
                     <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-400">Voucher</span>
                   </div>
                 </div>
 
-                {/* Status badges (kiri) + waktu (kanan) */}
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                    {statusList.map((meta) => (
-                      <span key={meta.label} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.cls}`}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                        {meta.label}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {new Date(txTime).toLocaleString('id-ID', {
-                      day: '2-digit',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </div>
+                {/* Waktu */}
+                <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  {new Date(txTime).toLocaleString('id-ID', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                 </div>
 
                 {/* Total harga */}
@@ -473,12 +413,13 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                   )}
                   {tx && (
                     <button
-                      onClick={() => setReprintTx(tx)}
+                      onClick={() => handleReprint(tx)}
+                      disabled={isReprintLoading}
                       title="Cetak Ulang Struk"
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
                     >
                       <Printer className="w-3.5 h-3.5" />
-                      Cetak
+                      {isReprintLoading ? 'Memuat...' : 'Cetak'}
                     </button>
                   )}
                 </div>
@@ -501,23 +442,18 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               <th className="p-3">Pembeli</th>
               <th className="p-3">Voucher</th>
               <th className="p-3">Total Harga</th>
-              <th className="p-3">Status</th>
               <th className="p-3">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 font-sans">
             {currentTransactions.length > 0 ? (
-              currentTransactions.map(({ tx, vouchers: vs }) => {
+              currentTransactions.map((tx) => {
                 const custName = tx?.customer_name || '-';
                 const custPhone = tx?.customer_phone || '';
-                const txTime = tx?.created_at || vs[0]?.created_at || '';
-
-                const statusList = [...new Set(vs.map((v) => v.status))].map(
-                  (status) => STATUS_META[status]
-                );
+                const txTime = tx?.created_at || '';
 
                 return (
-                  <tr key={tx?.id || vs[0].transaction_id} className="transition-colors hover:bg-slate-50">
+                  <tr key={tx.id} className="transition-colors hover:bg-slate-50">
                     <td className="p-3 font-mono text-[11px] font-semibold text-slate-600 whitespace-nowrap">
                       {new Date(txTime).toLocaleString('id-ID', {
                         day: '2-digit',
@@ -566,24 +502,12 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                       )}
                     </td>
                     <td className="p-3">
-                      <span className="font-black text-slate-900">{vs.length}</span>
+                      <span className="font-black text-slate-900">{voucherCount(tx)}</span>
                     </td>
                     <td className="p-3">
                       <span className="font-black text-slate-900 font-mono whitespace-nowrap">
                         {formatRupiah(tx?.total_harga || 0)}
                       </span>
-                    </td>
-                    <td className="p-3">
-                      <div className="flex flex-wrap gap-1">
-                        {statusList.map((meta) => (
-                          <span
-                            key={meta.label}
-                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${meta.cls}`}
-                          >
-                            {meta.label}
-                          </span>
-                        ))}
-                      </div>
                     </td>
                     <td className="p-3">
                       {tx && (
@@ -603,9 +527,10 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => setReprintTx(tx)}
+                            onClick={() => handleReprint(tx)}
+                            disabled={isReprintLoading}
                             title="Cetak Ulang Struk"
-                            className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95"
+                            className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-600 hover:bg-[#E70013] hover:text-white hover:border-[#E70013] transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
@@ -617,7 +542,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               })
             ) : (
               <tr>
-                <td colSpan={6} className="p-6 text-center text-slate-500 font-semibold font-sans">
+                <td colSpan={5} className="p-6 text-center text-slate-500 font-semibold font-sans">
                   Tidak ada transaksi yang sesuai.
                 </td>
               </tr>
@@ -701,7 +626,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                 <div className="min-w-0">
                   <h3 className="text-sm font-black text-slate-900">Gabungkan ke Base</h3>
                   <p className="truncate text-xs font-semibold text-slate-500">
-                    {mergeBase.customer_name || 'Tanpa Nama'} ({groupedByTx.get(mergeBase.id)?.length || 0} voucher)
+                    {mergeBase.customer_name || 'Tanpa Nama'} ({voucherCount(mergeBase)} voucher)
                   </p>
                 </div>
               </div>
@@ -722,7 +647,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                   type="text"
                   value={mergeSearch}
                   onChange={(e) => setMergeSearch(e.target.value)}
-                  placeholder="Cari source: nama, no. HP, atau kode..."
+                  placeholder="Cari source: nama atau no. HP..."
                   disabled={isMerging}
                   className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 placeholder-slate-400"
                 />
@@ -733,7 +658,7 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
             {/* Daftar source */}
             <div className="flex-1 overflow-y-auto px-6 py-3 space-y-2">
               {mergeCandidates.length > 0 ? (
-                mergeCandidates.map(({ tx, vouchers: vs }) => {
+                mergeCandidates.map((tx) => {
                   const checked = mergeSelected.includes(tx.id);
                   return (
                     <button
@@ -761,8 +686,8 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
                           {tx.customer_name || 'Tanpa Nama'}
                         </span>
                         <span className="block text-[11px] text-slate-500 font-mono font-semibold truncate">
-                          {vs.length} voucher ·{' '}
-                          {new Date(tx.created_at || vs[0]?.created_at || '').toLocaleString('id-ID', {
+                          {voucherCount(tx)} voucher ·{' '}
+                          {new Date(tx.created_at || '').toLocaleString('id-ID', {
                             day: '2-digit',
                             month: 'short',
                             hour: '2-digit',
