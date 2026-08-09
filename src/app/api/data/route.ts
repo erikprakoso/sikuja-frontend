@@ -24,11 +24,34 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Paginasi penuh: PostgREST memotong respons default di 1000 baris,
+    // sehingga tanpa loop ini voucher/transaksi terbaru hilang dari cache lokal.
+    const PAGE_SIZE = 1000;
+
+    const fetchAll = async <T>(table: string, order?: { column: string; ascending?: boolean }) => {
+      const rows: T[] = [];
+      for (let start = 0; ; start += PAGE_SIZE) {
+        let query = serverSupabase
+          .from(table)
+          .select('*')
+          .range(start, start + PAGE_SIZE - 1);
+        if (order) {
+          query = query.order(order.column, { ascending: order.ascending ?? true });
+        }
+        const { data, error } = await query;
+        if (error) return { data: rows, error };
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < PAGE_SIZE) break;
+      }
+      return { data: rows, error: null };
+    };
+
     const results = await Promise.allSettled([
-      serverSupabase.from('transactions').select('*'),
-      serverSupabase.from('vouchers').select('*'),
-      serverSupabase.from('purchases').select('*').order('purchase_date', { ascending: false }),
-      serverSupabase.from('draw_results').select('*'),
+      fetchAll<Record<string, unknown>>('transactions', { column: 'created_at' }),
+      fetchAll<Record<string, unknown>>('vouchers', { column: 'created_at' }),
+      fetchAll<Record<string, unknown>>('purchases', { column: 'purchase_date', ascending: false }),
+      fetchAll<Record<string, unknown>>('draw_results', { column: 'created_at' }),
     ]);
 
     const syncErrors: string[] = [];
