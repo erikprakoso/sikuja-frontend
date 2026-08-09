@@ -15,7 +15,7 @@ interface TransactionFormProps {
   setQtyFisik: React.Dispatch<React.SetStateAction<number>>;
   setQtyNonFisik: React.Dispatch<React.SetStateAction<number>>;
   setPaymentMethod: (method: 'cash' | 'qris' | 'free') => void;
-  onSubmit: (e: React.FormEvent, customCodes?: string[], customerName?: string, customerPhone?: string) => void;
+  onSubmit: (e: React.FormEvent, customCodes?: string[], customerName?: string, customerPhone?: string, existingTx?: Transaction | null) => void;
 }
 
 const MAX_VOUCHERS_PER_SALE = 200;
@@ -48,6 +48,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [historyResults, setHistoryResults] = useState<Transaction[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
+  const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const conflictBannerRef = useRef<HTMLDivElement>(null);
   const codeInputRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -225,6 +226,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     if (tx.customer_phone) setCustomerPhone(tx.customer_phone);
     setNameError('');
     setHistoryResults([]);
+    setSelectedTx(tx);
     nameInputRef.current?.focus();
   };
 
@@ -235,7 +237,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const confirmPayment = () => {
     const activeCustomCodes = activeCodeMode === 'custom' ? customCodes.filter((c) => c.trim() !== '') : [];
     setShowConfirmModal(false);
-    onSubmit({ preventDefault: () => {} } as React.FormEvent, activeCustomCodes, buildCustomerName(), customerPhone);
+    onSubmit({ preventDefault: () => {} } as React.FormEvent, activeCustomCodes, buildCustomerName(), customerPhone, selectedTx);
   };
 
   return (
@@ -480,6 +482,25 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
             3. Identitas Pemilik Kupon:
           </label>
 
+          {selectedTx && (
+            <div className="sm:col-span-2 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 animate-fade-in">
+              <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+              <p className="text-[11px] font-bold text-emerald-800 flex-1 leading-snug">
+                Gabung ke transaksi <span className="font-black">{selectedTx.customer_name || 'peserta'}</span> (
+                {(selectedTx.qty_fisik || 0) + (selectedTx.qty_non_fisik || 0)} voucher) — bukan transaksi baru.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedTx(null)}
+                disabled={isLoading}
+                className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-emerald-300 text-emerald-700 text-[10px] font-black hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95 disabled:opacity-50"
+              >
+                <X className="w-3 h-3" />
+                Buat Transaksi Baru
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="sm:col-span-2">
               <label className="text-[11px] text-slate-500 font-semibold mb-1 block">
@@ -493,6 +514,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                   value={customerName}
                   onChange={(e) => {
                     lastAutofilledNameRef.current = '';
+                    setSelectedTx(null);
                     setCustomerName(e.target.value);
                     if (nameError) setNameError('');
                   }}

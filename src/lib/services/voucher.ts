@@ -153,6 +153,93 @@ export function createPurchaseTransaction(
   return { transaction, vouchers: newVouchers };
 }
 
+// 1b. Append voucher baru ke transaksi yang SUDAH ADA (alur nama kembar / isi otomatis).
+// Token & ID transaksi tetap; qty & total_harga dijumlahkan; kode unik 5-digit tetap.
+export function appendVouchersToTransaction(
+  txId: string,
+  qtyFisik: number,
+  qtyNonFisik: number,
+  customCodes: string[] = [],
+  customerPhone: string = '',
+  paymentMethod: 'cash' | 'qris' | 'free' = 'cash'
+): {
+  transaction: Transaction;
+  vouchers: Voucher[];
+} {
+  const allVouchers = getStoredVouchers();
+  const allTransactions = getStoredTransactions();
+  const existing = allTransactions.find((t) => t.id === txId);
+  if (!existing) {
+    throw new Error('Transaksi tujuan tidak ditemukan.');
+  }
+
+  const usedCodes = new Set(allVouchers.map((v) => v.code));
+  const totalLembar = qtyFisik + qtyNonFisik;
+
+  // Validasi custom codes terhadap snapshot lokal terbaru.
+  const validatedCustomCodes: string[] = [];
+  for (const rawCode of customCodes) {
+    if (!rawCode || !rawCode.trim()) continue;
+    const formatted = format5DigitCode(rawCode);
+    if (!formatted) continue;
+    if (usedCodes.has(formatted)) {
+      throw new Error(`Kode voucher ${formatted} sudah terbit / dimiliki peserta lain.`);
+    }
+    validatedCustomCodes.push(formatted);
+  }
+
+  const finalCodes: string[] = [];
+  let customIdx = 0;
+
+  for (let i = 0; i < totalLembar; i++) {
+    if (customIdx < validatedCustomCodes.length) {
+      const code = validatedCustomCodes[customIdx++];
+      usedCodes.add(code);
+      finalCodes.push(code);
+    } else {
+      const code = generate5DigitCode(usedCodes);
+      usedCodes.add(code);
+      finalCodes.push(code);
+    }
+  }
+
+  const newVouchers: Voucher[] = [];
+
+  for (let i = 0; i < qtyFisik; i++) {
+    newVouchers.push({
+      code: finalCodes[i],
+      type: 'fisik',
+      status: 'terbit',
+      transaction_id: txId,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  for (let i = qtyFisik; i < totalLembar; i++) {
+    newVouchers.push({
+      code: finalCodes[i],
+      type: 'non-fisik',
+      status: 'terbit',
+      transaction_id: txId,
+      created_at: new Date().toISOString(),
+    });
+  }
+
+  const updatedTx: Transaction = {
+    ...existing,
+    qty_fisik: (existing.qty_fisik || 0) + qtyFisik,
+    qty_non_fisik: (existing.qty_non_fisik || 0) + qtyNonFisik,
+    total_harga: (existing.total_harga || 0) + (paymentMethod === 'free' ? 0 : totalLembar * 5000),
+    payment_method: paymentMethod,
+    ...(customerPhone.trim() ? { customer_phone: customerPhone.trim() } : {}),
+  };
+
+  saveTransactions(allTransactions.map((t) => (t.id === txId ? updatedTx : t)));
+  saveVouchers([...newVouchers, ...allVouchers]);
+
+  return { transaction: updatedTx, vouchers: newVouchers };
+}
+
 // 2. Single Voucher Check-in
 export function checkInVoucher(code: string, scannerId: string = 'pos-device-1'): {
   success: boolean;

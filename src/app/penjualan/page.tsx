@@ -43,7 +43,8 @@ export default function PenjualanPage() {
     e: React.FormEvent,
     customCodes: string[] = [],
     name: string = '',
-    phone: string = ''
+    phone: string = '',
+    existingTx: Transaction | null = null
   ) => {
     e.preventDefault();
     if (totalLembar <= 0 || isSubmitting) return;
@@ -53,7 +54,8 @@ export default function PenjualanPage() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/transactions', {
+      const url = existingTx ? `/api/transactions/${existingTx.id}/vouchers` : '/api/transactions';
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
