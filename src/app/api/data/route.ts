@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       fetchAll<Record<string, unknown>>('transactions', { column: 'created_at' }),
       fetchAll<Record<string, unknown>>('vouchers', { column: 'created_at' }),
       fetchAll<Record<string, unknown>>('purchases', { column: 'purchase_date', ascending: false }),
-      fetchAll<Record<string, unknown>>('draw_results', { column: 'created_at' }),
+      fetchAll<Record<string, unknown>>('draw_results', { column: 'drawn_at' }),
     ]);
 
     const syncErrors: string[] = [];
