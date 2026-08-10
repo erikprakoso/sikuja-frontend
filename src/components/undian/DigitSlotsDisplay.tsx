@@ -13,10 +13,10 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   winnerVoucher,
 }) => {
   return (
-    <div className="py-6 flex items-center justify-center">
+    <div className="py-6 flex items-center justify-center w-full">
       <div className="flex flex-col items-center w-full">
         <div
-          className={`inline-flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-6 rounded-3xl max-w-full relative ${
+          className={`flex items-stretch justify-center gap-2 sm:gap-4 p-3 sm:p-6 rounded-3xl w-full ${
             winnerVoucher
               ? 'bg-[#E70013] shadow-2xl ring-4 ring-[#E70013]/40'
               : 'bg-white border-4 border-[#E70013] shadow-xl'
@@ -27,11 +27,12 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               key={idx}
               style={{ animationDelay: `${idx * 60}ms` }}
               className={`
-                w-12 h-16 sm:w-24 sm:h-32 lg:w-16 lg:h-20 xl:w-20 xl:h-28
+                flex-1 aspect-[3/4]
                 rounded-2xl
+                overflow-hidden
                 flex items-center justify-center
                 font-mono font-black
-                text-4xl sm:text-7xl lg:text-4xl xl:text-6xl
+                text-4xl sm:text-6xl md:text-7xl lg:text-6xl xl:text-8xl 2xl:text-9xl
                 tracking-tighter
                 select-none
                 shadow-md
