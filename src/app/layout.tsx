@@ -48,9 +48,6 @@ export default function RootLayout({
           </main>
         </SyncProvider>
         <PwaInstallPrompt />
-        <footer className="border-t border-slate-200 py-3 text-center text-xs text-slate-400">
-          <p>© 2026 Jalan Sehat 2026</p>
-        </footer>
       </body>
     </html>
   );
