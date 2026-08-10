@@ -42,7 +42,6 @@ export default function DrawPage() {
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
-  const [lastAudit, setLastAudit] = useState<{ pool_size: number } | null>(null);
   const [winners, setWinners] = useState<Voucher[]>([]);
 
   const rollIntervalRef = useRef<number | null>(null);
@@ -118,7 +117,6 @@ export default function DrawPage() {
     setErrorMsg('');
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
-    setLastAudit(null);
     setLastPoolSize(null);
 
     soundManager.startDrumroll();
@@ -153,7 +151,6 @@ export default function DrawPage() {
 
       if (typeof data.audit?.pool_size === 'number') {
         setLastPoolSize(data.audit.pool_size);
-        setLastAudit({ pool_size: data.audit.pool_size });
       }
 
       setIsRolling(true);
@@ -206,7 +203,6 @@ export default function DrawPage() {
         const rawErr = data.error || 'Gagal memverifikasi undian.';
         const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
         setErrorMsg(errStr);
-        setLastAudit(null);
         return;
       }
 
@@ -221,7 +217,6 @@ export default function DrawPage() {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Draw stop error message:', msg);
       setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
-      setLastAudit(null);
     } finally {
       setIsRolling(false);
       resolvingRef.current = false;
@@ -389,7 +384,6 @@ export default function DrawPage() {
           displayDigits={displayDigits}
           isRolling={isRolling}
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
-          audit={lastAudit}
         />
 
         {errorMsg && (

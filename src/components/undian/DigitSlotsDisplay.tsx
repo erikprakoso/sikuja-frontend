@@ -6,14 +6,12 @@ interface DigitSlotsDisplayProps {
   displayDigits: string;
   isRolling: boolean;
   winnerVoucher: Voucher | null;
-  audit?: { pool_size: number } | null;
 }
 
 export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   displayDigits,
   isRolling,
   winnerVoucher,
-  audit,
 }) => {
   return (
     <div className="py-6 flex items-center justify-center gap-3 sm:gap-6 relative">
@@ -74,16 +72,6 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
         {isRolling && (
           <p className="mt-3 text-xs font-black text-[#E70013] uppercase tracking-widest animate-pulse">
             ⟳ Mengacak kode kupon...
-          </p>
-        )}
-
-        {!isRolling && audit && (
-          <p className="mt-3 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5">
-            <span>Transparan: diundi dari</span>
-            <strong className="text-emerald-700">{audit.pool_size} kupon sah</strong>
-            <span className="text-slate-400">•</span>
-            <strong className="text-slate-800">kode yang berhenti = pemenang</strong>
-            <span className="text-slate-400">(diverifikasi server)</span>
           </p>
         )}
       </div>
