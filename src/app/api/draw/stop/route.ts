@@ -113,9 +113,17 @@ export async function POST(request: NextRequest) {
     ]);
     if (pendingErr) throw pendingErr;
 
+    // 6. Ambil nama pembeli dari transaksi untuk dipanggil MC di panggung.
+    const { data: customer, error: custErr } = await serverSupabase
+      .from('transactions')
+      .select('customer_name')
+      .eq('id', voucher.transaction_id)
+      .maybeSingle();
+    if (custErr) throw custErr;
+
     return NextResponse.json({
       success: true,
-      candidate: voucher,
+      candidate: { ...voucher, customer_name: customer?.customer_name || null },
       prize,
       audit: {
         method: 'stop = kode yang tampil',

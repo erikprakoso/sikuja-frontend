@@ -379,6 +379,7 @@ export default function DrawPage() {
           displayDigits={displayDigits}
           isRolling={isRolling}
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
+          ownerName={candidateVoucher?.customer_name ?? null}
         />
 
         {errorMsg && (

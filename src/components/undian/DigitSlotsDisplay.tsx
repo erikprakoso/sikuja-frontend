@@ -5,12 +5,14 @@ interface DigitSlotsDisplayProps {
   displayDigits: string;
   isRolling: boolean;
   winnerVoucher: Voucher | null;
+  ownerName?: string | null;
 }
 
 export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   displayDigits,
   isRolling,
   winnerVoucher,
+  ownerName,
 }) => {
   return (
     <div className="py-6 flex items-center justify-center w-full">
@@ -52,6 +54,17 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
           <p className="mt-3 text-xs font-black text-[#E70013] uppercase tracking-widest animate-pulse">
             ⟳ Mengacak kode kupon...
           </p>
+        )}
+
+        {!isRolling && ownerName && (
+          <div className="mt-4 w-full max-w-md mx-auto px-6 py-4 rounded-2xl bg-slate-50 border-2 border-[#E70013]/20">
+            <p className="text-xs font-black text-[#E70013] uppercase tracking-widest text-center">
+              Pemilik Kupon
+            </p>
+            <p className="mt-1 text-2xl sm:text-4xl font-black text-slate-900 text-center">
+              {ownerName}
+            </p>
+          </div>
         )}
       </div>
     </div>

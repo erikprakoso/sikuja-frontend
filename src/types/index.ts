@@ -15,6 +15,7 @@ export interface Voucher {
   claimed_at?: string;
   prize_id?: string;
   prize_name?: string;
+  customer_name?: string | null;
 }
 
 export interface Transaction {

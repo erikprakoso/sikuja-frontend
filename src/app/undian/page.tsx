@@ -415,6 +415,7 @@ export default function LayarUndianPage() {
           displayDigits={displayDigits}
           isRolling={isRolling}
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
+          ownerName={candidateVoucher?.customer_name ?? null}
         />
 
         {errorMsg && (
