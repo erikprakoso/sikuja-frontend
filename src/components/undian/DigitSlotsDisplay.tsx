@@ -1,6 +1,5 @@
 import React from 'react';
 import { Voucher } from '@/types';
-import { Sparkles, Flame } from 'lucide-react';
 
 interface DigitSlotsDisplayProps {
   displayDigits: string;
@@ -14,28 +13,8 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
   winnerVoucher,
 }) => {
   return (
-    <div className="py-6 flex items-center justify-center gap-3 sm:gap-6 relative">
-      {/* Left Stage Side Flare Column */}
-      <div className="hidden xl:flex flex-col items-center justify-center gap-3 opacity-90">
-        <div
-          className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
-            winnerVoucher
-              ? 'bg-[#E70013] border-[#E70013] text-white shadow-xl animate-bounce'
-              : isRolling
-              ? 'bg-[#E70013]/20 border-[#E70013] text-[#E70013] animate-pulse shadow-lg'
-              : 'bg-white border-[#E70013]/30 text-[#E70013]'
-          }`}
-        >
-          <Sparkles className={`w-7 h-7 ${isRolling ? 'animate-spin' : 'animate-pulse'}`} />
-          <Flame className="w-6 h-6 animate-bounce" />
-          <span className="text-[10px] font-black uppercase tracking-widest [writing-mode:vertical-lr] rotate-180">
-            Jalan Sehat 2026
-          </span>
-        </div>
-      </div>
-
-      {/* Main 5-Digit Display Slot Screen */}
-      <div className="flex flex-col items-center">
+    <div className="py-6 flex items-center justify-center">
+      <div className="flex flex-col items-center w-full">
         <div
           className={`inline-flex items-center justify-center gap-2 sm:gap-4 p-3 sm:p-6 rounded-3xl max-w-full relative ${
             winnerVoucher
@@ -48,11 +27,11 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               key={idx}
               style={{ animationDelay: `${idx * 60}ms` }}
               className={`
-                w-10 h-14 sm:w-20 sm:h-28 lg:w-12 lg:h-16 xl:w-16 xl:h-24
+                w-12 h-16 sm:w-24 sm:h-32 lg:w-16 lg:h-20 xl:w-20 xl:h-28
                 rounded-2xl
                 flex items-center justify-center
                 font-mono font-black
-                text-3xl sm:text-6xl lg:text-3xl xl:text-5xl
+                text-4xl sm:text-7xl lg:text-4xl xl:text-6xl
                 tracking-tighter
                 select-none
                 shadow-md
@@ -74,25 +53,6 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
             ⟳ Mengacak kode kupon...
           </p>
         )}
-      </div>
-
-      {/* Right Stage Side Flare Column */}
-      <div className="hidden xl:flex flex-col items-center justify-center gap-3 opacity-90">
-        <div
-          className={`w-12 sm:w-16 h-48 sm:h-56 rounded-2xl flex flex-col items-center justify-center gap-2 border-2 transition-all duration-300 ${
-            winnerVoucher
-              ? 'bg-[#E70013] border-[#E70013] text-white shadow-xl animate-bounce'
-              : isRolling
-              ? 'bg-[#E70013]/20 border-[#E70013] text-[#E70013] animate-pulse shadow-lg'
-              : 'bg-white border-[#E70013]/30 text-[#E70013]'
-          }`}
-        >
-          <Sparkles className={`w-7 h-7 ${isRolling ? 'animate-spin' : 'animate-pulse'}`} />
-          <Flame className="w-6 h-6 animate-bounce" />
-          <span className="text-[10px] font-black uppercase tracking-widest [writing-mode:vertical-lr]">
-            Jalan Sehat 2026
-          </span>
-        </div>
       </div>
     </div>
   );
