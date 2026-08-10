@@ -27,12 +27,12 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               key={idx}
               style={{ animationDelay: `${idx * 60}ms` }}
               className={`
-                flex-1 aspect-[3/4]
+                flex-1 aspect-[2/3]
                 rounded-2xl
                 overflow-hidden
                 flex items-center justify-center
                 font-mono font-black
-                text-4xl sm:text-6xl md:text-7xl lg:text-6xl xl:text-8xl 2xl:text-9xl
+                text-5xl sm:text-7xl md:text-8xl lg:text-7xl xl:text-8xl 2xl:text-9xl
                 tracking-tighter
                 select-none
                 shadow-md
