@@ -119,8 +119,6 @@ export default function DrawPage() {
     setIsConfirmedWinner(false);
     setLastPoolSize(null);
 
-    soundManager.startDrumroll();
-
     try {
       // Ambil daftar kode kupon SAH dari server (pool). Pemenang BELUM
       // ditentukan — kode yang membeku saat MC menekan Stop itulah pemenang.
