@@ -29,6 +29,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               className={`
                 flex-1 h-24 sm:h-40 md:h-56 lg:h-40 xl:h-56 2xl:h-64
                 rounded-2xl
+                overflow-hidden
                 grid place-items-center text-center
                 font-mono font-black leading-none
                 text-5xl sm:text-[7rem] md:text-[8rem] lg:text-[6rem] xl:text-[9rem] 2xl:text-[10rem]
@@ -37,7 +38,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
                 ${winnerVoucher
                   ? 'bg-white text-[#E70013] shadow-lg'
                   : isRolling
-                    ? 'bg-[#E70013]/10 text-[#E70013] blur-[0.5px] scale-95 animate-bounce border-2 border-[#E70013]'
+                    ? 'bg-[#E70013]/10 text-[#E70013] border-2 border-[#E70013] animate-pulse'
                     : 'bg-white border-4 border-[#E70013] text-[#E70013] scale-100'
                 }
               `}
