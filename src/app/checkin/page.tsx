@@ -40,6 +40,7 @@ export default function CheckinPosPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerContainerId = 'qr-reader-pos';
   const autoClearTimerRef = useRef<number | null>(null);
+  const verifyResetTimerRef = useRef<number | null>(null);
 
   // Guard untuk mode pemindaian kontinu (banyak peserta):
   // - jangan proses frame baru selama masih memproses kode sebelumnya
@@ -67,6 +68,7 @@ export default function CheckinPosPage() {
   useEffect(() => {
     return () => {
       if (autoClearTimerRef.current !== null) clearTimeout(autoClearTimerRef.current);
+      if (verifyResetTimerRef.current !== null) clearTimeout(verifyResetTimerRef.current);
       if (scannerRef.current && scannerRef.current.isScanning) {
         scannerRef.current.stop().catch(() => {});
       }
@@ -80,6 +82,19 @@ export default function CheckinPosPage() {
       setResultMessage((prev) => (prev && prev.success ? null : prev));
       autoClearTimerRef.current = null;
     }, 3500);
+  };
+
+  // Verifikasi lewat tombol sukses: setelah 2 detik otomatis kembali ke layar
+  // pencarian (query + pilihan + pesan dibersihkan) tanpa harus hapus manual,
+  // agar langsung siap untuk pembeli berikutnya.
+  const scheduleVerifyAutoReset = () => {
+    if (verifyResetTimerRef.current !== null) clearTimeout(verifyResetTimerRef.current);
+    verifyResetTimerRef.current = window.setTimeout(() => {
+      setSearchQuery('');
+      setSelectedTxId(null);
+      setResultMessage(null);
+      verifyResetTimerRef.current = null;
+    }, 2000);
   };
 
   const handleProcessCode = async (scannedText: string) => {
@@ -190,7 +205,7 @@ export default function CheckinPosPage() {
 
       if (feedback.success) {
         playSuccessFeedback();
-        scheduleAutoClearSuccess();
+        scheduleVerifyAutoReset();
         // Refresh cache lokal agar detail transaksi terpilih langsung menampilkan
         // status "Sudah" dan tombol verifikasi nonaktif tanpa menunggu auto-sync.
         void syncFromSupabase().then(() => refreshStats());
