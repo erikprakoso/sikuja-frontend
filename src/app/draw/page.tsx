@@ -372,11 +372,6 @@ export default function DrawPage() {
               <Trophy className="w-5 h-5 text-white animate-bounce" />
               Kategori Hadiah: {currentPrize.name}
             </div>
-            {currentPrize.donor_name && (
-              <p className="text-xs font-bold text-violet-700">
-                🎁 Hadiah dari: {currentPrize.donor_name}
-              </p>
-            )}
           </div>
         )}
 
