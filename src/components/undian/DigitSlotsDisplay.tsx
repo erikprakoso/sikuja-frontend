@@ -31,7 +31,7 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
                 rounded-2xl
                 flex items-center justify-center
                 font-mono font-black leading-none
-                text-5xl sm:text-8xl md:text-[11rem] lg:text-[8rem] xl:text-[12rem] 2xl:text-[13rem]
+                text-5xl sm:text-[7rem] md:text-[8rem] lg:text-[6rem] xl:text-[9rem] 2xl:text-[10rem]
                 tracking-tighter
                 select-none
                 shadow-md
