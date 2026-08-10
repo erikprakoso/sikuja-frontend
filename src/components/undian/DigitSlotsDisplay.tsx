@@ -57,11 +57,11 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
         )}
 
         {!isRolling && ownerName && (
-          <div className="mt-4 w-full max-w-md mx-auto px-6 py-4 rounded-2xl bg-slate-50 border-2 border-[#E70013]/20">
-            <p className="text-xs font-black text-[#E70013] uppercase tracking-widest text-center">
+          <div className="mt-3 w-full max-w-md mx-auto px-4 py-2 rounded-xl bg-slate-50 border border-[#E70013]/20">
+            <p className="text-[10px] font-black text-[#E70013] uppercase tracking-widest text-center">
               Pemilik Kupon
             </p>
-            <p className="mt-1 text-2xl sm:text-4xl font-black text-slate-900 text-center">
+            <p className="text-base sm:text-xl font-black text-slate-900 text-center">
               {ownerName}
             </p>
           </div>
