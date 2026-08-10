@@ -48,11 +48,8 @@ export default function RootLayout({
           </main>
         </SyncProvider>
         <PwaInstallPrompt />
-        <footer className="border-t border-[#E70013]/20 bg-white py-6 text-center text-xs text-slate-600 font-medium">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <p>© 2026 Jalan Sehat 2026 🇮🇩</p>
-            <p className="text-slate-500 font-semibold">Aplikasi Web PWA • Bebas Kecurangan • Transparan</p>
-          </div>
+        <footer className="border-t border-slate-200 py-3 text-center text-xs text-slate-400">
+          <p>© 2026 Jalan Sehat 2026</p>
         </footer>
       </body>
     </html>
