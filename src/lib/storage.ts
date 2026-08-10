@@ -13,11 +13,11 @@ export const SIKUJA_EVENT_NAME = 'sikuja_data_changed';
 
 /**
  * Kebijakan undian: maksimal hadiah yang boleh dimenangkan oleh SATU orang
- * (dihitung per transaksi = satu pembeli). Beli banyak kupon tetap
- * memperbesar peluang, tapi dibatasi agar tidak menyapu semua doorprize.
- * Ubah angka ini untuk menyesuaikan kebijakan panitia (0 = tanpa batas).
+ * (dihitung per transaksi = satu pembeli). Nilai 0 = tanpa batas (undian bebas
+ * seperti mengambil kertas di kotak — berapa pun doorprize yang sudah dimenangkan
+ * sebelumnya, kuponnya tetap ikut diundi). Ubah angka ini sesuai kebijakan panitia.
  */
-export const SIKUJA_MAX_PRIZES_PER_PERSON = 2;
+export const SIKUJA_MAX_PRIZES_PER_PERSON = 0;
 
 export function getAppBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_APP_URL) {

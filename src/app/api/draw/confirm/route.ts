@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2b. Kebijakan undian: tolak konfirmasi bila pembeli yang sama (transaksi
-    //     yang sama) sudah memenangkan maksimal N doorprize.
+    //     yang sama) sudah memenangkan maksimal N doorprize. 0 = tanpa batas.
     const { data: existingWinners, error: siblingErr } = await serverSupabase
       .from('vouchers')
       .select('code')
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       .neq('code', code)
       .in('status', ['menang', 'diklaim']);
     if (siblingErr) throw siblingErr;
-    if ((existingWinners || []).length >= SIKUJA_MAX_PRIZES_PER_PERSON) {
+    if (SIKUJA_MAX_PRIZES_PER_PERSON > 0 && (existingWinners || []).length >= SIKUJA_MAX_PRIZES_PER_PERSON) {
       await serverSupabase.from('pending_draws').update({ status: 'pending' }).eq('id', pending.id);
       return NextResponse.json({
         error: `Pembeli ini sudah mencapai batas maksimal ${SIKUJA_MAX_PRIZES_PER_PERSON} doorprize — kebijakan undian (maks ${SIKUJA_MAX_PRIZES_PER_PERSON} hadiah per orang).`,
