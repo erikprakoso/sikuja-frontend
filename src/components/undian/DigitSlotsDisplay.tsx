@@ -29,10 +29,9 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
               className={`
                 flex-1 h-24 sm:h-40 md:h-56 lg:h-40 xl:h-56 2xl:h-64
                 rounded-2xl
-                flex items-center justify-center
+                grid place-items-center text-center
                 font-mono font-black leading-none
                 text-5xl sm:text-[7rem] md:text-[8rem] lg:text-[6rem] xl:text-[9rem] 2xl:text-[10rem]
-                tracking-tighter
                 select-none
                 shadow-md
                 ${winnerVoucher
