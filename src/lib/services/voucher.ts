@@ -1,14 +1,12 @@
-import { Transaction, Voucher, DrawResult, Prize } from '@/types';
+import { Transaction, Voucher } from '@/types';
 import {
   getStoredVouchers,
   saveVouchers,
   getStoredTransactions,
   saveTransactions,
-  getStoredPrizes,
   getStoredDrawResults,
   saveDrawResults,
   addToOfflineQueue,
-  SIKUJA_MAX_PRIZES_PER_PERSON,
 } from '@/lib/storage';
 
 // Format input into pure 5-digit code string e.g. "77" -> "00077"
@@ -434,94 +432,6 @@ export function checkInTransactionBatch(
   };
 }
 
-// 4. Random Draw Execution (CSPRNG compliant)
-export function drawWinner(prizeId: string, excludeCode?: string): {
-  success: boolean;
-  message: string;
-  winner?: DrawResult;
-} {
-  const vouchers = getStoredVouchers();
-  const prizes = getStoredPrizes();
-  const drawResults = getStoredDrawResults();
-
-  const prize = prizes.find((p) => p.id === prizeId);
-  if (!prize) {
-    return { success: false, message: 'Kategori hadiah tidak ditemukan.' };
-  }
-
-  const drawnCount = drawResults.filter((r) => r.prize_id === prizeId).length;
-  if (drawnCount >= prize.stock) {
-    return { success: false, message: `Stok hadiah ${prize.name} sudah habis (${prize.stock} unit).` };
-  }
-
-  let eligibleVouchers = vouchers.filter((v) => v.status === 'checkin');
-
-  // Kebijakan undian: pembeli yang sudah memenangkan maksimal N doorprize
-  // (status 'menang'/'diklaim') seluruh kuponnya keluar dari pool undian.
-  // Nilai 0 = tanpa batas (0 juga berarti filter nonaktif — undian bebas).
-  if (SIKUJA_MAX_PRIZES_PER_PERSON > 0) {
-    const winCountByTx = new Map<string, number>();
-    vouchers.forEach((v) => {
-      if (v.status === 'menang' || v.status === 'diklaim') {
-        winCountByTx.set(v.transaction_id, (winCountByTx.get(v.transaction_id) || 0) + 1);
-      }
-    });
-    eligibleVouchers = eligibleVouchers.filter(
-      (v) => (winCountByTx.get(v.transaction_id) || 0) < SIKUJA_MAX_PRIZES_PER_PERSON
-    );
-  }
-
-  // Undian ulang setelah gugur: kupon yang digugurkan dianggap HANGUS (status
-  // diubah 'forfeited' agar tidak pernah masuk pool lagi), dan semua kupon milik
-  // pembeli yang sama ikut dikecualikan dari undian ulang kali ini.
-  if (excludeCode) {
-    const forfeited = vouchers.find((v) => v.code === excludeCode);
-    if (forfeited) {
-      forfeited.status = 'forfeited';
-      saveVouchers(vouchers);
-      eligibleVouchers = eligibleVouchers.filter((v) => v.transaction_id !== forfeited.transaction_id);
-    }
-  }
-
-  if (eligibleVouchers.length === 0) {
-    return {
-      success: false,
-      message: 'Tidak ada voucher berstatus terverifikasi pos check-in yang tersedia untuk diundi.',
-    };
-  }
-
-  let selectedIndex = 0;
-  if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-    const randomBuffer = new Uint32Array(1);
-    window.crypto.getRandomValues(randomBuffer);
-    selectedIndex = randomBuffer[0] % eligibleVouchers.length;
-  } else {
-    selectedIndex = Math.floor(Math.random() * eligibleVouchers.length);
-  }
-
-  const winningVoucher = eligibleVouchers[selectedIndex];
-  winningVoucher.status = 'menang';
-  winningVoucher.prize_name = prize.name;
-  saveVouchers(vouchers);
-
-  const drawResult: DrawResult = {
-    id: 'draw_' + Date.now().toString(36),
-    prize_id: prize.id,
-    prize_name: prize.name,
-    voucher_code: winningVoucher.code,
-    drawn_at: new Date().toISOString(),
-    claimed: false,
-  };
-
-  saveDrawResults([drawResult, ...drawResults]);
-
-  return {
-    success: true,
-    message: `Pemenang ditarik: Kode ${winningVoucher.code} (${winningVoucher.type.toUpperCase()}) mendapatkan ${prize.name}!`,
-    winner: drawResult,
-  };
-}
-
 // 5. Confirm Prize Claim (Sobek Kertas Digital)
 export function claimPrize(voucherCode: string, verifierName: string = 'Petugas Verifikasi'): {
   success: boolean;
@@ -557,5 +467,4 @@ export function claimPrize(voucherCode: string, verifierName: string = 'Petugas 
 }
 
 // Aliases for API route compatibility
-export const drawWinnerForPrize = drawWinner;
 export const claimStagePrize = claimPrize;

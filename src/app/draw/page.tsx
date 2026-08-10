@@ -14,6 +14,21 @@ import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
 import { WinnersPanel } from '@/components/undian/WinnersPanel';
 import { DrawControls } from '@/components/undian/DrawControls';
 
+// Acak cepat daftar kode kupon untuk tampilan roll (Fisher–Yates, CSPRNG).
+// Pemenang TIDAK ditentukan di sini — kode yang membeku saat Stop itulah yang
+// diverifikasi & dicatat server di /api/draw/stop.
+function shuffleCodes(codes: string[]): string[] {
+  const arr = [...codes];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j =
+      typeof window !== 'undefined' && window.crypto
+        ? window.crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1)
+        : Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 export default function DrawPage() {
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [selectedPrizeId, setSelectedPrizeId] = useState<string>('');
@@ -27,10 +42,15 @@ export default function DrawPage() {
   const [isConfirmedWinner, setIsConfirmedWinner] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [lastPoolSize, setLastPoolSize] = useState<number | null>(null);
+  const [lastAudit, setLastAudit] = useState<{ pool_size: number } | null>(null);
   const [winners, setWinners] = useState<Voucher[]>([]);
 
   const rollIntervalRef = useRef<number | null>(null);
   const candidateRef = useRef<Voucher | null>(null);
+  const poolCodesRef = useRef<string[]>([]);
+  const poolIdxRef = useRef(0);
+  const currentDisplayCodeRef = useRef<string>('00000');
+  const resolvingRef = useRef(false);
 
   const refreshLocalData = () => {
     const p = getStoredPrizes();
@@ -92,76 +112,120 @@ export default function DrawPage() {
     });
   };
 
-  const handleStartDraw = async (excludeCode?: unknown) => {
-    if (isRolling || !selectedPrizeId) return;
-    setIsRolling(true);
+  const handleStartDraw = async () => {
+    if (isRolling || resolvingRef.current || !selectedPrizeId) return;
+    resolvingRef.current = true;
     setErrorMsg('');
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
+    setLastAudit(null);
+    setLastPoolSize(null);
 
-    // Pastikan excludeCode adalah string murni, bukan objek Event dari tombol
-    const validExcludeCode = typeof excludeCode === 'string' ? excludeCode : undefined;
+    soundManager.startDrumroll();
 
     try {
+      // Ambil daftar kode kupon SAH dari server (pool). Pemenang BELUM
+      // ditentukan — kode yang membeku saat MC menekan Stop itulah pemenang.
       const res = await fetch('/api/draw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prizeId: selectedPrizeId,
-          ...(validExcludeCode ? { excludeCode: validExcludeCode } : {}),
-        }),
+        body: JSON.stringify({ prizeId: selectedPrizeId }),
       });
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const rawErr = data.error || 'Gagal memproses pengundian.';
+        const rawErr = data.error || 'Gagal memuat kumpulan kupon undian.';
         const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
         setErrorMsg(errStr);
-        setIsRolling(false);
         return;
       }
 
-      const candidate: Voucher = data.candidate;
-      candidateRef.current = candidate;
-      if (typeof data.audit?.pool_size === 'number') {
-        setLastPoolSize(data.audit.pool_size);
+      const codes: string[] = data.codes;
+      if (!Array.isArray(codes) || codes.length === 0) {
+        setErrorMsg('Tidak ada kupon sah tersisa untuk diundi.');
+        return;
       }
 
-      soundManager.startDrumroll();
+      poolCodesRef.current = shuffleCodes(codes);
+      poolIdxRef.current = 0;
+      currentDisplayCodeRef.current = poolCodesRef.current[0];
+      setDisplayDigits(poolCodesRef.current[0]);
 
-      // Roll angka berjalan terus — berhenti hanya saat MC menekan Spasi
-      // (atau tombol Stop). Kandidat pemenang sudah diambil server di atas.
+      if (typeof data.audit?.pool_size === 'number') {
+        setLastPoolSize(data.audit.pool_size);
+        setLastAudit({ pool_size: data.audit.pool_size });
+      }
+
+      setIsRolling(true);
+
+      // Putar KODE KUPON ASLI dengan cepat. Kode yang membeku saat Stop
+      // dikirim ke /api/draw/stop untuk diverifikasi & dicatat — tidak ada
+      // lagi angka acak yang "berganti" setelah berhenti.
       rollIntervalRef.current = window.setInterval(() => {
-        const random5Digit = Math.floor(Math.random() * 100000)
-          .toString()
-          .padStart(5, '0');
-        setDisplayDigits(random5Digit);
+        const code = poolCodesRef.current[poolIdxRef.current % poolCodesRef.current.length];
+        poolIdxRef.current += 1;
+        currentDisplayCodeRef.current = code;
+        setDisplayDigits(code);
         soundManager.playTick();
       }, 85);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('Draw error message:', msg);
+      console.error('Draw start error message:', msg);
       setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
-      setIsRolling(false);
+    } finally {
+      soundManager.stopDrumroll();
+      resolvingRef.current = false;
     }
   };
 
-  const stopRoll = () => {
-    if (!isRolling) return;
+  const stopRoll = async () => {
+    if (!isRolling || resolvingRef.current) return;
+    resolvingRef.current = true;
+    setErrorMsg('');
+
+    // Kode yang tampil saat Stop membeku dan dikirim ke server untuk
+    // diverifikasi & dicatat — layar tidak pernah melihat angka "beku lalu
+    // berganti" lagi.
     if (rollIntervalRef.current !== null) {
       clearInterval(rollIntervalRef.current);
       rollIntervalRef.current = null;
     }
     soundManager.stopDrumroll();
 
-    const candidate = candidateRef.current;
-    if (candidate) {
-      soundManager.playVictoryFanfare();
-      triggerConfetti();
+    const frozenCode = currentDisplayCodeRef.current;
+
+    try {
+      const res = await fetch('/api/draw/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prizeId: selectedPrizeId, code: frozenCode }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        const rawErr = data.error || 'Gagal memverifikasi undian.';
+        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
+        setErrorMsg(errStr);
+        setLastAudit(null);
+        return;
+      }
+
+      const candidate: Voucher = data.candidate;
+      candidateRef.current = candidate;
       setDisplayDigits(candidate.code);
       setCandidateVoucher(candidate);
+
+      soundManager.playVictoryFanfare();
+      triggerConfetti();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Draw stop error message:', msg);
+      setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
+      setLastAudit(null);
+    } finally {
+      setIsRolling(false);
+      resolvingRef.current = false;
     }
-    setIsRolling(false);
   };
 
   const handleConfirmWinner = async () => {
@@ -201,12 +265,43 @@ export default function DrawPage() {
     }
   };
 
-  const handleForfeitAndRedraw = () => {
-    if (!candidateVoucher) return;
+  const handleForfeitAndRedraw = async () => {
+    if (!candidateVoucher || isConfirming || resolvingRef.current) return;
+    resolvingRef.current = true;
+    setErrorMsg('');
     const forfeitedCode = candidateVoucher.code;
     setCandidateVoucher(null);
     setIsConfirmedWinner(false);
-    handleStartDraw(forfeitedCode);
+
+    let ok = false;
+    try {
+      const res = await fetch('/api/draw/forfeit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prizeId: selectedPrizeId, code: forfeitedCode }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        const rawErr = data.error || 'Gagal menggugurkan kandidat.';
+        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
+        setErrorMsg(errStr);
+      } else {
+        ok = true;
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Draw forfeit error message:', msg);
+      setErrorMsg(msg || 'Gagal terhubung ke server untuk menggugurkan.');
+    } finally {
+      resolvingRef.current = false;
+    }
+
+    if (ok) {
+      await syncFromSupabase();
+      refreshLocalData();
+      void handleStartDraw();
+    }
   };
 
   // Kontrol undian dengan keyboard: Spasi untuk memulai/berhenti/undi
@@ -294,6 +389,7 @@ export default function DrawPage() {
           displayDigits={displayDigits}
           isRolling={isRolling}
           winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
+          audit={lastAudit}
         />
 
         {errorMsg && (
