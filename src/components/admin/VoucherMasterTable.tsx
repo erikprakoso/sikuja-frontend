@@ -291,10 +291,10 @@ export const VoucherMasterTable: React.FC<VoucherMasterTableProps> = ({
               aria-label="Jumlah data per halaman"
               className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm sm:text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#E70013]/20 cursor-pointer"
             >
-              <option value={10}>10 / hlm</option>
-              <option value={25}>25 / hlm</option>
-              <option value={50}>50 / hlm</option>
-              <option value={100}>100 / hlm</option>
+              <option value={10}>10 per hlm</option>
+              <option value={25}>25 per hlm</option>
+              <option value={50}>50 per hlm</option>
+              <option value={100}>100 per hlm</option>
             </select>
           </div>
         </div>
