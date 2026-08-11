@@ -321,13 +321,14 @@ export const DonasiList = () => {
               <option value={10}>10 per hlm</option>
               <option value={25}>25 per hlm</option>
               <option value={50}>50 per hlm</option>
+              <option value={100}>100 per hlm</option>
             </select>
             {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
           </div>
         </div>
 
         {/* Mobile Card List */}
-        <div className="grid gap-3 md:hidden">
+        <div className="grid gap-3 p-4 md:hidden">
           {paginatedDonations.length > 0 ? (
             paginatedDonations.map((d) => (
               <div
