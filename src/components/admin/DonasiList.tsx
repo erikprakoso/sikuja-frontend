@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Loader2, X, Edit, Trash2, ChevronLeft, ChevronRight, TrendingUp, Wallet, ShoppingBag, ArrowUpDown, Phone, CalendarDays } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { SIKUJA_EVENT_NAME } from '@/lib/storage';
 import { Donation } from '@/types';
+import { DonasiStatsCards } from '@/components/admin/donasi/DonasiStatsCards';
+import { DonasiToolbar } from '@/components/admin/donasi/DonasiToolbar';
+import { DonasiMobileCards } from '@/components/admin/donasi/DonasiMobileCards';
+import { DonasiTable } from '@/components/admin/donasi/DonasiTable';
+import { DonasiPagination } from '@/components/admin/donasi/DonasiPagination';
+import { DonasiFormModal } from '@/components/admin/donasi/DonasiFormModal';
 
 export const DonasiList = () => {
   const [donations, setDonations] = useState<Donation[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
-  
+
   const [newDonorName, setNewDonorName] = useState('');
   const [newDonorPhone, setNewDonorPhone] = useState('');
   const [newAmount, setNewAmount] = useState<string>(''); // Raw numeric string
   const [newNote, setNewNote] = useState('');
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -135,6 +141,11 @@ export const DonasiList = () => {
     setIsAdding(true);
   };
 
+  const handleCloseModal = () => {
+    setIsAdding(false);
+    setEditingDonation(null);
+  };
+
   const handleDeleteDonation = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus donasi ini?')) return;
 
@@ -222,10 +233,6 @@ export const DonasiList = () => {
     }
   };
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(amount);
-  };
-
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -247,387 +254,70 @@ export const DonasiList = () => {
       </div>
 
       {/* Summary Stat Cards (Specific to Incomes & Donations) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* Total Pemasukan & Sponsor */}
-        <div className="bg-linear-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-4 shadow-sm border border-emerald-500/30 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-100 block">Total Pemasukan & Sponsor</span>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(totalDonations)}</p>
-            <span className="text-[10px] font-semibold text-emerald-100 mt-0.5 block">{donations.length} transaksi penerimaan</span>
-          </div>
-          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Total Terpakai untuk Pengeluaran Donasi */}
-        <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Pengeluaran Terpakai (Donasi)</span>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(totalSpentDonations)}</p>
-            <span className="text-[10px] font-semibold text-slate-400 mt-0.5 block">Belanja dari sumber Donasi</span>
-          </div>
-          <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl text-white">
-            <ShoppingBag className="w-5 h-5" />
-          </div>
-        </div>
-
-        {/* Sisa Saldo Donasi & Sponsor */}
-        <div className="bg-linear-to-br from-blue-600 to-indigo-700 text-white rounded-2xl p-4 shadow-sm border border-blue-500/30 flex items-center justify-between">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-100 block">Sisa Saldo Donasi & Sponsor</span>
-            <p className="text-xl sm:text-2xl font-black text-white mt-0.5">{formatRupiah(sisaDonasi)}</p>
-            <span className="text-[10px] font-semibold text-blue-200 mt-0.5 block">Saldo bersih Donasi & Sponsor</span>
-          </div>
-          <div className="p-2.5 bg-white/15 backdrop-blur-md rounded-xl text-white">
-            <Wallet className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
+      <DonasiStatsCards
+        totalDonations={totalDonations}
+        totalSpentDonations={totalSpentDonations}
+        sisaDonasi={sisaDonasi}
+        donationCount={donations.length}
+      />
 
       {/* Main Table Card */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
         {/* Search & Filter Bar */}
-        <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Cari nama donatur atau nominal..."
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-[#E70013] focus:outline-none transition-all text-slate-900"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Urutkan:</span>
-            <select
-              value={`${sortKey}-${sortDir}`}
-              onChange={(e) => handleSortChange(e.target.value)}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value="date-desc">Tanggal Terbaru</option>
-              <option value="date-asc">Tanggal Terlama</option>
-              <option value="amount-desc">Nominal Terbesar</option>
-              <option value="amount-asc">Nominal Terkecil</option>
-            </select>
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline">Tampilkan:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value={10}>10 per hlm</option>
-              <option value={25}>25 per hlm</option>
-              <option value={50}>50 per hlm</option>
-              <option value={100}>100 per hlm</option>
-            </select>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
-          </div>
-        </div>
+        <DonasiToolbar
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          sortValue={`${sortKey}-${sortDir}`}
+          onSortChange={handleSortChange}
+          pageSize={pageSize}
+          onPageSizeChange={handlePageSizeChange}
+          isLoading={isLoading}
+        />
 
         {/* Mobile Card List */}
-        <div className="grid gap-3 p-4 md:hidden">
-          {paginatedDonations.length > 0 ? (
-            paginatedDonations.map((d) => (
-              <div
-                key={d.id}
-                className="w-full max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                {/* Header: avatar + nama */}
-                <div className="flex items-start justify-between gap-3 min-w-0">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center text-sm font-black shrink-0">
-                      {(d.donor_name || '?').charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 leading-snug break-words">{d.donor_name}</p>
-                      {d.donor_phone ? (
-                        <span className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono font-semibold break-all">
-                          <Phone className="w-3 h-3 shrink-0 text-slate-400" />
-                          {d.donor_phone}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {/* Nominal */}
-                  <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-emerald-50 border border-emerald-200 px-2.5 py-1.5">
-                    <strong className="text-xs sm:text-sm font-black text-emerald-700 leading-none text-right">
-                      {formatRupiah(d.amount)}
-                    </strong>
-                  </div>
-                </div>
-
-                {/* Tanggal diterima */}
-                <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-slate-500">
-                  <CalendarDays className="w-3.5 h-3.5 text-slate-400" />
-                  {new Date(d.received_at).toLocaleDateString('id-ID')}
-                </div>
-
-                {/* Catatan */}
-                {d.note ? (
-                  <div className="mt-2 rounded-lg bg-slate-50 border border-slate-100 px-3 py-1.5 text-xs text-slate-600 italic">
-                    {d.note}
-                  </div>
-                ) : null}
-
-                {/* Action footer */}
-                <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3">
-                  <button
-                    onClick={() => handleEditDonation(d)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-slate-100 transition-colors cursor-pointer active:scale-95"
-                  >
-                    <Edit className="w-3.5 h-3.5" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteDonation(d.id)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-600 text-[11px] font-bold hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors cursor-pointer active:scale-95"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Hapus
-                  </button>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-slate-200 p-6 text-center text-slate-500 font-semibold">
-              Belum ada data pemasukan donasi.
-            </div>
-          )}
-        </div>
+        <DonasiMobileCards
+          donations={paginatedDonations}
+          onEdit={handleEditDonation}
+          onDelete={handleDeleteDonation}
+        />
 
         {/* Table Data */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="p-4 font-bold text-slate-700">Donatur / Sponsor</th>
-                <th
-                  onClick={() => handleSortChange(sortKey === 'amount' && sortDir === 'desc' ? 'amount-asc' : 'amount-desc')}
-                  className="p-4 font-bold text-slate-700 text-right cursor-pointer hover:text-[#E70013] transition-colors"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Nominal (Rp)
-                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'amount' ? 'text-[#E70013]' : 'text-slate-400'}`} />
-                  </span>
-                </th>
-                <th
-                  onClick={() => handleSortChange(sortKey === 'date' && sortDir === 'desc' ? 'date-asc' : 'date-desc')}
-                  className="p-4 font-bold text-slate-700 cursor-pointer hover:text-[#E70013] transition-colors"
-                >
-                  <span className="inline-flex items-center gap-1">
-                    Tanggal Diterima
-                    <ArrowUpDown className={`w-3.5 h-3.5 ${sortKey === 'date' ? 'text-[#E70013]' : 'text-slate-400'}`} />
-                  </span>
-                </th>
-                <th className="p-4 font-bold text-slate-700">Catatan</th>
-                <th className="p-4 font-bold text-slate-700 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {paginatedDonations.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="p-12 text-center text-slate-500">
-                    <p className="text-lg font-semibold">Belum ada data pemasukan donasi.</p>
-                    <p className="text-xs mt-2">Klik &quot;Pemasukan Baru&quot; untuk menambahkan data donatur.</p>
-                  </td>
-                </tr>
-              ) : (
-                paginatedDonations.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-4 font-bold text-slate-900">
-                      <div>
-                        <p>{d.donor_name}</p>
-                        {d.donor_phone && (
-                          <p className="text-xs text-slate-500 font-normal">{d.donor_phone}</p>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-4 text-emerald-600 font-extrabold text-right">
-                      {formatRupiah(d.amount)}
-                    </td>
-                    <td className="p-4 text-slate-500">
-                      {new Date(d.received_at).toLocaleDateString('id-ID')}
-                    </td>
-                    <td className="p-4 text-slate-600 italic">
-                      {d.note || '-'}
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleEditDonation(d)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
-                          title="Edit Donasi"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDonation(d.id)}
-                          className="p-2 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                          title="Hapus Donasi"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <DonasiTable
+          donations={paginatedDonations}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSortChange={handleSortChange}
+          onEdit={handleEditDonation}
+          onDelete={handleDeleteDonation}
+        />
 
         {/* Pagination Controls */}
-        {totalCount > 0 && (
-          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-semibold text-slate-600">
-            <span>
-              Menampilkan <strong className="font-black text-slate-900">{startIndex + 1}</strong>–
-              <strong className="font-black text-slate-900">{endIndex}</strong> dari{' '}
-              <strong className="font-black text-slate-900">{totalCount}</strong> donasi
-            </span>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={safeCurrentPage <= 1}
-                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
-                title="Halaman Sebelumnya"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  const visibleCount = Math.min(5, totalPages);
-                  const windowStart = Math.max(
-                    1,
-                    Math.min(safeCurrentPage - Math.floor(visibleCount / 2), totalPages - visibleCount + 1)
-                  );
-                  const pageNum = windowStart + i;
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setCurrentPage(pageNum)}
-                      className={`w-7 h-7 rounded-lg text-xs font-bold font-mono transition-all cursor-pointer active:scale-95 border ${
-                        safeCurrentPage === pageNum
-                          ? 'bg-[#E70013] border-[#E70013] text-white shadow-xs'
-                          : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                disabled={safeCurrentPage >= totalPages}
-                className="p-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer active:scale-95"
-                title="Halaman Selanjutnya"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
+        <DonasiPagination
+          totalCount={totalCount}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Form Modal */}
-      {isAdding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-black text-slate-900">
-                {editingDonation ? 'Edit Pemasukan Donasi' : 'Tambah Pemasukan Donasi Baru'}
-              </h3>
-              <button
-                onClick={() => {
-                  setIsAdding(false);
-                  setEditingDonation(null);
-                }}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveDonation} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Nama Donatur / Sponsor</label>
-                <input
-                  type="text"
-                  value={newDonorName}
-                  onChange={(e) => setNewDonorName(e.target.value)}
-                  required
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold"
-                  placeholder="Contoh: H. Ahmad / PT Sinar Mas"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Nomor WhatsApp / HP (opsional)</label>
-                <input
-                  type="text"
-                  value={newDonorPhone}
-                  onChange={(e) => setNewDonorPhone(e.target.value)}
-                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900"
-                  placeholder="Contoh: 081234567890"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Nominal Donasi (Rp)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-extrabold text-slate-400">Rp</span>
-                  <input
-                    type="text"
-                    value={formattedDisplayAmount}
-                    onChange={handleAmountInputChange}
-                    required
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none text-slate-900 font-bold text-base"
-                    placeholder="1.000.000"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-600 mb-1 block">Catatan / Keterangan (opsional)</label>
-                <textarea
-                  value={newNote}
-                  onChange={(e) => setNewNote(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:border-[#E70013] focus:outline-none h-20 resize-none text-slate-900"
-                  placeholder="Keterangan bantuan / bentuk barang yang dinilai uang..."
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsAdding(false);
-                    setEditingDonation(null);
-                  }}
-                  className="px-4 py-2 rounded-xl text-slate-600 font-semibold hover:bg-slate-100"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading || !newDonorName.trim() || !newAmount}
-                  className="px-4 py-2 rounded-xl bg-[#E70013] text-white font-bold hover:bg-[#E70013]/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {editingDonation ? 'Simpan Perubahan' : 'Simpan Donasi'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <DonasiFormModal
+        isOpen={isAdding}
+        editingDonation={editingDonation}
+        isLoading={isLoading}
+        donorName={newDonorName}
+        onDonorNameChange={setNewDonorName}
+        donorPhone={newDonorPhone}
+        onDonorPhoneChange={setNewDonorPhone}
+        amountDisplay={formattedDisplayAmount}
+        onAmountInputChange={handleAmountInputChange}
+        note={newNote}
+        onNoteChange={setNewNote}
+        onClose={handleCloseModal}
+        onSubmit={handleSaveDonation}
+      />
     </div>
   );
 };
