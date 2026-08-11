@@ -11,6 +11,8 @@ import { HomeBuyCoupons } from '@/components/home/HomeBuyCoupons';
 import { HomeStatCards } from '@/components/home/HomeStatCards';
 import { HomeModuleCards } from '@/components/home/HomeModuleCards';
 import { HomeRecentWinners } from '@/components/home/HomeRecentWinners';
+import { HomeKeuanganSummary } from '@/components/home/HomeKeuanganSummary';
+import { WhatsAppFloatButton } from '@/components/home/WhatsAppFloatButton';
 
 const SYNC_INTERVAL_MS = 30000;
 
@@ -142,6 +144,9 @@ export default function HomePage() {
       {/* Hero Banner Section */}
       <HomeHeroBanner />
 
+      {/* Transparansi Keuangan (publik, agar semua bisa melihat) */}
+      <HomeKeuanganSummary />
+
       {/* Cara Beli Kupon (publik, untuk peserta jalan sehat) */}
       {mounted && !session && <HomeBuyCoupons />}
 
@@ -162,6 +167,9 @@ export default function HomePage() {
 
       {/* Live Recent Winners Section (hanya untuk panitia yang login) */}
       {mounted && session && <HomeRecentWinners winners={winners} lastSyncedAt={lastSyncedAt} />}
+
+      {/* Floating WhatsApp Order Button (publik) */}
+      <WhatsAppFloatButton />
     </div>
   );
 }
