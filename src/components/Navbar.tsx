@@ -102,9 +102,10 @@ export default function Navbar() {
     router.push('/');
   };
 
-  // Layar Undian: tampil navbar seperti biasa; saat fullscreen (stage proyektor)
-  // navbar disembunyikan agar layar panggung bersih. Halaman e-voucher publik (/v/) tetap tanpa navbar.
-  if (((pathname === '/draw' || pathname === '/undian') && isFullscreen) || pathname.startsWith('/v/')) {
+  // Layar Undian outdoor: fullscreen hitam total - navbar selalu disembunyikan
+  // agar tidak ada putih di atas/bawah/samping. Halaman e-voucher publik (/v/) tetap tanpa navbar.
+  // Saat fullscreen proyektor juga tetap hidden.
+  if (pathname === '/draw' || pathname === '/undian' || pathname.startsWith('/v/') || ((pathname === '/draw' || pathname === '/undian') && isFullscreen)) {
     return null;
   }
 

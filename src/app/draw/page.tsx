@@ -7,6 +7,7 @@ import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
 import { Trophy, AlertCircle } from 'lucide-react';
 
+import Link from 'next/link';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
@@ -342,14 +343,22 @@ export default function DrawPage() {
 
   return (
     <RequireAuth roles={['mc', 'admin']}>
-    <div className="space-y-8 py-4 max-w-7xl mx-auto">
+    <div className="fixed inset-0 z-[100] bg-zinc-950 overflow-y-auto">
+      <div className="min-h-screen flex flex-col">
+      <div className="flex-1 space-y-6 sm:space-y-8 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+      <div className="flex items-center justify-between text-[11px]">
+        <Link href="/" className="font-black text-zinc-400 hover:text-white transition-colors inline-flex items-center gap-1">
+          ← Keluar Stage
+        </Link>
+        <span className="font-black tracking-[0.14em] uppercase text-zinc-600">Mode Outdoor · Hitam Pekat</span>
+      </div>
       <UndianHeader
         eligibleCount={eligibleCount}
         poolSize={lastPoolSize}
         onToggleFullscreen={toggleFullscreen}
       />
 
-      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-start lg:gap-6">
+      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-start lg:gap-6 space-y-6 lg:space-y-0">
         <aside className="lg:sticky lg:top-16 @container">
           <PrizeSelectorGrid
             prizes={prizes}
@@ -363,10 +372,10 @@ export default function DrawPage() {
           />
         </aside>
 
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-200 p-5 sm:p-8 text-center space-y-5 shadow-xl">
+        <div className="relative overflow-hidden rounded-3xl bg-zinc-900 border-4 border-yellow-400 p-5 sm:p-8 text-center space-y-5 shadow-none">
         {currentPrize && (
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg">
+            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg border-2 border-white">
               <Trophy className="w-5 h-5 text-white animate-bounce" />
               Kategori Hadiah: {currentPrize.name}
             </div>
@@ -381,7 +390,7 @@ export default function DrawPage() {
         />
 
         {errorMsg && (
-          <div className="p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 max-w-md shadow-md">
+          <div className="p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 max-w-md shadow-md border-2 border-white">
             <AlertCircle className="w-5 h-5 flex-shrink-0 text-white" />
             {errorMsg}
           </div>
@@ -403,6 +412,8 @@ export default function DrawPage() {
         <aside className="lg:sticky lg:top-16">
           <WinnersPanel winners={winners} />
         </aside>
+      </div>
+      </div>
       </div>
     </div>
     </RequireAuth>

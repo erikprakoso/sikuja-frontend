@@ -35,8 +35,8 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
 
   if (prizes.length === 0 || availablePrizes.length === 0) {
     return (
-      <div className="p-4 rounded-2xl bg-[#E70013] text-white text-center font-black flex items-center justify-center gap-2 border-2 border-[#E70013]">
-        <CheckCircle className="w-5 h-5 text-white" />
+      <div className="p-4 rounded-2xl bg-yellow-400 text-black text-center font-black flex items-center justify-center gap-2 border-2 border-yellow-400">
+        <CheckCircle className="w-5 h-5 text-black" />
         Seluruh Pengundian Hadiah telah Selesai 🏆
       </div>
     );
@@ -44,8 +44,8 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
 
   return (
     <div className="space-y-3">
-      <label className="text-xs font-black uppercase tracking-wider text-[#E70013] flex items-center gap-1.5">
-        <Star className="w-4 h-4 text-[#E70013]" />
+      <label className="text-xs font-black uppercase tracking-wider text-yellow-400 flex items-center gap-1.5">
+        <Star className="w-4 h-4 text-yellow-400" />
         Pilih Kategori Hadiah ({availablePrizes.length} Tersedia):
       </label>
       <div
@@ -61,19 +61,19 @@ export const PrizeSelectorGrid: React.FC<PrizeSelectorGridProps> = ({
               onClick={() => onSelectPrize(p.id)}
               className={`w-full flex items-center justify-between gap-2 p-2.5 rounded-xl border-2 transition-all text-left cursor-pointer active:scale-[0.99] disabled:cursor-not-allowed ${
                 isSelected
-                  ? 'bg-[#E70013] border-[#E70013] text-white shadow-lg font-black'
-                  : 'bg-white border-[#E70013] text-[#E70013] hover:bg-[#E70013]/10 font-bold'
+                  ? 'bg-yellow-400 border-yellow-400 text-black shadow-lg font-black'
+                  : 'bg-zinc-800 border-zinc-600 text-white hover:bg-zinc-700 hover:border-zinc-500 font-bold'
               }`}
             >
               <span className="flex items-center gap-2 min-w-0">
-                <span className={`text-[10px] uppercase font-black ${isSelected ? 'text-white' : 'text-[#E70013]'}`}>
+                <span className={`text-[10px] uppercase font-black ${isSelected ? 'text-black' : 'text-yellow-400'}`}>
                   #{p.order_num}
                 </span>
                 <span className="text-xs font-black truncate">{p.name}</span>
               </span>
               <span
                 className={`text-[10px] font-black px-1.5 py-0.5 rounded border flex-shrink-0 ${
-                  isSelected ? 'bg-white text-[#E70013] border-white' : 'bg-[#E70013] text-white border-[#E70013]'
+                  isSelected ? 'bg-black text-yellow-400 border-black' : 'bg-yellow-400 text-black border-yellow-400'
                 }`}
               >
                 {p.drawn_count}/{p.stock}

@@ -34,21 +34,21 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
         <button
           onClick={onConfirmWinner}
           disabled={isConfirming}
-          className="flex-1 px-4 py-3 rounded-xl font-bold text-base bg-[#E70013] text-white hover:opacity-90 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-4 rounded-xl font-black text-base bg-yellow-400 text-black border-4 border-yellow-400 hover:brightness-110 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg"
         >
           {isConfirming ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <CheckCircle className="w-4 h-4" />
+            <CheckCircle className="w-5 h-5" />
           )}
           {isConfirming ? 'Konfirmasi...' : 'Konfirmasi'}
         </button>
         <button
           onClick={onForfeitAndRedraw}
           disabled={isConfirming}
-          className="flex-1 px-4 py-3 rounded-xl font-bold text-base bg-white text-[#E70013] border-2 border-[#E70013] hover:bg-[#E70013]/5 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-4 rounded-xl font-black text-base bg-zinc-800 text-white border-4 border-white hover:bg-zinc-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
         >
-          <XCircle className="w-4 h-4" />
+          <XCircle className="w-5 h-5" />
           Gugurkan
         </button>
       </div>
@@ -60,9 +60,9 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
     return (
       <button
         onClick={onStartDraw}
-        className="w-full max-w-md mx-auto px-4 py-3 rounded-xl font-bold text-base bg-[#E70013] text-white hover:opacity-90 cursor-pointer flex items-center justify-center gap-2"
+        className="w-full max-w-md mx-auto px-4 py-4 rounded-xl font-black text-base bg-yellow-400 text-black border-4 border-yellow-400 hover:brightness-110 cursor-pointer flex items-center justify-center gap-2 shadow-lg"
       >
-        <Play className="w-4 h-4 fill-current" />
+        <Play className="w-5 h-5 fill-current" />
         Undi Berikutnya
       </button>
     );
@@ -73,15 +73,15 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
     <button
       onClick={isRolling ? onStopDraw : onStartDraw}
       disabled={!canStart}
-      className={`w-full max-w-md mx-auto px-4 py-3 rounded-xl font-bold text-base flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed ${
+      className={`w-full max-w-md mx-auto px-4 py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed border-4 shadow-lg ${
         !canStart
-          ? 'bg-slate-100 text-slate-400'
+          ? 'bg-zinc-800 text-zinc-500 border-zinc-700'
           : isRolling
-            ? 'bg-slate-900 text-white hover:opacity-90'
-            : 'bg-[#E70013] text-white hover:opacity-90'
+            ? 'bg-white text-black border-white hover:brightness-95'
+            : 'bg-[#E70013] text-white border-white hover:brightness-110'
       }`}
     >
-      {isRolling ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+      {isRolling ? <Square className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
       {isRolling ? 'Stop' : 'Mulai'}
     </button>
   );

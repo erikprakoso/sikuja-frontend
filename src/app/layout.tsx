@@ -3,6 +3,7 @@ import { Outfit, Inter } from 'next/font/google';
 import Navbar from '@/components/Navbar';
 import { SyncProvider } from '@/components/SyncProvider';
 import { PwaInstallPrompt } from '@/components/PwaInstallPrompt';
+import { AppFooter } from '@/components/AppFooter';
 import './globals.css';
 
 const outfit = Outfit({
@@ -48,12 +49,7 @@ export default function RootLayout({
           </main>
         </SyncProvider>
         <PwaInstallPrompt />
-        <footer className="border-t border-slate-100 py-5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-xs text-slate-400">
-            <p className="font-semibold text-slate-500">Jalan Sehat 2026</p>
-            <p>Aplikasi undian digital &middot; Transparan &middot; Realtime</p>
-          </div>
-        </footer>
+        <AppFooter />
       </body>
     </html>
   );

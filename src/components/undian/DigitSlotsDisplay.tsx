@@ -18,10 +18,10 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
     <div className="py-6 flex items-center justify-center w-full">
       <div className="flex flex-col items-center w-full">
         <div
-          className={`flex items-stretch justify-center gap-1.5 sm:gap-3 p-2 sm:p-4 rounded-3xl w-full ${
+          className={`flex items-stretch justify-center gap-1.5 sm:gap-3 p-2 sm:p-4 rounded-3xl w-full border-4 ${
             winnerVoucher
-              ? 'bg-[#E70013] shadow-2xl ring-4 ring-[#E70013]/40'
-              : 'bg-white border-4 border-[#E70013] shadow-xl'
+              ? 'bg-yellow-400 border-yellow-400 shadow-2xl ring-4 ring-yellow-400/50'
+              : 'bg-black border-yellow-400 shadow-xl'
           }`}
         >
           {displayDigits.split('').map((digit, idx) => (
@@ -36,12 +36,12 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
                 font-mono font-black leading-none
                 text-5xl sm:text-[7rem] md:text-[8rem] lg:text-[6rem] xl:text-[9rem] 2xl:text-[10rem]
                 select-none
-                shadow-md
+                border-4
                 ${winnerVoucher
-                  ? 'bg-white text-[#E70013] shadow-lg'
+                  ? 'bg-black text-yellow-400 border-yellow-400 shadow-lg'
                   : isRolling
-                    ? 'bg-[#E70013]/10 text-[#E70013] border-2 border-[#E70013] animate-pulse'
-                    : 'bg-white border-4 border-[#E70013] text-[#E70013] scale-100'
+                    ? 'bg-yellow-400 text-black border-yellow-400 animate-pulse'
+                    : 'bg-zinc-900 text-yellow-400 border-yellow-400 scale-100'
                 }
               `}
             >
@@ -51,17 +51,17 @@ export const DigitSlotsDisplay: React.FC<DigitSlotsDisplayProps> = ({
         </div>
 
         {isRolling && (
-          <p className="mt-3 text-xs font-black text-[#E70013] uppercase tracking-widest animate-pulse">
+          <p className="mt-3 text-sm font-black text-yellow-400 uppercase tracking-widest animate-pulse">
             ⟳ Mengacak kode kupon...
           </p>
         )}
 
         {!isRolling && ownerName && (
-          <div className="mt-3 w-full max-w-md mx-auto px-4 py-2 rounded-xl bg-slate-50 border border-[#E70013]/20">
-            <p className="text-[10px] font-black text-[#E70013] uppercase tracking-widest text-center">
+          <div className="mt-3 w-full max-w-md mx-auto px-4 py-3 rounded-xl bg-black border-2 border-yellow-400">
+            <p className="text-[11px] font-black text-yellow-400 uppercase tracking-widest text-center">
               Pemilik Kupon
             </p>
-            <p className="text-base sm:text-xl font-black text-slate-900 text-center">
+            <p className="text-base sm:text-xl font-black text-white text-center">
               {ownerName}
             </p>
           </div>
