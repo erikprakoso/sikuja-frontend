@@ -5,7 +5,7 @@ import { Purchase, DrawResult } from '@/types';
 import { formatRupiah } from '@/lib/format';
 import { PembelianStatsCards } from '@/components/admin/pembelian/PembelianStatsCards';
 import { PembelianPrizeGrid } from '@/components/admin/pembelian/PembelianPrizeGrid';
-import { PembelianToolbar } from '@/components/admin/pembelian/PembelianToolbar';
+import { PembelianToolbar, PembelianFilter } from '@/components/admin/pembelian/PembelianToolbar';
 import { PembelianMobileCards } from '@/components/admin/pembelian/PembelianMobileCards';
 import { PembelianTable } from '@/components/admin/pembelian/PembelianTable';
 import { PembelianPagination } from '@/components/admin/pembelian/PembelianPagination';
@@ -31,6 +31,7 @@ export const PembelianList = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterValue, setFilterValue] = useState<PembelianFilter>('all');
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -70,15 +71,22 @@ export const PembelianList = () => {
   const totalOperasional = purchaseTotals.operasional;
 
   const filteredPurchases = useMemo(() => {
-    if (!searchQuery.trim()) return purchases;
+    let list = purchases;
+    if (filterValue === 'doorprize') list = list.filter((p) => p.is_doorprize);
+    else if (filterValue === 'operasional') list = list.filter((p) => !p.is_doorprize);
+
+    if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return purchases.filter(
-      (p) => p.item_name.toLowerCase().includes(q)
-    );
-  }, [purchases, searchQuery]);
+    return list.filter((p) => p.item_name.toLowerCase().includes(q));
+  }, [purchases, searchQuery, filterValue]);
 
   const handleSearchChange = (query: string) => {
     setSearchQuery(query);
+    setCurrentPage(1);
+  };
+
+  const handleFilterChange = (value: PembelianFilter) => {
+    setFilterValue(value);
     setCurrentPage(1);
   };
 
@@ -387,6 +395,8 @@ export const PembelianList = () => {
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
           isLoading={isLoading}
+          filterValue={filterValue}
+          onFilterChange={handleFilterChange}
         />
 
         {/* Mobile Card List */}

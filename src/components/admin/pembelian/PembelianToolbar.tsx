@@ -1,5 +1,7 @@
 import { Search, Loader2 } from 'lucide-react';
 
+export type PembelianFilter = 'all' | 'doorprize' | 'operasional';
+
 interface PembelianToolbarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -8,6 +10,8 @@ interface PembelianToolbarProps {
   pageSize: number;
   onPageSizeChange: (size: number) => void;
   isLoading: boolean;
+  filterValue: PembelianFilter;
+  onFilterChange: (value: PembelianFilter) => void;
 }
 
 export const PembelianToolbar = ({
@@ -18,6 +22,8 @@ export const PembelianToolbar = ({
   pageSize,
   onPageSizeChange,
   isLoading,
+  filterValue,
+  onFilterChange,
 }: PembelianToolbarProps) => {
   return (
     <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -32,7 +38,17 @@ export const PembelianToolbar = ({
         />
       </div>
 
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+      <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-wrap">
+        <select
+          value={filterValue}
+          onChange={(e) => onFilterChange(e.target.value as PembelianFilter)}
+          className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-700 focus:outline-none cursor-pointer"
+          title="Filter kategori"
+        >
+          <option value="all">Semua</option>
+          <option value="doorprize">Doorprize</option>
+          <option value="operasional">Operasional</option>
+        </select>
         <span className="text-xs text-slate-500 font-medium hidden sm:inline">Urutkan:</span>
         <select
           value={sortValue}
