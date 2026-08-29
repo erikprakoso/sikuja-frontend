@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Voucher } from '@/types';
-import { Trophy, ChevronDown } from 'lucide-react';
+import { Trophy, ChevronDown, User } from 'lucide-react';
+import { getStoredTransactions, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 interface WinnersPanelProps {
   winners: Voucher[];
@@ -10,10 +11,29 @@ const PAGE_SIZE = 8;
 
 export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [txMap, setTxMap] = useState<Map<string, string>>(new Map());
 
-  const sortedWinners = [...winners].sort(
+  useEffect(() => {
+    const refreshTx = () => {
+      const map = new Map<string, string>();
+      for (const tx of getStoredTransactions()) {
+        if (tx.customer_name) map.set(tx.id, tx.customer_name);
+      }
+      setTxMap(map);
+    };
+    refreshTx();
+    window.addEventListener(SIKUJA_EVENT_NAME, refreshTx);
+    return () => window.removeEventListener(SIKUJA_EVENT_NAME, refreshTx);
+  }, []);
+
+  const getWinnerName = (w: Voucher) => {
+    if (w.customer_name) return w.customer_name;
+    return txMap.get(w.transaction_id) || '-';
+  };
+
+  const sortedWinners = useMemo(() => [...winners].sort(
     (a, b) => new Date(b.won_at ?? 0).getTime() - new Date(a.won_at ?? 0).getTime()
-  );
+  ), [winners]);
 
   const visibleWinners = sortedWinners.slice(0, visibleCount);
   const hasMore = visibleCount < sortedWinners.length;
@@ -36,15 +56,21 @@ export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
           {visibleWinners.map((w) => (
             <div
               key={w.code}
-              className="w-full flex items-center justify-between gap-2 p-2.5 rounded-xl border-2 border-zinc-700 bg-zinc-800"
+              className="w-full flex flex-col gap-1 p-2.5 rounded-xl border-2 border-zinc-700 bg-zinc-800"
             >
-              <span className="flex items-center gap-2 min-w-0">
-                <Trophy className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
-                <span className="text-[11px] font-black truncate text-white">{w.prize_name || '-'}</span>
-              </span>
-              <span className="text-sm font-black font-mono tracking-widest text-yellow-400 flex-shrink-0">
-                {w.code}
-              </span>
+              <div className="flex items-center justify-between gap-2 w-full">
+                <span className="flex items-center gap-2 min-w-0">
+                  <Trophy className="w-3.5 h-3.5 text-yellow-400 flex-shrink-0" />
+                  <span className="text-[11px] font-black truncate text-white">{w.prize_name || '-'}</span>
+                </span>
+                <span className="text-sm font-black font-mono tracking-widest text-yellow-400 flex-shrink-0">
+                  {w.code}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-300 truncate">
+                <User className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                <span className="truncate">{getWinnerName(w)}</span>
+              </div>
             </div>
           ))}
 

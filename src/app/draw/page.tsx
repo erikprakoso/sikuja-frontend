@@ -475,7 +475,7 @@ export default function DrawPage() {
                 </div>
               )}
 
-              <div className="relative mt-6 sm:mt-8 flex justify-center">
+              <div className="relative mt-6 sm:mt-8 flex justify-center pb-3 sm:pb-4">
                 <div className="w-full max-w-xl">
                   <DrawControls
                     isRolling={isRolling}
