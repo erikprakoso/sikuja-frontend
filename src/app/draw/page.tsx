@@ -53,6 +53,7 @@ export default function DrawPage() {
   const [eligibleCount, setEligibleCount] = useState<number>(0);
   
   const [isRolling, setIsRolling] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
   const [displayDigits, setDisplayDigits] = useState<string>('00000');
   
@@ -130,11 +131,10 @@ export default function DrawPage() {
   };
 
   const handleStartDraw = async () => {
-    if (isRolling || resolvingRef.current || !selectedPrizeId) return;
+    if (isRolling || isStarting || resolvingRef.current || !selectedPrizeId) return;
     resolvingRef.current = true;
+    setIsStarting(true);
     setErrorMsg('');
-    setCandidateVoucher(null);
-    setIsConfirmedWinner(false);
     setLastPoolSize(null);
 
     try {
@@ -167,6 +167,9 @@ export default function DrawPage() {
         setLastPoolSize(data.audit.pool_size);
       }
 
+      // Bersihkan kandidat sebelumnya HANYA setelah pool siap — hindari kedipan Mulai setelah Undi Berikutnya
+      setCandidateVoucher(null);
+      setIsConfirmedWinner(false);
       setIsRolling(true);
 
       // Putar KODE KUPON ASLI dengan cepat. Kode yang membeku saat Stop
@@ -186,6 +189,7 @@ export default function DrawPage() {
     } finally {
       soundManager.stopDrumroll();
       resolvingRef.current = false;
+      setIsStarting(false);
     }
   };
 
@@ -303,7 +307,7 @@ export default function DrawPage() {
     if (ok) {
       await syncFromSupabase();
       refreshLocalData();
-      void handleStartDraw();
+      // Jangan auto-start, biarkan operator tekan Spasi / Mulai Undian secara manual (konsisten dengan Konfirmasi -> Undi Berikutnya)
     }
   };
 
@@ -311,6 +315,7 @@ export default function DrawPage() {
   // berikutnya; Y = konfirmasi pemenang, N = gugurkan & undi ulang.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
+      if (isStarting) return;
       if (e.key === 'y' || e.key === 'Y') {
         if (candidateVoucher && !isConfirmedWinner && !isConfirming) {
           e.preventDefault();
@@ -338,7 +343,7 @@ export default function DrawPage() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRolling, isConfirming, candidateVoucher, selectedPrizeId, isConfirmedWinner]);
+  }, [isRolling, isStarting, isConfirming, candidateVoucher, selectedPrizeId, isConfirmedWinner]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -427,7 +432,7 @@ export default function DrawPage() {
               <PrizeSelectorGrid
                 prizes={prizes}
                 selectedPrizeId={selectedPrizeId}
-                isRolling={isRolling}
+                isRolling={isRolling || isStarting}
                 onSelectPrize={(id) => {
                   setSelectedPrizeId(id);
                   setCandidateVoucher(null);
@@ -474,6 +479,7 @@ export default function DrawPage() {
                 <div className="w-full max-w-xl">
                   <DrawControls
                     isRolling={isRolling}
+                    isStarting={isStarting}
                     isConfirming={isConfirming}
                     candidateVoucher={candidateVoucher}
                     isConfirmed={isConfirmedWinner}

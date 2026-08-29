@@ -4,6 +4,7 @@ import { Play, Square, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
 interface DrawControlsProps {
   isRolling: boolean;
+  isStarting?: boolean;
   isConfirming: boolean;
   candidateVoucher: Voucher | null;
   isConfirmed: boolean;
@@ -16,6 +17,7 @@ interface DrawControlsProps {
 
 export const DrawControls: React.FC<DrawControlsProps> = ({
   isRolling,
+  isStarting = false,
   isConfirming,
   candidateVoucher,
   isConfirmed,
@@ -26,6 +28,19 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
   onForfeitAndRedraw,
 }) => {
   const canStart = !!selectedPrizeId;
+
+  // Saat menyiapkan pool (fetch /api/draw) - jangan tampilkan Mulai agar tidak kedip setelah Undi Berikutnya
+  if (isStarting) {
+    return (
+      <button
+        disabled
+        className="w-full max-w-md mx-auto px-4 py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 cursor-wait disabled:cursor-wait border-2 shadow-lg bg-zinc-800 text-zinc-400 border-zinc-700"
+      >
+        <Loader2 className="w-5 h-5 animate-spin" />
+        Menyiapkan Undian...
+      </button>
+    );
+  }
 
   // Kandidat tampil: pilih Konfirmasi atau Gugurkan
   if (candidateVoucher && !isConfirmed) {
