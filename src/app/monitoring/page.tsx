@@ -12,6 +12,7 @@ import { Voucher, Transaction, DrawResult } from '@/types';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
+import { BelumCheckinFollowUp } from '@/components/admin/BelumCheckinFollowUp';
 
 export default function MonitoringPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -57,6 +58,9 @@ export default function MonitoringPage() {
         totalOmzet={totalOmzet}
         totalTransactions={transactions.length}
       />
+
+      {/* Belum Checkpoint - follow-up */}
+      <BelumCheckinFollowUp />
 
       {/* Vouchers Master Table */}
       <VoucherMasterTable
