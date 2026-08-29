@@ -32,7 +32,7 @@ export const PembelianStatsCards = ({
   const doorprize = totalDoorprize || 0;
   const operasional = totalOperasional || Math.max(0, totalSpent - doorprize);
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
       {/* Total Pendapatan */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between gap-2">
