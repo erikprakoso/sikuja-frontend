@@ -46,7 +46,7 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
         <button
           onClick={onForfeitAndRedraw}
           disabled={isConfirming}
-          className="flex-1 px-4 py-4 rounded-xl font-black text-base bg-zinc-800 text-white border-4 border-white hover:bg-zinc-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
+          className="flex-1 px-4 py-4 rounded-xl font-black text-base bg-zinc-800 text-zinc-200 border-2 border-zinc-700 hover:bg-zinc-700 hover:border-zinc-600 hover:text-white cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 flex items-center justify-center gap-2"
         >
           <XCircle className="w-5 h-5" />
           Gugurkan
@@ -68,21 +68,21 @@ export const DrawControls: React.FC<DrawControlsProps> = ({
     );
   }
 
-  // Layar utama: tombol Mulai / Stop
+  // Layar utama: tombol Mulai / Stop - outdoor high-contrast tanpa merah/putih
   return (
     <button
       onClick={isRolling ? onStopDraw : onStartDraw}
       disabled={!canStart}
-      className={`w-full max-w-md mx-auto px-4 py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed border-4 shadow-lg ${
+      className={`w-full max-w-md mx-auto px-4 py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 cursor-pointer disabled:cursor-not-allowed border-2 shadow-lg transition-colors ${
         !canStart
           ? 'bg-zinc-800 text-zinc-500 border-zinc-700'
           : isRolling
-            ? 'bg-white text-black border-white hover:brightness-95'
-            : 'bg-[#E70013] text-white border-white hover:brightness-110'
+            ? 'bg-zinc-900 text-yellow-400 border-yellow-400 hover:bg-black'
+            : 'bg-yellow-400 text-black border-yellow-400 hover:brightness-110'
       }`}
     >
       {isRolling ? <Square className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
-      {isRolling ? 'Stop' : 'Mulai'}
+      {isRolling ? 'Stop' : 'Mulai Undian'}
     </button>
   );
 };

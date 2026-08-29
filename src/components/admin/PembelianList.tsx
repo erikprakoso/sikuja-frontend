@@ -45,19 +45,29 @@ export const PembelianList = () => {
     let donasi = 0;
     let kupon = 0;
     let barang = 0;
+    let doorprize = 0;
+    let operasional = 0;
     for (const p of purchases) {
       total += p.total_price;
       if (p.funding_source === 'penjualan_kupon') kupon += p.total_price;
       else if (p.funding_source === 'donasi_barang') barang += p.total_price;
       else donasi += p.total_price;
+
+      // Pecah doorprize vs operasional untuk kas (non barang)
+      if (p.funding_source !== 'donasi_barang') {
+        if (p.is_doorprize) doorprize += p.total_price;
+        else operasional += p.total_price;
+      }
     }
-    return { total, donasi, kupon, barang };
+    return { total, donasi, kupon, barang, doorprize, operasional };
   }, [purchases]);
 
   const totalSpent = purchaseTotals.donasi + purchaseTotals.kupon;
   const totalSpentBarang = purchaseTotals.barang;
   const totalSpentDonations = purchaseTotals.donasi;
   const totalSpentVouchers = purchaseTotals.kupon;
+  const totalDoorprize = purchaseTotals.doorprize;
+  const totalOperasional = purchaseTotals.operasional;
 
   const filteredPurchases = useMemo(() => {
     if (!searchQuery.trim()) return purchases;
@@ -157,6 +167,7 @@ export const PembelianList = () => {
   const sisaDonasi = totalDonations - totalSpentDonations;
   const sisaKupon = voucherSales - totalSpentVouchers;
   const sisaKas = sisaDonasi + sisaKupon;
+  const totalPendapatan = totalDonations + voucherSales;
 
   // Modal Balance Validation
   const currentAvailableBalance = useMemo(() => {
@@ -349,6 +360,9 @@ export const PembelianList = () => {
 
       {/* Modern Summary Stat Cards (Split Balances) */}
       <PembelianStatsCards
+        totalPendapatan={totalPendapatan}
+        totalDoorprize={totalDoorprize}
+        totalOperasional={totalOperasional}
         totalSpent={totalSpent}
         totalSpentBarang={totalSpentBarang}
         sisaDonasi={sisaDonasi}

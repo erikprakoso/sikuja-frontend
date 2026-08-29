@@ -8,6 +8,9 @@ const SYNC_INTERVAL_MS = 30000;
 
 export const HomeKeuanganSummary: React.FC = () => {
   const [summary, setSummary] = useState<{
+    totalPendapatan: number;
+    totalDoorprize: number;
+    totalOperasional: number;
     totalSpent: number;
     totalSpentBarang: number;
     sisaDonasi: number;
@@ -58,6 +61,9 @@ export const HomeKeuanganSummary: React.FC = () => {
       </div>
 
       <PembelianStatsCards
+        totalPendapatan={summary.totalPendapatan}
+        totalDoorprize={summary.totalDoorprize}
+        totalOperasional={summary.totalOperasional}
         totalSpent={summary.totalSpent}
         totalSpentBarang={summary.totalSpentBarang}
         sisaDonasi={summary.sisaDonasi}

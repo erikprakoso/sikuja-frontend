@@ -189,8 +189,19 @@ export async function POST(request: NextRequest) {
       winnerVoucher: { ...voucher, status: 'menang', won_at: now, prize_name: prize.name },
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error('API /draw/confirm error:', errorMsg);
-    return NextResponse.json({ error: errorMsg || 'Internal Server Error' }, { status: 500 });
+    const errorMsg =
+      err instanceof Error
+        ? err.message
+        : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : (() => {
+              try {
+                return JSON.stringify(err);
+              } catch {
+                return String(err);
+              }
+            })();
+    console.error('API /draw/confirm error:', err, errorMsg);
+    return NextResponse.json({ error: errorMsg && errorMsg !== '{}' ? errorMsg : 'Internal Server Error' }, { status: 500 });
   }
 }

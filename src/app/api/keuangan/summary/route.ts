@@ -24,7 +24,7 @@ export async function GET() {
     }
 
     const [{ data: purchases }, { data: donations }, { data: transactions }] = await Promise.all([
-      serverSupabase.from('purchases').select('total_price, funding_source'),
+      serverSupabase.from('purchases').select('total_price, funding_source, is_doorprize'),
       serverSupabase.from('donations').select('amount'),
       serverSupabase.from('transactions').select('total_harga'),
     ]);
@@ -37,11 +37,18 @@ export async function GET() {
     let spentDonasi = 0;
     let spentKupon = 0;
     let spentBarang = 0;
+    let spentDoorprize = 0;
+    let spentOperasional = 0;
     for (const p of rows) {
       const price = p.total_price ?? 0;
       if (p.funding_source === 'penjualan_kupon') spentKupon += price;
       else if (p.funding_source === 'donasi_barang') spentBarang += price;
       else spentDonasi += price;
+
+      if (p.funding_source !== 'donasi_barang') {
+        if (p.is_doorprize) spentDoorprize += price;
+        else spentOperasional += price;
+      }
     }
 
     const totalSpent = spentDonasi + spentKupon;
@@ -53,9 +60,13 @@ export async function GET() {
     const sisaDonasi = totalDonations - spentDonasi;
     const sisaKupon = voucherSales - spentKupon;
     const sisaKas = sisaDonasi + sisaKupon;
+    const totalPendapatan = totalDonations + voucherSales;
 
     const payload = {
       summary: {
+        totalPendapatan,
+        totalDoorprize: spentDoorprize,
+        totalOperasional: spentOperasional,
         totalSpent,
         totalSpentBarang,
         sisaDonasi,

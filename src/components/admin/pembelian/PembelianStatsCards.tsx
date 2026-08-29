@@ -1,7 +1,10 @@
-import { ShoppingBag, PackageCheck, Gift, Package, Trophy } from 'lucide-react';
+import { Wallet, ShoppingBag, PackageCheck, Gift, Package, Trophy } from 'lucide-react';
 import { formatRupiah } from '@/lib/format';
 
 interface PembelianStatsCardsProps {
+  totalPendapatan?: number;
+  totalDoorprize?: number;
+  totalOperasional?: number;
   totalSpent: number;
   totalSpentBarang: number;
   sisaDonasi: number;
@@ -13,6 +16,9 @@ interface PembelianStatsCardsProps {
 }
 
 export const PembelianStatsCards = ({
+  totalPendapatan = 0,
+  totalDoorprize = 0,
+  totalOperasional = 0,
   totalSpent,
   totalSpentBarang,
   sisaDonasi,
@@ -22,8 +28,25 @@ export const PembelianStatsCards = ({
   sisaKas,
   purchaseCount,
 }: PembelianStatsCardsProps) => {
+  const pendapatan = totalPendapatan || totalDonations + voucherSales;
+  const doorprize = totalDoorprize || 0;
+  const operasional = totalOperasional || Math.max(0, totalSpent - doorprize);
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-4">
+      {/* Total Pendapatan */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">Total Pendapatan</span>
+          <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-white text-slate-900 shrink-0">
+            <Wallet className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          </div>
+        </div>
+        <p className="text-base sm:text-2xl font-black text-white mt-1 sm:mt-1.5">
+          {formatRupiah(pendapatan)}
+        </p>
+        <span className="hidden sm:block text-[11px] font-semibold text-slate-400 mt-1">Donasi {formatRupiah(totalDonations)} + Kupon {formatRupiah(voucherSales)}</span>
+      </div>
+
       {/* Total Pengeluaran */}
       <div className="bg-slate-100/60 border border-slate-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs">
         <div className="flex items-center justify-between gap-2">
@@ -35,7 +58,12 @@ export const PembelianStatsCards = ({
         <p className="text-base sm:text-2xl font-black text-slate-900 mt-1 sm:mt-1.5">
           {formatRupiah(totalSpent)}
         </p>
-        <span className="hidden sm:block text-[11px] font-semibold text-slate-500 mt-1">{purchaseCount} transaksi</span>
+        <span className="hidden sm:block text-[11px] font-semibold text-slate-500 mt-1">
+          Doorprize {formatRupiah(doorprize)} • Operasional {formatRupiah(operasional)} • {purchaseCount} trx
+        </span>
+        <span className="sm:hidden text-[10px] font-semibold text-slate-500 mt-1">
+          Doorprize {formatRupiah(doorprize)}
+        </span>
       </div>
 
       {/* Total Donasi Barang (In-Kind) */}

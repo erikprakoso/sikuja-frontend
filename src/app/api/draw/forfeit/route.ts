@@ -59,8 +59,19 @@ export async function POST(request: NextRequest) {
       message: `Kupon ${code} digugurkan (dianggap sobek) — undian ulang siap dimulai.`,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : String(err);
-    console.error('API /draw/forfeit error:', errorMsg);
-    return NextResponse.json({ error: errorMsg || 'Internal Server Error' }, { status: 500 });
+    const errorMsg =
+      err instanceof Error
+        ? err.message
+        : typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as { message: unknown }).message)
+          : (() => {
+              try {
+                return JSON.stringify(err);
+              } catch {
+                return String(err);
+              }
+            })();
+    console.error('API /draw/forfeit error:', err, errorMsg);
+    return NextResponse.json({ error: errorMsg && errorMsg !== '{}' ? errorMsg : 'Internal Server Error' }, { status: 500 });
   }
 }

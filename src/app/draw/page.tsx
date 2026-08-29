@@ -5,15 +5,32 @@ import confetti from 'canvas-confetti';
 import { getStoredPrizes, getStoredVouchers, syncFromSupabase, SIKUJA_EVENT_NAME, sortPrizesByUnitPrice } from '@/lib/storage';
 import { soundManager } from '@/lib/services/audio';
 import { Prize, Voucher } from '@/types';
-import { Trophy, AlertCircle } from 'lucide-react';
+import { Trophy, AlertCircle, Maximize } from 'lucide-react';
 
 import Link from 'next/link';
 import { RequireAuth } from '@/components/auth/RequireAuth';
-import { UndianHeader } from '@/components/undian/UndianHeader';
 import { PrizeSelectorGrid } from '@/components/undian/PrizeSelectorGrid';
 import { DigitSlotsDisplay } from '@/components/undian/DigitSlotsDisplay';
 import { WinnersPanel } from '@/components/undian/WinnersPanel';
 import { DrawControls } from '@/components/undian/DrawControls';
+
+// Helper aman untuk menampilkan error API tanpa [object Object]
+function formatApiError(raw: unknown, fallback: string): string {
+  if (!raw) return fallback;
+  if (typeof raw === 'string') return raw !== '[object Object]' ? raw : fallback;
+  if (typeof raw === 'object') {
+    const o = raw as Record<string, unknown>;
+    if (typeof o.message === 'string' && o.message && o.message !== '[object Object]') return o.message;
+    if (typeof o.error === 'string' && o.error && o.error !== '[object Object]') return o.error;
+    if (typeof o.msg === 'string' && o.msg) return o.msg;
+    try {
+      const s = JSON.stringify(raw);
+      if (s && s !== '{}' && s !== '""' && s !== '[object Object]') return s;
+    } catch {}
+  }
+  const s = String(raw);
+  return s && s !== '[object Object]' ? s : fallback;
+}
 
 // Acak cepat daftar kode kupon untuk tampilan roll (Fisher–Yates, CSPRNG).
 // Pemenang TIDAK ditentukan di sini — kode yang membeku saat Stop itulah yang
@@ -131,9 +148,7 @@ export default function DrawPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const rawErr = data.error || 'Gagal memuat kumpulan kupon undian.';
-        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
-        setErrorMsg(errStr);
+        setErrorMsg(formatApiError(data.error, 'Gagal memuat kumpulan kupon undian.'));
         return;
       }
 
@@ -165,8 +180,8 @@ export default function DrawPage() {
         soundManager.playTick();
       }, 85);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('Draw start error message:', msg);
+      const msg = err instanceof Error ? err.message : formatApiError(err, 'Gagal terhubung ke server pengundian.');
+      console.error('Draw start error message:', msg, err);
       setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
     } finally {
       soundManager.stopDrumroll();
@@ -199,9 +214,7 @@ export default function DrawPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const rawErr = data.error || 'Gagal memverifikasi undian.';
-        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
-        setErrorMsg(errStr);
+        setErrorMsg(formatApiError(data.error, 'Gagal memverifikasi undian.'));
         return;
       }
 
@@ -213,8 +226,8 @@ export default function DrawPage() {
       soundManager.playVictoryFanfare();
       triggerConfetti();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('Draw stop error message:', msg);
+      const msg = err instanceof Error ? err.message : formatApiError(err, 'Gagal terhubung ke server pengundian.');
+      console.error('Draw stop error message:', msg, err);
       setErrorMsg(msg || 'Gagal terhubung ke server pengundian.');
     } finally {
       setIsRolling(false);
@@ -236,9 +249,7 @@ export default function DrawPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const rawErr = data.error || 'Gagal mengonfirmasi pemenang.';
-        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
-        setErrorMsg(errStr);
+        setErrorMsg(formatApiError(data.error, 'Gagal mengonfirmasi pemenang.'));
         setIsConfirming(false);
         return;
       }
@@ -252,8 +263,8 @@ export default function DrawPage() {
       await syncFromSupabase();
       refreshLocalData();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('Confirm error message:', msg);
+      const msg = err instanceof Error ? err.message : formatApiError(err, 'Gagal terhubung ke server untuk mengonfirmasi.');
+      console.error('Confirm error message:', msg, err);
       setErrorMsg(msg || 'Gagal terhubung ke server untuk mengonfirmasi.');
       setIsConfirming(false);
     }
@@ -277,15 +288,13 @@ export default function DrawPage() {
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        const rawErr = data.error || 'Gagal menggugurkan kandidat.';
-        const errStr = typeof rawErr === 'string' ? rawErr : (rawErr.message || String(rawErr));
-        setErrorMsg(errStr);
+        setErrorMsg(formatApiError(data.error, 'Gagal menggugurkan kandidat.'));
       } else {
         ok = true;
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.error('Draw forfeit error message:', msg);
+      const msg = err instanceof Error ? err.message : formatApiError(err, 'Gagal terhubung ke server untuk menggugurkan.');
+      console.error('Draw forfeit error message:', msg, err);
       setErrorMsg(msg || 'Gagal terhubung ke server untuk menggugurkan.');
     } finally {
       resolvingRef.current = false;
@@ -343,79 +352,158 @@ export default function DrawPage() {
 
   return (
     <RequireAuth roles={['mc', 'admin']}>
-    <div className="fixed inset-0 z-[100] bg-zinc-950 overflow-y-auto">
-      <div className="min-h-screen flex flex-col">
-      <div className="flex-1 space-y-6 sm:space-y-8 py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
-      <div className="flex items-center justify-between text-[11px]">
-        <Link href="/" className="font-black text-zinc-400 hover:text-white transition-colors inline-flex items-center gap-1">
-          ← Keluar Stage
-        </Link>
-        <span className="font-black tracking-[0.14em] uppercase text-zinc-600">Mode Outdoor · Hitam Pekat</span>
-      </div>
-      <UndianHeader
-        eligibleCount={eligibleCount}
-        poolSize={lastPoolSize}
-        onToggleFullscreen={toggleFullscreen}
-      />
-
-      <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:items-start lg:gap-6 space-y-6 lg:space-y-0">
-        <aside className="lg:sticky lg:top-16 @container">
-          <PrizeSelectorGrid
-            prizes={prizes}
-            selectedPrizeId={selectedPrizeId}
-            isRolling={isRolling}
-            onSelectPrize={(id) => {
-              setSelectedPrizeId(id);
-              setCandidateVoucher(null);
-              setIsConfirmedWinner(false);
-            }}
-          />
-        </aside>
-
-        <div className="relative overflow-hidden rounded-3xl bg-zinc-900 border-4 border-yellow-400 p-5 sm:p-8 text-center space-y-5 shadow-none">
-        {currentPrize && (
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#E70013] text-white text-sm font-black uppercase tracking-widest shadow-lg border-2 border-white">
-              <Trophy className="w-5 h-5 text-white animate-bounce" />
-              Kategori Hadiah: {currentPrize.name}
-            </div>
-          </div>
-        )}
-
-        <DigitSlotsDisplay
-          displayDigits={displayDigits}
-          isRolling={isRolling}
-          winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
-          ownerName={candidateVoucher?.customer_name ?? null}
-        />
-
-        {errorMsg && (
-          <div className="p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 max-w-md shadow-md border-2 border-white">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 text-white" />
-            {errorMsg}
-          </div>
-        )}
-
-        <DrawControls
-          isRolling={isRolling}
-          isConfirming={isConfirming}
-          candidateVoucher={candidateVoucher}
-          isConfirmed={isConfirmedWinner}
-          selectedPrizeId={selectedPrizeId}
-          onStartDraw={() => handleStartDraw()}
-          onStopDraw={stopRoll}
-          onConfirmWinner={handleConfirmWinner}
-          onForfeitAndRedraw={handleForfeitAndRedraw}
-        />
+      <div className="fixed inset-0 z-[100] bg-zinc-950 flex flex-col overflow-hidden">
+        {/* Background premium - subtle glow, tetap hitam pekat outdoor */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_85%_60%_at_50%_-15%,rgba(250,204,21,0.09),transparent_62%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_100%_100%,rgba(231,0,19,0.07),transparent_60%)]" />
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-yellow-400/25 to-transparent" />
+          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)`, backgroundSize: '36px 36px' }} />
         </div>
 
-        <aside className="lg:sticky lg:top-16">
-          <WinnersPanel winners={winners} />
-        </aside>
+        {/* Header profesional full-width */}
+        <header className="relative shrink-0 h-[56px] sm:h-[64px] flex items-center justify-between gap-3 px-3 sm:px-6 border-b border-zinc-800 bg-zinc-900/75 backdrop-blur-xl">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <Link
+              href="/"
+              className="shrink-0 inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white text-[11px] sm:text-xs font-black tracking-wide transition-colors"
+            >
+              ← <span className="hidden sm:inline">Keluar Stage</span><span className="sm:hidden">Keluar</span>
+            </Link>
+            <div className="hidden sm:block h-6 w-px bg-zinc-700" />
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <img src="/logo-ri.png" alt="Logo" className="h-7 sm:h-9 w-auto shrink-0" />
+              <div className="min-w-0 leading-none hidden xs:block">
+                <div className="font-black text-white text-[13px] sm:text-[15px] tracking-tight truncate">
+                  JALAN SEHAT <span className="text-[#E70013]">2026</span>
+                </div>
+                <div className="hidden sm:block text-[10px] font-black tracking-[0.16em] text-zinc-500 uppercase">Panggung Undian Doorprize</div>
+              </div>
+            </div>
+            <span className="hidden lg:inline-flex items-center gap-1.5 ml-1 sm:ml-2 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] font-black tracking-[0.14em]">LIVE</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <div className="hidden md:flex items-center gap-4 sm:gap-5">
+              <div className="text-right">
+                <div className="text-[10px] font-black tracking-[0.14em] text-zinc-500 uppercase leading-none">Peserta Sah</div>
+                <div className="text-sm font-black font-mono text-white leading-none mt-1">{eligibleCount.toLocaleString('id-ID')}</div>
+              </div>
+              <div className="h-8 w-px bg-zinc-800" />
+              <div className="text-right">
+                <div className="text-[10px] font-black tracking-[0.14em] text-zinc-500 uppercase leading-none">Pool Terakhir</div>
+                <div className="text-sm font-black font-mono text-yellow-400 leading-none mt-1">{lastPoolSize !== null ? lastPoolSize.toLocaleString('id-ID') : '—'}</div>
+              </div>
+              <div className="h-8 w-px bg-zinc-800 hidden xl:block" />
+              <div className="hidden xl:block text-right">
+                <div className="text-[10px] font-black tracking-[0.14em] text-zinc-500 uppercase leading-none">Pemenang</div>
+                <div className="text-sm font-black font-mono text-white leading-none mt-1">{winners.length}</div>
+              </div>
+            </div>
+            {/* Mobile stats compact */}
+            <div className="flex md:hidden items-center gap-2 text-[11px] font-mono font-black">
+              <span className="px-2 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-white">{eligibleCount}</span>
+              <span className="text-zinc-600">/</span>
+              <span className="px-2 py-1 rounded-full bg-yellow-400 text-black">{winners.length}</span>
+            </div>
+            <button
+              onClick={toggleFullscreen}
+              className="shrink-0 p-2 sm:p-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              title="Mode Tampilan Penuh"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        {/* Stage full-page */}
+        <div className="relative flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-[320px_minmax(0,1fr)_340px] gap-4 sm:gap-5 p-3 sm:p-5 lg:p-6 overflow-y-auto lg:overflow-hidden">
+          {/* Left - Kategori */}
+          <aside className="lg:min-h-0 lg:overflow-y-auto lg:pr-1 order-2 lg:order-1">
+            <div className="rounded-2xl bg-zinc-900/60 backdrop-blur border border-zinc-800 p-4 shadow-xl">
+              <PrizeSelectorGrid
+                prizes={prizes}
+                selectedPrizeId={selectedPrizeId}
+                isRolling={isRolling}
+                onSelectPrize={(id) => {
+                  setSelectedPrizeId(id);
+                  setCandidateVoucher(null);
+                  setIsConfirmedWinner(false);
+                }}
+              />
+            </div>
+          </aside>
+
+          {/* Center - Panggung utama */}
+          <div className="order-1 lg:order-2 flex flex-col justify-center gap-4 lg:min-h-0 lg:overflow-y-auto lg:py-2">
+            <div className="relative rounded-[24px] sm:rounded-[32px] bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-900 border-[3px] border-yellow-400 p-4 sm:p-6 lg:p-8 text-center shadow-[0_0_0_1px_rgba(250,204,21,0.18),0_18px_60px_rgba(0,0,0,0.65),0_0_80px_rgba(250,204,21,0.10)] overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 rounded-[24px] sm:rounded-[32px] bg-gradient-to-b from-white/[0.06] via-transparent to-transparent" />
+              <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[85%] h-32 bg-yellow-400/10 blur-[50px] rounded-full" />
+
+              {currentPrize && (
+                <div className="relative flex justify-center mb-4 sm:mb-6">
+                  <div className="inline-flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-2.5 rounded-full bg-[#E70013] text-white text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg border border-white/20">
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 animate-bounce" />
+                    <span className="truncate max-w-[22ch] sm:max-w-none">{currentPrize.name}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative">
+                <DigitSlotsDisplay
+                  displayDigits={displayDigits}
+                  isRolling={isRolling}
+                  winnerVoucher={isConfirmedWinner ? candidateVoucher : null}
+                  ownerName={candidateVoucher?.customer_name ?? null}
+                />
+              </div>
+
+              {errorMsg && (
+                <div className="relative mt-4 flex justify-center">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-[#E70013] text-white text-sm font-black inline-flex items-center gap-2 border-2 border-white/20 max-w-md shadow-lg">
+                    <AlertCircle className="w-5 h-5 shrink-0 text-white" />
+                    <span className="text-left leading-tight">{errorMsg}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative mt-6 sm:mt-8 flex justify-center">
+                <div className="w-full max-w-xl">
+                  <DrawControls
+                    isRolling={isRolling}
+                    isConfirming={isConfirming}
+                    candidateVoucher={candidateVoucher}
+                    isConfirmed={isConfirmedWinner}
+                    selectedPrizeId={selectedPrizeId}
+                    onStartDraw={() => handleStartDraw()}
+                    onStopDraw={stopRoll}
+                    onConfirmWinner={handleConfirmWinner}
+                    onForfeitAndRedraw={handleForfeitAndRedraw}
+                  />
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* Right - Pemenang */}
+          <aside className="lg:min-h-0 lg:overflow-hidden flex flex-col order-3">
+            <div className="rounded-2xl bg-zinc-900/60 backdrop-blur border border-zinc-800 p-4 shadow-xl flex-1 min-h-0 flex flex-col">
+              <WinnersPanel winners={winners} />
+            </div>
+          </aside>
+        </div>
+
+        {/* Footer */}
+        <div className="relative shrink-0 hidden sm:flex items-center justify-between px-6 py-2.5 border-t border-zinc-800/80 bg-zinc-900/40 backdrop-blur text-[11px]">
+          <span className="font-semibold text-zinc-500">Jalan Sehat 2026</span>
+          <span className="font-mono text-zinc-600">{winners.length} pemenang • {eligibleCount} peserta</span>
+        </div>
       </div>
-      </div>
-      </div>
-    </div>
     </RequireAuth>
   );
 }
