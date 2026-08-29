@@ -450,8 +450,8 @@ export default function DrawPage() {
 
               {currentPrize && (
                 <div className="relative flex justify-center mb-4 sm:mb-6">
-                  <div className="inline-flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-2.5 rounded-full bg-[#E70013] text-white text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg border border-white/20">
-                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 animate-bounce" />
+                  <div className="inline-flex items-center gap-2 px-5 sm:px-7 py-2 sm:py-2.5 rounded-full bg-yellow-400 text-black text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg border-2 border-yellow-400">
+                    <Trophy className="w-4 h-4 sm:w-5 sm:h-5 shrink-0 text-black animate-bounce" />
                     <span className="truncate max-w-[22ch] sm:max-w-none">{currentPrize.name}</span>
                   </div>
                 </div>
