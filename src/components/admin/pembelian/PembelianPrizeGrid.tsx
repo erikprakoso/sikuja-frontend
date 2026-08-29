@@ -1,4 +1,5 @@
-import { Trophy, PackageCheck } from 'lucide-react';
+import { useState } from 'react';
+import { Trophy, PackageCheck, ChevronDown, ChevronUp } from 'lucide-react';
 import { Prize } from '@/types';
 
 interface PembelianPrizeGridProps {
@@ -6,6 +7,10 @@ interface PembelianPrizeGridProps {
 }
 
 export const PembelianPrizeGrid = ({ prizes }: PembelianPrizeGridProps) => {
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL = 6;
+  const visible = showAll ? prizes : prizes.slice(0, INITIAL);
+  const hiddenCount = prizes.length - visible.length;
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -29,8 +34,9 @@ export const PembelianPrizeGrid = ({ prizes }: PembelianPrizeGridProps) => {
           </p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {prizes.map((p) => (
+          {visible.map((p) => (
             <div
               key={p.id}
               className="bg-slate-50/70 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between shadow-2xs hover:border-slate-300 transition-all"
@@ -57,6 +63,16 @@ export const PembelianPrizeGrid = ({ prizes }: PembelianPrizeGridProps) => {
             </div>
           ))}
         </div>
+        {prizes.length > INITIAL && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="w-full mt-3 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-black hover:bg-slate-50 active:scale-[0.99] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {showAll ? 'Sembunyikan' : `Lihat ${hiddenCount} kategori lagi`}
+          </button>
+        )}
+        </>
       )}
     </div>
   );
