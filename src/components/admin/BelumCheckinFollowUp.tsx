@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Ticket, Search, X, Clock, Phone, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
-import { getStoredTransactions, getStoredVouchers, SIKUJA_EVENT_NAME } from '@/lib/storage';
+import { Ticket, Search, X, Clock, Phone, ChevronLeft, ChevronRight, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { getStoredTransactions, getStoredVouchers, SIKUJA_EVENT_NAME, syncFromSupabase } from '@/lib/storage';
+import { checkInTransactionBatch } from '@/lib/services/voucher';
 import { Transaction, Voucher } from '@/types';
 
 interface Row {
@@ -21,6 +22,8 @@ export const BelumCheckinFollowUp: React.FC = () => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [resultMsg, setResultMsg] = useState<{ success: boolean; text: string } | null>(null);
 
   const refresh = () => {
     setTransactions(getStoredTransactions());
@@ -86,6 +89,39 @@ export const BelumCheckinFollowUp: React.FC = () => {
     setCurrentPage(1);
   };
 
+  const handleVerify = async (txId: string) => {
+    setVerifyingId(txId);
+    setResultMsg(null);
+    try {
+      let feedback: { success: boolean; text: string } | null = null;
+      try {
+        const res = await fetch('/api/checkin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ transactionId: txId }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) feedback = { success: true, text: data.message || 'Checkin berhasil' };
+        else if (data.error) feedback = { success: false, text: data.error };
+      } catch {
+        // offline fallback
+      }
+      if (!feedback) {
+        const batchRes = checkInTransactionBatch(txId, 'pos-device-1', { exact: true });
+        feedback = { success: batchRes.success, text: batchRes.message };
+      }
+      setResultMsg(feedback);
+      if (feedback.success) {
+        // refresh local + server sync biar row yang sudah checkin hilang (terbit==0)
+        refresh();
+        void syncFromSupabase().then(() => refresh());
+        setTimeout(() => setResultMsg(null), 3000);
+      }
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
   return (
     <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-sm">
       {/* Header */}
@@ -139,6 +175,13 @@ export const BelumCheckinFollowUp: React.FC = () => {
         </div>
       </div>
 
+      {resultMsg && (
+        <div className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 ${resultMsg.success ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+          {resultMsg.success ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {resultMsg.text}
+        </div>
+      )}
+
       {/* Mobile cards */}
       <div className="grid gap-3 md:hidden">
         {pageRows.length > 0 ? (
@@ -190,6 +233,14 @@ export const BelumCheckinFollowUp: React.FC = () => {
                     )}
                   </div>
                 )}
+                <button
+                  onClick={() => handleVerify(r.tx.id)}
+                  disabled={verifyingId === r.tx.id}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center justify-center gap-1.5 hover:bg-emerald-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                >
+                  {verifyingId === r.tx.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {verifyingId === r.tx.id ? 'Memverifikasi...' : `Verifikasi Checkin (${r.terbit} kupon)`}
+                </button>
               </div>
             );
           })
@@ -208,6 +259,7 @@ export const BelumCheckinFollowUp: React.FC = () => {
               <th className="p-3">Belum (Terbit)</th>
               <th className="p-3">Sudah Checkin</th>
               <th className="p-3">Kode Terbit</th>
+              <th className="p-3 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
@@ -225,20 +277,30 @@ export const BelumCheckinFollowUp: React.FC = () => {
                   </td>
                   <td className="p-3 text-center font-bold text-emerald-700">{r.checkin}</td>
                   <td className="p-3">
-                    <div className="flex flex-wrap gap-1 max-w-[280px]">
-                      {r.vouchersTerbit.slice(0, 8).map((v) => (
+                    <div className="flex flex-wrap gap-1 max-w-[220px]">
+                      {r.vouchersTerbit.slice(0, 6).map((v) => (
                         <span key={v.code} className="px-1.5 py-0.5 rounded bg-slate-900 text-white font-mono text-[11px] font-bold">
                           {v.code}
                         </span>
                       ))}
-                      {r.vouchersTerbit.length > 8 && <span className="text-[11px] font-semibold text-slate-500">+{r.vouchersTerbit.length - 8} lagi</span>}
+                      {r.vouchersTerbit.length > 6 && <span className="text-[11px] font-semibold text-slate-500">+{r.vouchersTerbit.length - 6} lagi</span>}
                     </div>
+                  </td>
+                  <td className="p-3 text-center">
+                    <button
+                      onClick={() => handleVerify(r.tx.id)}
+                      disabled={verifyingId === r.tx.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-black hover:bg-emerald-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      {verifyingId === r.tx.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                      {verifyingId === r.tx.id ? 'Proses...' : 'Verifikasi'}
+                    </button>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-6 text-center font-semibold text-slate-500">
+                <td colSpan={6} className="p-6 text-center font-semibold text-slate-500">
                   Tidak ada yang belum checkpoint 🎉
                 </td>
               </tr>
