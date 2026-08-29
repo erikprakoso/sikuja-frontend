@@ -59,15 +59,15 @@ export default function MonitoringPage() {
         totalTransactions={transactions.length}
       />
 
-      {/* Belum Checkpoint - follow-up */}
-      <BelumCheckinFollowUp />
-
       {/* Vouchers Master Table */}
       <VoucherMasterTable
         transactions={transactions}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
+
+      {/* Belum Checkpoint - follow-up */}
+      <BelumCheckinFollowUp />
     </div>
     </RequireAuth>
   );
