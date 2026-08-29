@@ -61,14 +61,14 @@ export const AdminStatCards: React.FC<AdminStatCardsProps> = ({
       </div>
 
       {/* 3. Hasil Penjualan */}
-      <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">Hasil Penjualan</span>
-          <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-600 text-white">
+      <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-xs min-w-0 overflow-hidden">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider truncate">Hasil Penjualan</span>
+          <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-600 text-white shrink-0">
             <Banknote className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </div>
         </div>
-        <p className="text-lg sm:text-3xl font-black text-emerald-700 mt-1 sm:mt-1.5">
+        <p className="text-base sm:text-xl lg:text-2xl xl:text-[28px] font-black text-emerald-700 mt-1 sm:mt-1.5 leading-none break-words tracking-tight">
           {formatRupiah(totalOmzet)}
         </p>
         <span className="hidden sm:block text-[11px] font-semibold text-slate-500 mt-1">
