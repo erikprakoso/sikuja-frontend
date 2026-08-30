@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Voucher } from '@/types';
 import { Trophy, ChevronDown, User } from 'lucide-react';
-import { getStoredTransactions, SIKUJA_EVENT_NAME } from '@/lib/storage';
+import { getStoredTransactions, getStoredDrawResults, SIKUJA_EVENT_NAME } from '@/lib/storage';
 
 interface WinnersPanelProps {
   winners: Voucher[];
@@ -12,23 +12,33 @@ const PAGE_SIZE = 8;
 export const WinnersPanel: React.FC<WinnersPanelProps> = ({ winners }) => {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [txMap, setTxMap] = useState<Map<string, string>>(new Map());
+  const [drawMap, setDrawMap] = useState<Map<string, string>>(new Map());
 
   useEffect(() => {
-    const refreshTx = () => {
-      const map = new Map<string, string>();
+    const refresh = () => {
+      const tMap = new Map<string, string>();
       for (const tx of getStoredTransactions()) {
-        if (tx.customer_name) map.set(tx.id, tx.customer_name);
+        if (tx.customer_name) tMap.set(tx.id, tx.customer_name);
       }
-      setTxMap(map);
+      setTxMap(tMap);
+      const dMap = new Map<string, string>();
+      for (const dr of getStoredDrawResults()) {
+        if (dr.customer_name) dMap.set(dr.voucher_code, dr.customer_name);
+      }
+      setDrawMap(dMap);
     };
-    refreshTx();
-    window.addEventListener(SIKUJA_EVENT_NAME, refreshTx);
-    return () => window.removeEventListener(SIKUJA_EVENT_NAME, refreshTx);
+    refresh();
+    window.addEventListener(SIKUJA_EVENT_NAME, refresh);
+    return () => window.removeEventListener(SIKUJA_EVENT_NAME, refresh);
   }, []);
 
   const getWinnerName = (w: Voucher) => {
-    if (w.customer_name) return w.customer_name;
-    return txMap.get(w.transaction_id) || '-';
+    if (w.customer_name && w.customer_name.trim()) return w.customer_name;
+    const fromDraw = drawMap.get(w.code);
+    if (fromDraw && fromDraw.trim()) return fromDraw;
+    const fromTx = txMap.get(w.transaction_id);
+    if (fromTx && fromTx.trim()) return fromTx;
+    return '-';
   };
 
   const sortedWinners = useMemo(() => [...winners].sort(
