@@ -29,12 +29,13 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
       .map((tx) => {
         const vs = voucherByTx.get(tx.id) || [];
         const total = vs.length || (tx.qty_fisik || 0) + (tx.qty_non_fisik || 0);
-        const menang = vs.filter((v) => v.status === 'menang' || v.status === 'diklaim').length;
+        // Berdasarkan doorprize id (prize_id) yang null = belum dapat doorprize sama sekali, bukan klaim
+        const dapatDoorprize = vs.filter((v) => !!v.prize_id).length;
         const checkin = vs.filter((v) => v.status === 'checkin').length;
         const terbit = vs.filter((v) => v.status === 'terbit').length;
-        return { tx, vs, total, menang, checkin, terbit };
+        return { tx, vs, total, dapatDoorprize, checkin, terbit };
       })
-      .filter((r) => r.menang === 0)
+      .filter((r) => r.dapatDoorprize === 0)
       .sort((a, b) => new Date(b.tx.created_at).getTime() - new Date(a.tx.created_at).getTime());
   }, [transactions, voucherByTx]);
 
@@ -62,7 +63,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
           <Trophy className="w-5 h-5 text-slate-400" />
           Tidak Dapat Doorprize <span className="text-slate-400 font-bold">({filtered.length} transaksi • {filtered.reduce((a, r) => a + r.total, 0)} kupon)</span>
         </h2>
-        <p className="text-xs text-slate-500 font-medium">Transaksi yang <span className="font-black text-slate-700">0 voucher menang/diklaim</span> — belum beruntung sama sekali.</p>
+        <p className="text-xs text-slate-500 font-medium">Transaksi yang <span className="font-black text-slate-700">0 voucher dengan doorprize (prize_id null)</span> — belum beruntung sama sekali.</p>
 
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between pt-1">
           <div className="relative flex-1 lg:max-w-sm">
@@ -129,7 +130,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
               <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] font-bold">
                 <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-600">{r.terbit} terbit</span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">{r.checkin} checkin</span>
-                <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white">0 menang</span>
+                <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white">0 doorprize</span>
               </div>
             </div>
           ))
@@ -147,7 +148,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
               <th className="p-3 text-center">Total</th>
               <th className="p-3 text-center">Terbit</th>
               <th className="p-3 text-center">Checkin</th>
-              <th className="p-3 text-center">Menang</th>
+              <th className="p-3 text-center">Doorprize</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
