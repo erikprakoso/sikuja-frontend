@@ -123,11 +123,14 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
       {/* Mobile */}
       <div className="grid gap-3 md:hidden">
         {pageRows.length > 0 ? (
-          pageRows.map((r) => (
+          pageRows.map((r, idx) => (
             <div key={r.tx.id} className="rounded-2xl border border-slate-200 p-4 bg-white shadow-sm">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-bold text-slate-900 truncate">{r.tx.customer_name || 'Tanpa Nama'}</p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex w-6 h-6 items-center justify-center rounded-full bg-slate-900 text-white text-[11px] font-black shrink-0">{start + idx + 1}</span>
+                    <p className="font-bold text-slate-900 truncate">{r.tx.customer_name || 'Tanpa Nama'}</p>
+                  </div>
                   <span className="flex items-center gap-1 text-[11px] text-slate-500 font-mono font-semibold">
                     <Phone className="w-3 h-3 text-slate-400" />
                     {r.tx.customer_phone || '-'}
@@ -159,6 +162,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
         <table className="w-full text-left text-xs text-slate-800">
           <thead className="bg-slate-900 text-white uppercase font-bold text-[10px]">
             <tr>
+              <th className="p-3 w-12 text-center">No</th>
               <th className="p-3">Pembeli</th>
               <th className="p-3 text-center">Total</th>
               <th className="p-3 text-center">Terbit</th>
@@ -168,8 +172,9 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
           </thead>
           <tbody className="divide-y divide-slate-200">
             {pageRows.length > 0 ? (
-              pageRows.map((r) => (
+              pageRows.map((r, idx) => (
                 <tr key={r.tx.id} className="hover:bg-slate-50">
+                  <td className="p-3 text-center font-mono font-bold text-slate-500">{start + idx + 1}</td>
                   <td className="p-3">
                     <div className="font-bold text-slate-900">{r.tx.customer_name || 'Tanpa Nama'}</div>
                     <div className="text-[11px] font-mono font-semibold text-slate-500">{r.tx.customer_phone || '-'}</div>
@@ -188,7 +193,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="p-6 text-center font-semibold text-slate-500">
+                <td colSpan={6} className="p-6 text-center font-semibold text-slate-500">
                   Semua transaksi sudah pernah menang 🎉
                 </td>
               </tr>
