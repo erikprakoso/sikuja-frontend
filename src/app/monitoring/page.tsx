@@ -13,6 +13,7 @@ import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
 import { BelumCheckinFollowUp } from '@/components/admin/BelumCheckinFollowUp';
+import { TidakDapatDoorprizeTable } from '@/components/admin/TidakDapatDoorprizeTable';
 
 export default function MonitoringPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -59,15 +60,18 @@ export default function MonitoringPage() {
         totalTransactions={transactions.length}
       />
 
+      {/* Belum Checkpoint - follow-up */}
+      <BelumCheckinFollowUp />
+
+      {/* Tidak Dapat Doorprize Sama Sekali */}
+      <TidakDapatDoorprizeTable transactions={transactions} vouchers={vouchers} />
+
       {/* Vouchers Master Table */}
       <VoucherMasterTable
         transactions={transactions}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
-
-      {/* Belum Checkpoint - follow-up */}
-      <BelumCheckinFollowUp />
     </div>
     </RequireAuth>
   );

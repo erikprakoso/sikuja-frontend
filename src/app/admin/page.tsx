@@ -12,7 +12,6 @@ import { Voucher, Transaction, DrawResult } from '@/types';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { AdminStatCards } from '@/components/admin/AdminStatCards';
 import { VoucherMasterTable } from '@/components/admin/VoucherMasterTable';
-import { TidakDapatDoorprizeTable } from '@/components/admin/TidakDapatDoorprizeTable';
 
 export default function AdminDashboardPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
@@ -58,9 +57,6 @@ export default function AdminDashboardPage() {
         totalOmzet={totalOmzet}
         totalTransactions={transactions.length}
       />
-
-      {/* Tidak Dapat Doorprize Sama Sekali */}
-      <TidakDapatDoorprizeTable transactions={transactions} vouchers={vouchers} />
 
       {/* Vouchers Master Table */}
       <VoucherMasterTable
