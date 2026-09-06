@@ -13,6 +13,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortBy, setSortBy] = useState<'date' | 'total'>('total');
 
   const voucherByTx = useMemo(() => {
     const map = new Map<string, Voucher[]>();
@@ -25,7 +26,7 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
   }, [vouchers]);
 
   const rows = useMemo(() => {
-    return transactions
+    const base = transactions
       .map((tx) => {
         const vs = voucherByTx.get(tx.id) || [];
         const total = vs.length || (tx.qty_fisik || 0) + (tx.qty_non_fisik || 0);
@@ -35,9 +36,12 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
         const terbit = vs.filter((v) => v.status === 'terbit').length;
         return { tx, vs, total, menang, checkin, terbit };
       })
-      .filter((r) => r.menang === 0)
-      .sort((a, b) => new Date(b.tx.created_at).getTime() - new Date(a.tx.created_at).getTime());
-  }, [transactions, voucherByTx]);
+      .filter((r) => r.menang === 0);
+    if (sortBy === 'total') {
+      return base.sort((a, b) => b.total - a.total || new Date(b.tx.created_at).getTime() - new Date(a.tx.created_at).getTime());
+    }
+    return base.sort((a, b) => new Date(b.tx.created_at).getTime() - new Date(a.tx.created_at).getTime());
+  }, [transactions, voucherByTx, sortBy]);
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -90,6 +94,17 @@ export const TidakDapatDoorprizeTable: React.FC<Props> = ({ transactions, vouche
               </button>
             )}
           </div>
+          <select
+            value={sortBy}
+            onChange={(e) => {
+              setSortBy(e.target.value as 'date' | 'total');
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-700 cursor-pointer"
+          >
+            <option value="total">Total Besar → Kecil</option>
+            <option value="date">Tanggal Terbaru</option>
+          </select>
           <select
             value={pageSize}
             onChange={(e) => {
